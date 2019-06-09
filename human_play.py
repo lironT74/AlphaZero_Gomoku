@@ -8,7 +8,7 @@ Input your move in the format: 2,3
 
 from __future__ import print_function
 import pickle
-from game import Board, Game
+from game import Board, Game, BoardSlim
 from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
 from policy_value_net_numpy import PolicyValueNetNumpy
@@ -16,7 +16,9 @@ from policy_value_net_numpy import PolicyValueNetNumpy
 # from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
 # from policy_value_net_keras import PolicyValueNet  # Keras
-
+from policy_net_keras import PolicyNet
+from policy_player import PolicyPlayer
+import numpy as np
 
 class Human(object):
     """
@@ -47,11 +49,16 @@ class Human(object):
 
 
 def run():
-    n = 5
-    width, height = 8, 8
-    model_file = 'best_policy_8_8_5.model'
+    n = 4
+    width, height = 6, 6
+    model_file = 'PATH_TO_POLICY'
     try:
-        board = Board(width=width, height=height, n_in_row=n)
+        initial_board = np.array([[0,1,0,2,0,0],[0,2,1,1,0,0],[1,2,2,2,1,0],[2,0,1,1,2,0],[1,0,2,2,0,0],[0,0,0,0,
+                                                                                                  0,0]])
+        i_board = np.zeros((2, height, width))
+        i_board[0] = initial_board == 1
+        i_board[1] = initial_board == 2
+        board = BoardSlim(width=width, height=height, n_in_row=n)
         game = Game(board)
 
         # ############### human VS AI ###################
@@ -61,15 +68,16 @@ def run():
         # mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
 
         # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
-        try:
-            policy_param = pickle.load(open(model_file, 'rb'))
-        except:
-            policy_param = pickle.load(open(model_file, 'rb'),
-                                       encoding='bytes')  # To support python3
-        best_policy = PolicyValueNetNumpy(width, height, policy_param)
-        mcts_player = MCTSPlayer(best_policy.policy_value_fn,
-                                 c_puct=5,
-                                 n_playout=400)  # set larger n_playout for better performance
+        # try:
+        #     policy_param = pickle.load(open(model_file, 'rb'))
+        # except:
+        #     policy_param = pickle.load(open(model_file, 'rb'),
+        #                                encoding='bytes')  # To support python3
+        best_policy = PolicyNet(width, height, model_file=model_file)
+        policy_player = PolicyPlayer(best_policy, False)
+        # mcts_player = MCTSPlayer(best_policy.policy_value_fn,
+        #                          c_puct=5,
+        #                          n_playout=400)  # set larger n_playout for better performance
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
@@ -78,7 +86,7 @@ def run():
         human = Human()
 
         # set start_player=0 for human first
-        game.start_play(human, mcts_player, start_player=1, is_shown=1)
+        game.start_play(policy_player, human, start_player=1, is_shown=1, start_board=i_board)
     except KeyboardInterrupt:
         print('\n\rquit')
 
