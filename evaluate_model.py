@@ -4,6 +4,7 @@ from policy_net_keras import PolicyNet
 from game import Game, BoardSlim
 import numpy as np
 import tqdm
+
 PATH2MODEL = "/Users/danamir/tictactoe/AlphaZero_Gomoku/1555508174/policy14999.h5"
 BOARD_SHAPE = (6,6)
 playouts = [1]

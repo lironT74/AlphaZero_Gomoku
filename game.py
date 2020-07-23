@@ -87,6 +87,7 @@ class BoardSlim(object):
                             move_curr % self.height] = 1.0
             square_state[1][move_oppo // self.width,
                             move_oppo % self.height] = 1.0
+
         return square_state[:, ::-1, :]
 
     def do_move(self, move):
@@ -150,6 +151,7 @@ class Board(object):
     def __init__(self, **kwargs):
         self.width = int(kwargs.get('width', 8))
         self.height = int(kwargs.get('height', 8))
+
         # board states stored as a dict,
         # key: move as location on the board,
         # value: player as pieces type
@@ -157,6 +159,7 @@ class Board(object):
         # need how many pieces in a row to win
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
+
 
     def init_board(self, start_player=0):
         if self.width < self.n_in_row or self.height < self.n_in_row:
@@ -198,17 +201,22 @@ class Board(object):
         square_state = np.zeros((4, self.width, self.height))
         if self.states:
             moves, players = np.array(list(zip(*self.states.items())))
+
             move_curr = moves[players == self.current_player]
+
             move_oppo = moves[players != self.current_player]
+
             square_state[0][move_curr // self.width,
                             move_curr % self.height] = 1.0
             square_state[1][move_oppo // self.width,
                             move_oppo % self.height] = 1.0
+
             # indicate the last move location
             square_state[2][self.last_move // self.width,
                             self.last_move % self.height] = 1.0
         if len(self.states) % 2 == 0:
             square_state[3][:, :] = 1.0  # indicate the colour to play
+
         return square_state[:, ::-1, :]
 
     def do_move(self, move):
@@ -296,12 +304,14 @@ class Game(object):
                     print('_'.center(8), end='')
             print('\r\n\r\n')
 
-    def start_play(self, player1, player2, start_player=0, is_shown=1, start_board=None):
+    def start_play(self, player1, player2, start_player=0, is_shown=1):
         """start a game between two players"""
         if start_player not in (0, 1):
             raise Exception('start_player should be either 0 (player1 first) '
                             'or 1 (player2 first)')
-        self.board.init_board(start_player, start_board)
+
+        self.board.init_board(start_player)
+
         p1, p2 = self.board.players
         player1.set_player_ind(p1)
         player2.set_player_ind(p2)
@@ -311,7 +321,9 @@ class Game(object):
         while True:
             current_player = self.board.get_current_player()
             player_in_turn = players[current_player]
+
             move = player_in_turn.get_action(self.board)
+
             self.board.do_move(move)
             if is_shown:
                 self.graphic(self.board, player1.player, player2.player)

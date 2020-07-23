@@ -20,6 +20,8 @@ class PolicyPlayer(object):
         move_probs = np.zeros(board.width*board.height)
         if len(sensible_moves) > 0:
             probs_legal = self._policy_network.policy_fn(board)
+            # probs_legal = self._policy_network.policy_value_fn(board)[0] #lt
+
             acts = [p[0] for p in probs_legal]
             probs = [p[1] for p in probs_legal]
 
