@@ -21,14 +21,16 @@ def set_learning_rate(optimizer, lr):
 
 class Net(nn.Module):
     """policy-value network module"""
-    def __init__(self, board_width, board_height):
+    def __init__(self, board_width, board_height, input_plains_num):
         super(Net, self).__init__()
 
         self.board_width = board_width
         self.board_height = board_height
+        self.input_plains_num = input_plains_num
 
         # common layers
-        self.conv1 = nn.Conv2d(4, 32, kernel_size=3, padding=1)
+
+        self.conv1 = nn.Conv2d(self.input_plains_num, 32, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
 
@@ -62,27 +64,30 @@ class Net(nn.Module):
 
 class PolicyValueNet():
     """policy-value network """
-    def __init__(self, board_width, board_height,
-                 model_file=None, use_gpu=True):
+    def __init__(self,
+                 board_width,
+                 board_height,
+                 input_plains_num,
+                 model_file=None,
+                 use_gpu=True):
+
         self.use_gpu = use_gpu
 
         if self.use_gpu:
             self.cuda_to_use = torch.device('cuda:1')
 
-
         self.board_width = board_width
         self.board_height = board_height
         self.l2_const = 1e-4  # coef of l2 penalty
-
+        self.input_plains_num = input_plains_num
 
         # # the policy value net module
         if self.use_gpu:
-            self.policy_value_net = Net(board_width, board_height).cuda(device=self.cuda_to_use)
+            self.policy_value_net = Net(self.board_width, self.board_height, self.input_plains_num).cuda(device=self.cuda_to_use)
         else:
-            self.policy_value_net = Net(board_width, board_height)
+            self.policy_value_net = Net(self.board_width, self.board_height, self.input_plains_num)
 
-        self.optimizer = optim.Adam(self.policy_value_net.parameters(),
-                                    weight_decay=self.l2_const)
+        self.optimizer = optim.Adam(self.policy_value_net.parameters(), weight_decay=self.l2_const)
 
         if model_file:
             net_params = torch.load(model_file)
@@ -133,8 +138,8 @@ class PolicyValueNet():
         """
         legal_positions = board.availables
 
-        current_state = np.ascontiguousarray(board.current_state().reshape(
-                -1, 4, self.board_width, self.board_height))
+        current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
+                -1, self.input_plains_num , self.board_width, self.board_height))
 
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(

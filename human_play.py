@@ -51,7 +51,9 @@ class Human(object):
 def run():
     n = 4
     width, height = 6, 6
-    model_file = 'best_policy_pytorch_6_6_4.model2'
+    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
+    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
+
     try:
         board = Board(width=width, height=height, n_in_row=n)
         game = Game(board)
@@ -60,8 +62,11 @@ def run():
         # ############### human VS AI ###################
         # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
 
-        best_policy = PolicyValueNet(width, height, model_file = model_file)
-        mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=5, n_playout=400)
+        best_policy_1 = PolicyValueNet(width, height, model_file = model_1_file, input_plains_num=3)
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plaines model")
+
+        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
+        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plaines model")
 
         # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
         # try:
@@ -81,12 +86,12 @@ def run():
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
 
         # human player, input your move in the format: 2,3
-        human = Human()
+        # human = Human()
 
         # set start_player=1 for human first
         # game.start_play(policy_player, human, start_player=1, is_shown=1, start_board=i_board)
 
-        game.start_play(mcts_player, human, start_player=0, is_shown=1)
+        game.start_play(mcts_player_1, mcts_player_2, start_player=0, is_shown=1)
 
     except KeyboardInterrupt:
         print('\n\rquit')
