@@ -50,7 +50,6 @@ class BoardSlim(object):
                 self.do_move(move)
 
 
-
     def move_to_location(self, move):
         """
         3*3 board's moves like:
@@ -93,11 +92,15 @@ class BoardSlim(object):
     def do_move(self, move):
         self.states[move] = self.current_player
         self.availables.remove(move)
+
         self.current_player = (
             self.players[0] if self.current_player == self.players[1]
             else self.players[1]
         )
+
+
         self.last_move = move
+
 
     def has_a_winner(self):
         width = self.width
@@ -170,6 +173,9 @@ class Board(object):
         self.states = {}
         self.last_move = -1
 
+        self.last_move_p1 = -1
+        self.last_move_p2 = -1
+
     def move_to_location(self, move):
         """
         3*3 board's moves like:
@@ -208,15 +214,25 @@ class Board(object):
 
                 square_state[0][move_curr // self.width,
                                 move_curr % self.height] = 1.0
+
                 square_state[1][move_oppo // self.width,
                                 move_oppo % self.height] = 1.0
 
-                # indicate the last move location
-                square_state[2][self.last_move // self.width,
-                                self.last_move % self.height] = 1.0
-
             if len(self.states) % 2 == 0:
+
+                if self.last_move_p1 != -1:
+                    # indicate the last move location OF THE CURRENT PLAYER!!!!
+                    square_state[2][self.last_move_p1 // self.width,
+                                    self.last_move_p1 % self.height] = 1.0
+
                 square_state[3][:, :] = 1.0  # indicate the colour to play
+
+            else:
+                if self.last_move_p2 != -1:
+                    # indicate the last move location OF THE CURRENT PLAYER!!!!
+                    square_state[2][self.last_move_p2 // self.width,
+                                    self.last_move_p2 % self.height] = 1.0
+
 
             return square_state[:, ::-1, :]
 
@@ -226,7 +242,6 @@ class Board(object):
                 moves, players = np.array(list(zip(*self.states.items())))
 
                 move_curr = moves[players == self.current_player]
-
                 move_oppo = moves[players != self.current_player]
 
                 square_state[0][move_curr // self.width,
@@ -239,14 +254,23 @@ class Board(object):
 
             return square_state[:, ::-1, :]
 
+
     def do_move(self, move):
         self.states[move] = self.current_player
         self.availables.remove(move)
+
+        if self.current_player == self.players[0]:
+            self.last_move_p1 = move
+        else:
+            self.last_move_p2 = move
+
+        self.last_move = move
+
         self.current_player = (
             self.players[0] if self.current_player == self.players[1]
             else self.players[1]
         )
-        self.last_move = move
+
 
     def has_a_winner(self):
         width = self.width
@@ -335,6 +359,7 @@ class Game(object):
         player1.set_player_ind(p1)
         player2.set_player_ind(p2)
         players = {p1: player1, p2: player2}
+
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
         while True:
@@ -355,7 +380,7 @@ class Game(object):
                         print("Game end. Tie")
                 return winner
 
-    def start_self_play(self, player, is_shown=0, temp=1e-3, last_move=True):
+    def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
@@ -367,7 +392,7 @@ class Game(object):
                                                  temp=temp,
                                                  return_prob=1)
             # store the data
-            states.append(self.board.current_state(last_move))
+            states.append(self.board.current_state(is_last_move))
             mcts_probs.append(move_probs)
             current_players.append(self.board.current_player)
             # perform a move

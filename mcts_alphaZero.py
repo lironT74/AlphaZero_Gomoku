@@ -153,12 +153,9 @@ class MCTS(object):
         act_visits = [(act, node._n_visits)
                       for act, node in self._root._children.items()]
 
-        """
-            maybe? use this for visit counts
-        """
         acts, visits = zip(*act_visits)
-        act_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
 
+        act_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
 
         return acts, act_probs
 
@@ -200,7 +197,10 @@ class MCTSPlayer(object):
         if len(sensible_moves) > 0:
             acts, probs = self.mcts.get_move_probs(board, temp)
 
-            self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
+            # self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
+
+            my_marker = "X" if self.player == 1 else "O"
+            print(my_marker, ":\n" ,board.current_state()[2])
 
             move_probs[list(acts)] = probs
 
@@ -232,24 +232,30 @@ class MCTSPlayer(object):
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
 
-    @staticmethod
-    def create_probs_heatmap(acts, probs, width, height, name, board):
+    def create_probs_heatmap(self, acts, probs, width, height, name, board):
 
-        import matplotlib
         import matplotlib.pyplot as plt
         np.set_printoptions(precision=3)
 
         move_probs = np.zeros(width*height)
-        taken_squares = [i for i in range(width*height) if i not in acts]
-        x_takens = board.current_state()[0]
-        o_takens = board.current_state()[1]
+
+        my_marker = "X" if self.player == 1 else "O"
+
+        if self.player == 1:
+            x_takens = board.current_state()[0]
+            o_takens = board.current_state()[1]
+        else:
+            o_takens = board.current_state()[0]
+            x_takens = board.current_state()[1]
+
 
         move_probs[list(acts)] = probs
-        move_probs[taken_squares] = 0
 
         move_probs = move_probs.reshape(width, height)
+        move_probs = np.round_(move_probs, decimals=4)
+        move_probs = np.flipud(move_probs)
 
-        y_axis = range(width, 0, -1)
+        y_axis = range(width-1, -1, -1)
         x_axis = range(0, height, 1)
 
         fig, ax = plt.subplots()
@@ -273,6 +279,6 @@ class MCTSPlayer(object):
                 text = ax.text(j, i, "X" if x_takens[i,j]==1 else ("O" if o_takens[i,j]==1 else move_probs[i,j]),
                                ha="center", va="center", color="w")
 
-        ax.set_title("Heatmap of action probas of {}".format(name))
+        ax.set_title("Heatmap of action probas of {} which plays {} ".format(name, my_marker))
         fig.tight_layout()
         plt.show()
