@@ -5,6 +5,8 @@
 
 from __future__ import print_function
 import numpy as np
+WIN_SCORE = 100
+
 
 class BoardSlim(object):
     """board for the game"""
@@ -162,7 +164,6 @@ class Board(object):
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
 
-
     def init_board(self, start_player=0):
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
@@ -218,6 +219,7 @@ class Board(object):
                 square_state[1][move_oppo // self.width,
                                 move_oppo % self.height] = 1.0
 
+
             if len(self.states) % 2 == 0:
 
                 if self.last_move_p1 != -1:
@@ -228,10 +230,12 @@ class Board(object):
                 square_state[3][:, :] = 1.0  # indicate the colour to play
 
             else:
+
                 if self.last_move_p2 != -1:
                     # indicate the last move location OF THE CURRENT PLAYER!!!!
                     square_state[2][self.last_move_p2 // self.width,
                                     self.last_move_p2 % self.height] = 1.0
+
 
 
             return square_state[:, ::-1, :]
@@ -254,7 +258,6 @@ class Board(object):
 
             return square_state[:, ::-1, :]
 
-
     def do_move(self, move):
         self.states[move] = self.current_player
         self.availables.remove(move)
@@ -270,7 +273,6 @@ class Board(object):
             self.players[0] if self.current_player == self.players[1]
             else self.players[1]
         )
-
 
     def has_a_winner(self):
         width = self.width
@@ -316,6 +318,177 @@ class Board(object):
 
     def get_current_player(self):
         return self.current_player
+
+    def density_square_score(self, cur_positions, opponent_positions, density = 'reg', sig=3):
+
+        width = self.width
+        height = self.height
+
+        scores = np.zeros((width, height), dtype=float)
+        radius = width - 1
+
+        cur_positions_padded = np.zeros((width + 2*radius, height + 2*radius))
+        cur_positions_padded[radius:radius+width, radius:radius+height] = cur_positions
+
+        gaussian_kernel = []
+        if density == 'guassian':
+            # create guassians for each X square
+            for row in range(width):
+                for col in range(height):
+                    if cur_positions[row, col] == 'X':
+                        gaussian_kernel.append(self.makeGaussian(width, fwhm=sig, center=[row, col]))
+
+
+        for row in range(width):
+            for col in range(height):
+                row_hat, col_hat = row+radius, col+radius
+
+                if cur_positions[row, col] or opponent_positions[row, col]: # taken squares get -1
+                    scores[row, col] = -1
+
+                else:
+                    if density == 'guassian':
+                        scores[row, col] = self.compute_density_guassian(row, col, gaussian_kernel)
+
+                    else:
+                        for r in range(radius):
+                            scores[row, col] += ((1/(8*(r+1)))\
+                                            *(np.sum(cur_positions_padded[row_hat - r - 1, col_hat - r - 1: col_hat + r + 2]) + \
+                                            np.sum(cur_positions_padded[row_hat + r + 1, col_hat - r - 1: col_hat + r + 2]) + \
+                                            np.sum(cur_positions_padded[row_hat - r : row_hat + r + 1, col_hat + r + 1]) + \
+                                            np.sum(cur_positions_padded[row_hat - r : row_hat + r + 1, col_hat - r - 1]))
+        return scores
+
+    def linear_square_score_aux(self, cur_positions, opponent_positions):
+
+        width = self.width
+        height = self.height
+
+        scores = np.zeros((4, width, height))
+        cur_positions_adjusted = np.zeros((width + 2, height + 2))
+        cur_positions_adjusted[1:width + 1, 1:height + 1] = cur_positions
+
+        for i in range(width):
+            for j in range(height):
+
+                i_hat, j_hat = i+1, j+1
+
+                if cur_positions[i, j] or opponent_positions[i, j]:  # taken squares get -1
+                    scores[:, i, j] = np.zeros(4)
+
+                else:
+                    """ 
+                    indicator positions for a given square:
+                    1 2 3
+                    4 _ 5
+                    6 7 8
+                    """
+
+                    i1, i2, i3 = tuple(cur_positions_adjusted[i_hat-1, j_hat-1:j_hat+2])
+                    i6, i7, i8 = tuple(cur_positions_adjusted[i_hat+1, j_hat-1:j_hat+2])
+                    i5 = cur_positions_adjusted[i_hat, j_hat+1]
+                    i4 = cur_positions_adjusted[i_hat, j_hat-1]
+
+                    horizontal = 0
+                    vertical = 0
+                    main_diag = 0
+                    secondary_diag = 0
+
+                    #horizontal path
+                    if i4 or i5:
+                        #go right (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat, j_hat+1]:
+                            horizontal += 1
+                            j_hat += 1
+                        j_hat = j + 1
+
+                        #go left (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat, j_hat - 1]:
+                            horizontal += 1
+                            j_hat -= 1
+                        j_hat = j + 1
+
+                    # vertical path
+                    if i2 or i7:
+                        # go up (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat - 1, j_hat]:
+                            vertical += 1
+                            i_hat -= 1
+                        i_hat = i + 1
+
+                        # go down (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat + 1, j_hat]:
+                            vertical += 1
+                            i_hat += 1
+                        i_hat = i + 1
+
+                    #main diagonal
+                    if i1 or i8:
+                        #go up+left (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat - 1, j_hat - 1]:
+                            main_diag += 1
+                            i_hat -= 1
+                            j_hat -= 1
+                        i_hat = i + 1
+                        j_hat = j + 1
+
+                        # go down+right (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat + 1, j_hat + 1]:
+                            main_diag += 1
+                            i_hat += 1
+                            j_hat += 1
+                        i_hat = i + 1
+                        j_hat = j + 1
+
+                    # secondary diagonal
+                    if i3 or i6:
+                        # go up+right (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat - 1, j_hat + 1]:
+                            secondary_diag += 1
+                            i_hat -= 1
+                            j_hat += 1
+                        i_hat = i + 1
+                        j_hat = j + 1
+
+                        # go down+left (guaranteed to stop because the frame is zeros)
+                        while cur_positions_adjusted[i_hat + 1, j_hat - 1]:
+                            secondary_diag += 1
+                            i_hat += 1
+                            j_hat -= 1
+                        i_hat = i + 1
+                        j_hat = j + 1
+
+                    scores[:, i, j] = [horizontal, vertical, main_diag, secondary_diag]
+        return scores
+
+    @staticmethod
+    def compute_density_guassian(row, col, guassian_kernel):
+        density_score = 0.0
+        for guas in guassian_kernel:
+            density_score += guas[row][col]
+        return density_score
+
+    @staticmethod
+    def makeGaussian(size, fwhm=3, center=None):
+        """ Make a square gaussian kernel.
+        size is the length of a side of the square
+        fwhm is full-width-half-maximum, which
+        can be thought of as an effective radius.
+        """
+
+        x = np.arange(0, size, 1, float)
+        y = x[:, np.newaxis]
+
+        if center is None:
+            x0 = y0 = size // 2 - 1
+        else:
+            x0 = center[0]
+            y0 = center[1]
+
+        # return np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / fwhm**2)
+        return np.exp(-1 * ((x - x0) ** 2 + (y - y0) ** 2) / fwhm ** 2)
+
+
 
 class Game(object):
     """game server"""
@@ -447,3 +620,5 @@ class Game(object):
                 elif winner == p2:
                     reward = -1
                 return reward, zip(states, moves)
+
+

@@ -119,8 +119,8 @@ class MCTS(object):
         node = self._root
         while(1):
             if node.is_leaf():
-
                 break
+
             # Greedily select next move.
             action, node = node.select(self._c_puct)
             state.do_move(action)
@@ -130,8 +130,10 @@ class MCTS(object):
         end, winner = state.game_end()
         if not end:
             node.expand(action_probs)
+
         # Evaluate the leaf node by random rollout
         leaf_value = self._evaluate_rollout(state)
+
         # Update value and visit count of nodes in this traversal.
         node.update_recursive(-leaf_value)
 

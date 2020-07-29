@@ -49,10 +49,12 @@ class Human(object):
 
 
 def run():
-    n = 4
-    width, height = 6, 6
-    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
-    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
+    n = 5
+    width, height = 8,8
+
+    model_1_file = './best_policy_8_8_5.model'
+    # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
+    # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
 
     try:
         board = Board(width=width, height=height, n_in_row=n)
@@ -62,11 +64,14 @@ def run():
         # ############### human VS AI ###################
         # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
 
-        best_policy_1 = PolicyValueNet(width, height, model_file = model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plains model")
+        best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=4)
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="AI")
 
-        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plains model")
+        # best_policy_1 = PolicyValueNet(width, height, model_file = model_1_file, input_plains_num=3)
+        # mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plains model")
+
+        # best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
+        # mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plains model")
 
         # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
         # try:
@@ -96,7 +101,7 @@ def run():
         start_player = 0
 
         for i in range(1):
-            winner = game.start_play(mcts_player_1, mcts_player_2, start_player=start_player, is_shown=1)
+            winner = game.start_play(mcts_player_1, human, start_player=start_player, is_shown=1)
 
             results[winner] += 1
             start_player = 1 - start_player

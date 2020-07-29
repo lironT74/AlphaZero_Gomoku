@@ -17,6 +17,10 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
 # from policy_value_net_keras import PolicyValueNet # Keras
 
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter('./runs/pt_4_4_3_p3_training')
+
+
 
 class TrainPipeline():
     def __init__(self, init_model=None):
@@ -107,6 +111,7 @@ class TrainPipeline():
 
             play_data = list(play_data)[:]
             self.episode_len = len(play_data)
+
             # augment the data
             play_data = self.get_equi_data(play_data)
             self.data_buffer.extend(play_data)
@@ -186,11 +191,17 @@ class TrainPipeline():
         """run the training pipeline"""
         try:
             for i in range(self.game_batch_num):
+
                 self.collect_selfplay_data(self.play_batch_size)
+
                 print("batch i:{}, episode_len:{}".format(
                         i+1, self.episode_len))
+
                 if len(self.data_buffer) > self.batch_size:
                     loss, entropy = self.policy_update()
+
+                    writer.add_scalar('training loss', loss, i+1)
+                    writer.add_scalar('training entropy', entropy, i+1)
 
                 # check the performance of the current model,
                 # and save the model params

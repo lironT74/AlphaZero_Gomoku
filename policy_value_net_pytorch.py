@@ -12,6 +12,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
+from torch.utils.tensorboard import SummaryWriter
+# writer = SummaryWriter('./runs/pt_4_4_3_p3_training')
+
 
 def set_learning_rate(optimizer, lr):
     """Sets the learning rate to the given value"""
@@ -21,7 +24,7 @@ def set_learning_rate(optimizer, lr):
 
 class Net(nn.Module):
     """policy-value network module"""
-    def __init__(self, board_width, board_height, input_plains_num):
+    def __init__(self, board_width=6, board_height=6, input_plains_num=4):
         super(Net, self).__init__()
 
         self.board_width = board_width
@@ -62,6 +65,18 @@ class Net(nn.Module):
         return x_act, x_val
 
 
+# from game import Board
+# board = Board(width=6, height=6, n_in_row=4)
+# board.init_board()
+# net = Net()
+# input = board.current_state(last_move=True).copy()
+# input = np.ascontiguousarray(input.reshape(-1, 4 , 6, 6))
+# torch_input = torch.tensor(input)
+# writer.add_graph(net, torch_input)
+# writer.close()
+
+
+
 class PolicyValueNet():
     """policy-value network """
     def __init__(self,
@@ -90,26 +105,26 @@ class PolicyValueNet():
         self.optimizer = optim.Adam(self.policy_value_net.parameters(), weight_decay=self.l2_const)
 
         if model_file:
-            net_params = torch.load(model_file)
-            self.policy_value_net.load_state_dict(net_params)
+            # net_params = torch.load(model_file)
+            # self.policy_value_net.load_state_dict(net_params)
 
-            # import pickle
-            # from collections import OrderedDict
-            # param_theano = pickle.load(open('best_policy_6_6_4.model', 'rb'), encoding='bytes')
-            # keys = ['conv1.weight', 'conv1.bias', 'conv2.weight', 'conv2.bias', 'conv3.weight', 'conv3.bias'
-            #     , 'act_conv1.weight', 'act_conv1.bias', 'act_fc1.weight', 'act_fc1.bias'
-            #     , 'val_conv1.weight', 'val_conv1.bias', 'val_fc1.weight', 'val_fc1.bias', 'val_fc2.weight',
-            #         'val_fc2.bias']
-            # param_pytorch = OrderedDict()
-            # for key, value in zip(keys, param_theano):
-            #     if 'fc' in key and 'weight' in key:
-            #         param_pytorch[key] = torch.FloatTensor(value.T)
-            #     elif 'conv' in key and 'weight' in key:
-            #         param_pytorch[key] = torch.FloatTensor(value[:, :, ::-1, ::-1].copy())
-            #     else:
-            #         param_pytorch[key] = torch.FloatTensor(value)
-            #
-            # self.policy_value_net.load_state_dict(param_pytorch)
+            import pickle
+            from collections import OrderedDict
+            param_theano = pickle.load(open('./best_policy_8_8_5.model', 'rb'), encoding='bytes')
+            keys = ['conv1.weight', 'conv1.bias', 'conv2.weight', 'conv2.bias', 'conv3.weight', 'conv3.bias'
+                , 'act_conv1.weight', 'act_conv1.bias', 'act_fc1.weight', 'act_fc1.bias'
+                , 'val_conv1.weight', 'val_conv1.bias', 'val_fc1.weight', 'val_fc1.bias', 'val_fc2.weight',
+                    'val_fc2.bias']
+            param_pytorch = OrderedDict()
+            for key, value in zip(keys, param_theano):
+                if 'fc' in key and 'weight' in key:
+                    param_pytorch[key] = torch.FloatTensor(value.T)
+                elif 'conv' in key and 'weight' in key:
+                    param_pytorch[key] = torch.FloatTensor(value[:, :, ::-1, ::-1].copy())
+                else:
+                    param_pytorch[key] = torch.FloatTensor(value)
+
+            self.policy_value_net.load_state_dict(param_pytorch)
 
 
     def policy_value(self, state_batch):

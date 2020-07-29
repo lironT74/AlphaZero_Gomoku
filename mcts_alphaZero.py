@@ -9,7 +9,9 @@ network to guide the tree search and evaluate the leaf nodes
 import numpy as np
 import copy
 from tensorboardX import SummaryWriter
-writer = SummaryWriter()
+
+writer = SummaryWriter("directory path here")
+
 
 def softmax(x):
     probs = np.exp(x - np.max(x))
@@ -57,7 +59,7 @@ class TreeNode(object):
         # Count visit.
         self._n_visits += 1
         # Update Q, a running average of values for all visits.
-        self._Q += 1.0*(leaf_value - self._Q) / self._n_visits
+        self._Q += 1.0 * (leaf_value - self._Q) / self._n_visits
 
     def update_recursive(self, leaf_value):
         """Like a call to update(), but applied recursively for all ancestors.
@@ -89,7 +91,7 @@ class TreeNode(object):
 class MCTS(object):
     """An implementation of Monte Carlo Tree Search."""
 
-    def __init__(self, policy_value_fn, c_puct=5, n_playout=10000, name = "MCTS"):
+    def __init__(self, policy_value_fn, c_puct=5, n_playout=10000, name="MCTS"):
         """
         policy_value_fn: a function that takes in a board state and outputs
             a list of (action, probability) tuples and also a score in [-1, 1]
@@ -111,7 +113,7 @@ class MCTS(object):
         State is modified in-place, so a copy must be provided.
         """
         node = self._root
-        while(1):
+        while (1):
             if node.is_leaf():
                 break
             # Greedily select next move.
@@ -155,7 +157,7 @@ class MCTS(object):
 
         acts, visits = zip(*act_visits)
 
-        act_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
+        act_probs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
 
         return acts, act_probs
 
@@ -193,14 +195,12 @@ class MCTSPlayer(object):
         sensible_moves = board.availables
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-        move_probs = np.zeros(board.width*board.height)
+        move_probs = np.zeros(board.width * board.height)
         if len(sensible_moves) > 0:
             acts, probs = self.mcts.get_move_probs(board, temp)
 
-            # self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
-
-            my_marker = "X" if self.player == 1 else "O"
-            print(my_marker, ":\n" ,board.current_state()[2])
+            # this call is relevant only during playtime
+            self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
 
             move_probs[list(acts)] = probs
 
@@ -209,7 +209,7 @@ class MCTSPlayer(object):
                 # self-play training)
                 move = np.random.choice(
                     acts,
-                    p=0.75*probs + 0.25*np.random.dirichlet(0.3*np.ones(len(probs)))
+                    p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs)))
                 )
                 # update the root node and reuse the search tree
                 self.mcts.update_with_move(move)
@@ -219,8 +219,8 @@ class MCTSPlayer(object):
                 move = np.random.choice(acts, p=probs)
                 # reset the root node
                 self.mcts.update_with_move(-1)
-#                location = board.move_to_location(move)
-#                print("AI move: %d,%d\n" % (location[0], location[1]))
+            #                location = board.move_to_location(move)
+            #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
             if return_prob:
                 return move, move_probs
@@ -235,31 +235,29 @@ class MCTSPlayer(object):
     def create_probs_heatmap(self, acts, probs, width, height, name, board):
 
         import matplotlib.pyplot as plt
-        np.set_printoptions(precision=3)
 
-        move_probs = np.zeros(width*height)
+        move_probs = np.zeros(width * height)
 
         my_marker = "X" if self.player == 1 else "O"
-
         if self.player == 1:
-            x_takens = board.current_state()[0]
-            o_takens = board.current_state()[1]
+            x_positions = board.current_state()[0]
+            o_positions = board.current_state()[1]
         else:
-            o_takens = board.current_state()[0]
-            x_takens = board.current_state()[1]
+            x_positions = board.current_state()[1]
+            o_positions = board.current_state()[0]
 
 
         move_probs[list(acts)] = probs
 
         move_probs = move_probs.reshape(width, height)
-        move_probs = np.round_(move_probs, decimals=4)
         move_probs = np.flipud(move_probs)
+        move_probs = np.round_(move_probs, decimals=3)
 
-        y_axis = range(width-1, -1, -1)
+        y_axis = range(width - 1, -1, -1)
         x_axis = range(0, height, 1)
 
         fig, ax = plt.subplots()
-        im = ax.imshow(move_probs, cmap = 'jet')
+        im = ax.imshow(move_probs, cmap='jet')
         fig.colorbar(im, ax=ax)
 
         # We want to show all ticks...
@@ -276,7 +274,7 @@ class MCTSPlayer(object):
         # Loop over data dimensions and create text annotations.
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
-                text = ax.text(j, i, "X" if x_takens[i,j]==1 else ("O" if o_takens[i,j]==1 else move_probs[i,j]),
+                text = ax.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs[i, j]),
                                ha="center", va="center", color="w")
 
         ax.set_title("Heatmap of action probas of {} which plays {} ".format(name, my_marker))
