@@ -8,7 +8,8 @@ network to guide the tree search and evaluate the leaf nodes
 
 import numpy as np
 import copy
-
+from tensorboardX import SummaryWriter
+writer = SummaryWriter()
 
 def softmax(x):
     probs = np.exp(x - np.max(x))
@@ -155,9 +156,9 @@ class MCTS(object):
         """
             maybe? use this for visit counts
         """
-
         acts, visits = zip(*act_visits)
         act_probs = softmax(1.0/temp * np.log(np.array(visits) + 1e-10))
+
 
         return acts, act_probs
 
@@ -193,11 +194,16 @@ class MCTSPlayer(object):
 
     def get_action(self, board, temp=1e-3, return_prob=0):
         sensible_moves = board.availables
+
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width*board.height)
         if len(sensible_moves) > 0:
             acts, probs = self.mcts.get_move_probs(board, temp)
+
+            self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
+
             move_probs[list(acts)] = probs
+
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
@@ -225,3 +231,48 @@ class MCTSPlayer(object):
 
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
+
+    @staticmethod
+    def create_probs_heatmap(acts, probs, width, height, name, board):
+
+        import matplotlib
+        import matplotlib.pyplot as plt
+        np.set_printoptions(precision=3)
+
+        move_probs = np.zeros(width*height)
+        taken_squares = [i for i in range(width*height) if i not in acts]
+        x_takens = board.current_state()[0]
+        o_takens = board.current_state()[1]
+
+        move_probs[list(acts)] = probs
+        move_probs[taken_squares] = 0
+
+        move_probs = move_probs.reshape(width, height)
+
+        y_axis = range(width, 0, -1)
+        x_axis = range(0, height, 1)
+
+        fig, ax = plt.subplots()
+        im = ax.imshow(move_probs, cmap = 'jet')
+        fig.colorbar(im, ax=ax)
+
+        # We want to show all ticks...
+        ax.set_xticks(np.arange(len(x_axis)))
+        ax.set_yticks(np.arange(len(y_axis)))
+        # ... and label them with the respective list entries
+        ax.set_xticklabels(x_axis)
+        ax.set_yticklabels(y_axis)
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), ha="right",
+                 rotation_mode="anchor")
+
+        # Loop over data dimensions and create text annotations.
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax.text(j, i, "X" if x_takens[i,j]==1 else ("O" if o_takens[i,j]==1 else move_probs[i,j]),
+                               ha="center", va="center", color="w")
+
+        ax.set_title("Heatmap of action probas of {}".format(name))
+        fig.tight_layout()
+        plt.show()

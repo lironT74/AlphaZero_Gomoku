@@ -63,10 +63,10 @@ def run():
         # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
 
         best_policy_1 = PolicyValueNet(width, height, model_file = model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plaines model")
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plains model")
 
         best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plaines model")
+        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plains model")
 
         # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
         # try:
@@ -86,15 +86,34 @@ def run():
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
 
         # human player, input your move in the format: 2,3
-        # human = Human()
+        human = Human()
 
         # set start_player=1 for human first
-        # game.start_play(policy_player, human, start_player=1, is_shown=1, start_board=i_board)
+        # game.start_play(mcts_player_1, human, start_player=1, is_shown=1)
 
-        game.start_play(mcts_player_1, mcts_player_2, start_player=0, is_shown=1)
+        results = {-1:0, 1:0, 2:0}
+
+        start_player = 0
+
+        for i in range(1):
+            winner = game.start_play(mcts_player_1, mcts_player_2, start_player=start_player, is_shown=1)
+
+            results[winner] += 1
+            start_player = 1 - start_player
+
+            print("Game {}: {} plains model has started, {} plains model has won".format(
+                i+1,
+                start_player + 3,
+                winner + 2,
+            ))
+
+        print("\n\nWins of 3 plains model: ", results[1])
+        print("Wins of 4 plains model: ", results[2])
+        print("Ties: ", results[-1])
 
     except KeyboardInterrupt:
         print('\n\rquit')
+
 
 
 if __name__ == '__main__':
