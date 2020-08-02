@@ -49,13 +49,13 @@ class Human(object):
 
 
 def run():
-    # n = 5
-    # width, height = 8,8
-    # model_1_file = './best_policy_8_8_5.model'
+    n = 5
+    width, height = 8,8
+    model_1_file = './best_policy_8_8_5.model'
 
-    n = 3
-    width, height = 4,4
-    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_4_4_3_p4/best_policy.model'
+    # n = 3
+    # width, height = 4,4
+    # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_4_4_3_p4/best_policy.model'
 
     # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
     # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'

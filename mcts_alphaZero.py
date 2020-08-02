@@ -161,7 +161,7 @@ class MCTS(object):
 
         # print(visits)
 
-        act_probs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
+        act_probs = softmax((1.0 / temp) * np.log(np.array(visits) + 1e-10))
 
         # print(act_probs)
 
