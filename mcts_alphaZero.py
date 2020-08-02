@@ -9,6 +9,8 @@ network to guide the tree search and evaluate the leaf nodes
 import numpy as np
 import copy
 from tensorboardX import SummaryWriter
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 writer = SummaryWriter("directory path here")
 
@@ -157,11 +159,11 @@ class MCTS(object):
 
         acts, visits = zip(*act_visits)
 
-        print(visits)
+        # print(visits)
 
         act_probs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
 
-        print(act_probs)
+        # print(act_probs)
 
         return acts, act_probs
 
@@ -201,26 +203,28 @@ class MCTSPlayer(object):
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width * board.height)
         if len(sensible_moves) > 0:
-            acts, probs = self.mcts.get_move_probs(board, temp)
+            acts, probas = self.mcts.get_move_probs(board, temp)
+
+            acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
             # this call is relevant only during playtime
-            self.create_probs_heatmap(acts, probs, board.width, board.height, self.name, board)
+            self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width, board.height, self.name, board)
 
-            move_probs[list(acts)] = probs
+            move_probs[list(acts)] = probas
 
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
                 move = np.random.choice(
                     acts,
-                    p=0.75 * probs + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probs)))
+                    p=0.75 * probas + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probas)))
                 )
                 # update the root node and reuse the search tree
                 self.mcts.update_with_move(move)
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
-                move = np.random.choice(acts, p=probs)
+                move = np.random.choice(acts, p=probas)
                 # reset the root node
                 self.mcts.update_with_move(-1)
             #                location = board.move_to_location(move)
@@ -236,12 +240,10 @@ class MCTSPlayer(object):
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
 
-    def create_probs_heatmap(self, acts, probs, width, height, name, board):
 
-        import matplotlib.pyplot as plt
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board):
 
-        move_probs = np.zeros(width * height)
-
+        fontsize = 15
         my_marker = "X" if self.player == 1 else "O"
         if self.player == 1:
             x_positions = board.current_state()[0]
@@ -251,36 +253,65 @@ class MCTSPlayer(object):
             o_positions = board.current_state()[0]
 
 
-        move_probs[list(acts)] = probs
-
-        move_probs = move_probs.reshape(width, height)
-        move_probs = np.flipud(move_probs)
-        move_probs = np.round_(move_probs, decimals=3)
-
         y_axis = range(width - 1, -1, -1)
         x_axis = range(0, height, 1)
 
-        fig, ax = plt.subplots()
-        im = ax.imshow(move_probs, cmap='jet')
-        fig.colorbar(im, ax=ax)
+
+        fig, axes = plt.subplots(2, figsize=(10,15))
+        (ax1, ax2) = axes
+
+
+        move_probs_mcts = np.zeros(width * height)
+        move_probs_mcts[list(acts_mcts)] = probas_mcts
+        move_probs_mcts = move_probs_mcts.reshape(width, height)
+        move_probs_mcts = np.flipud(move_probs_mcts)
+        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
+
+        im1 = ax1.imshow(move_probs_mcts, cmap='jet')
+        fig.colorbar(im1, ax=ax1).ax.tick_params(labelsize=fontsize)
 
         # We want to show all ticks...
-        ax.set_xticks(np.arange(len(x_axis)))
-        ax.set_yticks(np.arange(len(y_axis)))
+        ax1.set_xticks(np.arange(len(x_axis)))
+        ax1.set_yticks(np.arange(len(y_axis)))
         # ... and label them with the respective list entries
-        ax.set_xticklabels(x_axis)
-        ax.set_yticklabels(y_axis)
-
+        ax1.set_xticklabels(x_axis, fontsize=fontsize)
+        ax1.set_yticklabels(y_axis, fontsize=fontsize)
         # Rotate the tick labels and set their alignment.
-        plt.setp(ax.get_xticklabels(), ha="right",
+        plt.setp(ax1.get_xticklabels(), ha="right",
                  rotation_mode="anchor")
-
         # Loop over data dimensions and create text annotations.
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
-                text = ax.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs[i, j]),
-                               ha="center", va="center", color="w")
+                text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
+                               ha="center", va="center", color="w", fontsize=fontsize)
+        ax1.set_title("Heatmap of action probas of \n{} which plays {} ".format(name, my_marker), fontsize=fontsize+4)
 
-        ax.set_title("Heatmap of action probas of {} which plays {} ".format(name, my_marker))
+
+
+        move_probs_policy = np.zeros(width * height)
+        move_probs_policy[list(acts_policy)] = probas_policy
+        move_probs_policy = move_probs_policy.reshape(width, height)
+        move_probs_policy = np.flipud(move_probs_policy)
+        move_probs_policy = np.round_(move_probs_policy, decimals=3)
+
+        im2 = ax2.imshow(move_probs_policy, cmap='jet')
+        fig.colorbar(im2, ax=ax2).ax.tick_params(labelsize=fontsize)
+
+        ax2.set_xticks(np.arange(len(x_axis)))
+        ax2.set_yticks(np.arange(len(y_axis)))
+        ax2.set_xticklabels(x_axis, fontsize=fontsize)
+        ax2.set_yticklabels(y_axis, fontsize=fontsize)
+        plt.setp(ax1.get_xticklabels(), ha="right",
+                 rotation_mode="anchor")
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                ha="center", va="center", color="w", fontsize=fontsize)
+        ax2.set_title("Heatmap of action probas of \nthe corresponding policy value fn", fontsize=fontsize+4)
+
         fig.tight_layout()
+
+
         plt.show()
+

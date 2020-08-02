@@ -49,8 +49,8 @@ class Human(object):
 
 
 def run():
-    # n = 4
-    # width, height =6,6
+    # n = 5
+    # width, height = 8,8
     # model_1_file = './best_policy_8_8_5.model'
 
     n = 3
