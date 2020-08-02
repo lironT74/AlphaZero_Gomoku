@@ -157,7 +157,11 @@ class MCTS(object):
 
         acts, visits = zip(*act_visits)
 
+        print(visits)
+
         act_probs = softmax(1.0 / temp * np.log(np.array(visits) + 1e-10))
+
+        print(act_probs)
 
         return acts, act_probs
 

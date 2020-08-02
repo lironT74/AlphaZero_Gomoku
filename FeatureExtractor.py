@@ -70,50 +70,6 @@ class FeatureExtractor:
         return square_features_scores
 
 
-    def densityFeature(self, board_mat:np.array, row, col, N, X=1, O=2):
-        if (row<0 | row>N | col<0 | col>N):
-            raise("Row or column index is out of range")
-
-        board_mat = np.array(copy.deepcopy(board_mat))
-        #score_board = np.zeros([N][N])  # score board stores density scores for each square
-        density_adjacentSquare_score = 1/8
-        density_radiusSquare_score = 1/16
-        '''
-        for row in range(N):
-            for col in range(N):
-                # for each square in the matrix...
-                if np.isnan(board[row][col]): #(Square is empty - explore radius of 2
-        '''
-        square_density_score = 0.0
-
-        # Make sure indices are within range
-        row_index_begin = max(row - 1, 0)
-        col_index_begin = max(col - 1, 0)
-        row_index_end = min(row + 2, N) # Slices indices are Exclusive, so we use N (instead of N-1) as upper limit
-        col_index_end = min(col + 2, N)
-
-        # First, calculate the score of adjacent squares
-        adjacent_Xs = board_mat[row_index_begin:row_index_end, col_index_begin:col_index_end]
-        adjacent_Xs_count = np.sum(adjacent_Xs == X)
-        # Multiply the number of adjacent Xs by the score factor
-        square_density_score += adjacent_Xs_count * density_adjacentSquare_score
-
-        # Count the number of Xs in larger radius from the square
-        # We will later subtract the number of adjacent Xs
-        row_index_begin = max(row - self.density_radius, 0)
-        col_index_begin = max(col - self.density_radius, 0)
-        row_index_end = min(row + self.density_radius + 1, N)
-        col_index_end = min(col + self.density_radius + 1, N)
-
-        radius_Xs = board_mat[row_index_begin:row_index_end, col_index_begin:col_index_end]
-        radius_Xs_count = np.sum(radius_Xs == X)
-        # Subtract the number of adjacent Xs
-        radius_Xs_count = radius_Xs_count - adjacent_Xs_count
-        # Factorize the number of radius-Xs and add them to the square's score
-        square_density_score += radius_Xs_count*density_radiusSquare_score
-
-        return square_density_score
-
     def calcNotDensityFeats(self, board, paths_data:list, r, c, x_turn, o_turn, streak_size,
                                                  X=1, O=2):
 
@@ -366,17 +322,21 @@ class FeatureExtractor:
                     open_paths_data.append((path_x_count, empty_squares, path))
 
 
-
         # compute the linear, nonlinear and interactions scores for the cell based on the potential paths
         for i in range(len(open_paths_data)):
             p1 = open_paths_data[i]
             if streak_size == p1[0]:
+
+                print("fdf")
+
                 # current player has one - update all of the features scores
                 for feature in tmp_score_dict:
                     tmp_score_dict[feature] = WIN_SCORE ### Check with Ofra
                 winning_move = True
                 break # Highest score achieved
             else:
+                print(p1[0])
+
                 tmp_score_dict["linear"] += p1[0]
                 tmp_score_dict["nonlinear"] += 1.0 / math.pow((streak_size - p1[0]), exp)  # score for individual path
 

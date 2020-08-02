@@ -1153,6 +1153,8 @@ def compute_open_paths_data_interaction_new(row, col, board, exp=1, player='X', 
                 score += p1[0]  # score for individual path
             else:
                 score += 1.0/math.pow((streak_size-p1[0]), exp)  # score for individual path
+
+
         if interaction:
             for j in range(i+1, len(open_paths_data)):
                 p2 = open_paths_data[j]

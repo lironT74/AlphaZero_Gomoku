@@ -5,8 +5,12 @@
 
 from __future__ import print_function
 import numpy as np
-WIN_SCORE = 100
+import copy
+from FeatureExtractor import FeatureExtractor
+import math
 
+WIN_SCORE = 9
+FORCING_BONUS = 11
 
 class BoardSlim(object):
     """board for the game"""
@@ -26,7 +30,7 @@ class BoardSlim(object):
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
                             'less than {}'.format(self.n_in_row))
-        self.current_player = self.players[start_player -1]  # start player
+        self.current_player = self.players[start_player - 1]  # start player
         # keep available moves in a list
         self.availables = list(range(self.width * self.height))
         self.states = {}
@@ -50,7 +54,6 @@ class BoardSlim(object):
                 move = self.location_to_move(loc)
                 print(move)
                 self.do_move(move)
-
 
     def move_to_location(self, move):
         """
@@ -100,9 +103,7 @@ class BoardSlim(object):
             else self.players[1]
         )
 
-
         self.last_move = move
-
 
     def has_a_winner(self):
         width = self.width
@@ -120,19 +121,19 @@ class BoardSlim(object):
             player = states[m]
 
             if (w in range(width - n + 1) and
-                        len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
+                    len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
                 return True, player
 
             if (h in range(height - n + 1) and
-                        len(set(states.get(i, -1) for i in range(m, m + n * width, width))) == 1):
+                    len(set(states.get(i, -1) for i in range(m, m + n * width, width))) == 1):
                 return True, player
 
             if (w in range(width - n + 1) and h in range(height - n + 1) and
-                        len(set(states.get(i, -1) for i in range(m, m + n * (width + 1), width + 1))) == 1):
+                    len(set(states.get(i, -1) for i in range(m, m + n * (width + 1), width + 1))) == 1):
                 return True, player
 
             if (w in range(n - 1, width) and h in range(height - n + 1) and
-                        len(set(states.get(i, -1) for i in range(m, m + n * (width - 1), width - 1))) == 1):
+                    len(set(states.get(i, -1) for i in range(m, m + n * (width - 1), width - 1))) == 1):
                 return True, player
 
         return False, -1
@@ -149,6 +150,7 @@ class BoardSlim(object):
     def get_current_player(self):
         return self.current_player
 
+
 class Board(object):
     """board for the game"""
 
@@ -164,18 +166,60 @@ class Board(object):
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
 
-    def init_board(self, start_player=0):
+    def init_board(self, start_player=0, initial_state=None):
+
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
                             'less than {}'.format(self.n_in_row))
         self.current_player = self.players[start_player]  # start player
+
         # keep available moves in a list
         self.availables = list(range(self.width * self.height))
         self.states = {}
-        self.last_move = -1
 
+        self.last_move = -1
         self.last_move_p1 = -1
         self.last_move_p2 = -1
+
+        if initial_state is not None:
+            p1_moves = np.transpose(np.nonzero(initial_state[0])).tolist()
+            p2_moves = np.transpose(np.nonzero(initial_state[1])).tolist()
+
+            player_to_moves = {
+                1: p1_moves,
+                2: p2_moves
+            }
+
+            self.last_move_p1 = p1_moves[-1] if len(p1_moves) > 0 else -1
+            self.last_move_p2 = p2_moves[-1] if len(p2_moves) > 0 else -1
+
+            if abs(len(p1_moves) - len(p2_moves)) > 1:
+                raise Exception("Invalid Board ({}'s turn was skipped)".format(
+                    "Player1" if len(p2_moves) > len(p1_moves) else "Player2"))
+
+            if len(p1_moves) == len(p2_moves):
+                self.current_player = start_player + 1
+            else:
+                if len(p1_moves) > len(p2_moves):
+                    self.last_move = self.last_move_p1
+                    self.current_player = self.players[0]
+
+                    if start_player != 0:
+                        raise Exception("It cant be that player 2 was first to play (he made less moves)")
+
+                else:
+                    self.last_move = self.last_move_p2
+                    self.current_player = self.players[1]
+
+                    if start_player != 1:
+                        raise Exception("It cant be that player 1 was first to play (he made less moves)")
+
+            for i in range(len(p1_moves) + len(p2_moves)):
+                loc = player_to_moves[self.current_player].pop(0)
+                # print(loc)
+                move = self.location_to_move(loc)
+                # print(move)
+                self.do_move(move)
 
     def move_to_location(self, move):
         """
@@ -219,7 +263,6 @@ class Board(object):
                 square_state[1][move_oppo // self.width,
                                 move_oppo % self.height] = 1.0
 
-
             if len(self.states) % 2 == 0:
 
                 if self.last_move_p1 != -1:
@@ -235,8 +278,6 @@ class Board(object):
                     # indicate the last move location OF THE CURRENT PLAYER!!!!
                     square_state[2][self.last_move_p2 // self.width,
                                     self.last_move_p2 % self.height] = 1.0
-
-
 
             return square_state[:, ::-1, :]
 
@@ -281,7 +322,7 @@ class Board(object):
         n = self.n_in_row
 
         moved = list(set(range(width * height)) - set(self.availables))
-        if len(moved) < self.n_in_row *2-1:
+        if len(moved) < self.n_in_row * 2 - 1:
             return False, -1
 
         for m in moved:
@@ -319,16 +360,32 @@ class Board(object):
     def get_current_player(self):
         return self.current_player
 
-    def density_square_score(self, cur_positions, opponent_positions, density = 'reg', sig=3):
+    def calc_all_heuristics(self,
+                            exp,
+                            o_weight,
+                            last_move=True,
+                            normalized_density_scores=False,
+                            density='reg',
+                            sig=3,
+                            max_radius_density=-1):
+
+        board_state = self.current_state(last_move=last_move)
+        cur_positions = np.flipud(board_state[0])
+        opponent_positions = np.flipud(board_state[1])
+
 
         width = self.width
         height = self.height
 
-        scores = np.zeros((width, height), dtype=float)
+        scores = np.zeros((5, width, height))
+
         radius = width - 1
 
-        cur_positions_padded = np.zeros((width + 2*radius, height + 2*radius))
-        cur_positions_padded[radius:radius+width, radius:radius+height] = cur_positions
+        if max_radius_density != -1:
+            radius = min(radius, max_radius_density)
+
+        cur_positions_padded = np.zeros((width + 2 * radius, height + 2 * radius))
+        cur_positions_padded[radius:radius + width, radius:radius + height] = cur_positions
 
         gaussian_kernel = []
         if density == 'guassian':
@@ -338,128 +395,373 @@ class Board(object):
                     if cur_positions[row, col] == 'X':
                         gaussian_kernel.append(self.makeGaussian(width, fwhm=sig, center=[row, col]))
 
+        immediate_threats, unavoidable_traps = self.find_all_win_scores_squares()
 
         for row in range(width):
             for col in range(height):
-                row_hat, col_hat = row+radius, col+radius
+                row_hat, col_hat = row + radius, col + radius
 
-                if cur_positions[row, col] or opponent_positions[row, col]: # taken squares get -1
-                    scores[row, col] = -1
+                if cur_positions[row, col] or opponent_positions[row, col]:  # taken squares get -1
+                    scores[:, row, col] = -1
+                    continue
 
+                if (row, col) in immediate_threats or (row, col) in unavoidable_traps:
+                    scores[:, row, col] = WIN_SCORE
+                    continue
+
+                # DENSITY:
+                if density == 'guassian':
+                    scores[0, row, col] = self.compute_density_guassian(row, col, gaussian_kernel)
                 else:
-                    if density == 'guassian':
-                        scores[row, col] = self.compute_density_guassian(row, col, gaussian_kernel)
+                    for r in range(radius):
+                        scores[0, row, col] += (1 / (8 * (r + 1))) \
+                                            * (np.sum(cur_positions_padded[row_hat - r - 1, col_hat - r - 1: col_hat + r + 2]) +
+                                               np.sum(cur_positions_padded[row_hat + r + 1, col_hat - r - 1: col_hat + r + 2]) +
+                                               np.sum(cur_positions_padded[row_hat - r: row_hat + r + 1, col_hat + r + 1]) +
+                                               np.sum(cur_positions_padded[row_hat - r: row_hat + r + 1, col_hat - r - 1]))
 
-                    else:
-                        for r in range(radius):
-                            scores[row, col] += ((1/(8*(r+1)))\
-                                            *(np.sum(cur_positions_padded[row_hat - r - 1, col_hat - r - 1: col_hat + r + 2]) + \
-                                            np.sum(cur_positions_padded[row_hat + r + 1, col_hat - r - 1: col_hat + r + 2]) + \
-                                            np.sum(cur_positions_padded[row_hat - r : row_hat + r + 1, col_hat + r + 1]) + \
-                                            np.sum(cur_positions_padded[row_hat - r : row_hat + r + 1, col_hat - r - 1]))
+                #THE REST:
+                (all_features_but_blocking, open_paths_data, max_path) = \
+                    self.all_features_but_density_and_forcing(exp,
+                                                              row,
+                                                              col,
+                                                              cur_positions,
+                                                              opponent_positions)
+
+                scores[1, row, col] = all_features_but_blocking["linear"]
+                scores[2, row, col] = all_features_but_blocking["nonlinear"]
+                scores[3, row, col] = all_features_but_blocking["interaction"]
+
+                if max_path == self.n_in_row-2:
+                    scores[4, row, col] += FORCING_BONUS
+
+                # scores[4, row, col] = self.calc_blocking_bonus(max_path,
+                #                                                row,
+                #                                                col,
+                #                                                cur_positions,
+                #                                                opponent_positions,
+                #                                                o_weight)
+
+
+        if normalized_density_scores:
+            scores[0,:,:] = self.normalize_matrix(scores[0,:,:], width, height, cur_positions, opponent_positions)
+
         return scores
 
-    def linear_square_score_aux(self, cur_positions, opponent_positions):
+
+    def calc_blocking_bonus(self, max_path, row, col, cur_positions, opponent_positions, o_weight):
+
+        # Calculate blocking scores
+        blocking_score_x = 0.0
+
+        # Calculate open paths for Opponent player
+        open_paths_data_o, max_path_o = \
+            self.find_open_paths(row=row,
+                                 col=col,
+                                 cur_positions=opponent_positions,
+                                 opponent_positions=cur_positions) #!!!!!!!
+
+        blocking_score_o = 0.0
+
+        # Calculate blocking score
+        if (max_path == (self.n_in_row - 1)): # give score for forcing O
+            blocking_score_x += FORCING_BONUS
+
+        elif (max_path_o == (self.n_in_row - 1)):  # give score for forcing X
+            blocking_score_o += FORCING_BONUS
+
+        if o_weight == 0.5:
+            blocking_score = blocking_score_x + blocking_score_o
+
+        elif o_weight == 0:
+            blocking_score = blocking_score_x  # o blindness for x player disregard O
+
+        elif o_weight == 1.0:
+            ### Osher: in this case, shouldn't we ignore the blocking_score_x?
+            blocking_score = blocking_score_x  # o blindness - just use for score how good it would be to block x
+
+        if blocking_score > WIN_SCORE:
+            blocking_score = WIN_SCORE
+
+        return blocking_score
+
+
+
+    def all_features_but_density_and_forcing(self,
+                                             exp,
+                                             row: int,
+                                             col: int,
+                                             cur_positions,
+                                             opponent_positions,
+                                             threshold = 0):
+
+        tmp_score_dict = {
+            "linear": 0.0,
+            "nonlinear": 0.0,
+            "interaction": 0.0,
+        }
+
+        exp = exp
+
+        open_paths_data, max_length_path = self.find_open_paths(row, col, cur_positions, opponent_positions, threshold=threshold)
+
+        # compute the linear, nonlinear and interactions scores for the cell based on the potential paths
+        for i in range(len(open_paths_data)):
+
+            p1 = open_paths_data[i]
+
+            if self.n_in_row - 1 == p1[0]:
+                raise Exception("We missed an immediate threat at {}".format((row, col)))
+
+            tmp_score_dict["linear"] += p1[0]
+            tmp_score_dict["nonlinear"] += 1.0 / math.pow((self.n_in_row - p1[0]), exp)  # score for individual path
+
+            # Calculate interaction score:
+            for j in range(i+1, len(open_paths_data)):
+                p2=open_paths_data[j]
+
+                if self.check_path_overlap(p2[2], p1[2]) == False:
+                    raise Exception("It cant be that the paths do not overlap (at {})".format((row, col)))
+
+                if not self.check_path_overlap(p1[1], p2[1], square_to_ignore=(row,col)):
+
+                    numenator = 0.0 + p1[0] * p2[0]
+                    denom = ((self.n_in_row - 1) * (self.n_in_row - 1)) - (p1[0] * p2[0])
+
+                    if denom == 0:
+                        raise Exception("We missed an immediate threat at {}".format((row, col)))
+
+                    tmp_score_dict["interaction"] += math.pow(numenator / denom, exp)
+
+        return (tmp_score_dict, open_paths_data, max_length_path)
+
+
+    def find_open_paths(self,
+                        row: int,
+                        col: int,
+                        cur_positions,
+                        opponent_positions,
+                        threshold=0
+                        ):
+
+        open_paths_data = []  # this list will hold information on all the potential paths, each path will be represented by a pair (length and empty squares, which will be used to check overlap)
+
+        max_length_path = 0
+
+        # check right-down diagonal
+        for i in range(self.n_in_row):
+            r = row - i
+            c = col - i
+            if (r > self.height - 1) | (r < 0) | (c > self.width - 1) | (c < 0):
+                continue
+            blocked = False  # indicates whether the current way is blocked
+            path_length = 0
+            path_cur_pawns_count = 0
+            empty_squares = []
+            path = []
+            square_row = r
+            square_col = c
+            while (not blocked) & (path_length < self.n_in_row) & (square_row < self.height) & (square_row >= 0) & (
+                    square_col < self.width) & (square_col >= 0):
+                if opponent_positions[square_row][square_col]:
+                    blocked = True
+                elif cur_positions[square_row][square_col]:
+                    path_cur_pawns_count += 1
+                elif ((square_col != col) | (square_row != row)):
+                    # Square is empty, add it to empty_squares only if it's NOT the current square in play
+                    empty_squares.append([square_row, square_col])
+                path.append([square_row, square_col])
+                square_row += 1
+                square_col += 1
+                path_length += 1
+
+            if (path_length == self.n_in_row) & (not blocked) & (path_cur_pawns_count > threshold):
+                open_paths_data.append((path_cur_pawns_count, empty_squares, path))
+
+        # check left-down diagonal
+        for i in range(self.n_in_row):
+            r = row - i
+            c = col + i
+            if (r > self.height - 1) | (r < 0) | (c > self.width - 1) | (c < 0):
+                continue
+            blocked = False
+            path_length = 0
+            path_cur_pawns_count = 0
+            empty_squares = []
+            path = []
+            square_row = r
+            square_col = c
+            while (not blocked) & (path_length < self.n_in_row) & (square_row < self.height) & (square_row >= 0) & (
+                    square_col < self.width) & (square_col >= 0):
+                if opponent_positions[square_row][square_col]:
+                    blocked = True
+                elif cur_positions[square_row][square_col]:
+                    path_cur_pawns_count += 1
+                elif ((square_col != col) | (square_row != row)):
+                    empty_squares.append([square_row, square_col])
+                path.append([square_row, square_col])
+                square_row += 1
+                square_col -= 1
+                path_length += 1
+
+            if (path_length == self.n_in_row) & (not blocked) & (path_cur_pawns_count > threshold):
+                open_paths_data.append((path_cur_pawns_count, empty_squares, path))
+
+            # check vertical
+
+        # check vertical
+        for i in range(self.n_in_row):
+            r = row - i
+            c = col
+            if (r > self.height - 1) | (r < 0) | (c > self.width - 1) | (c < 0):
+                continue
+            blocked = False
+            path_length = 0
+            path_cur_pawns_count = 0
+            empty_squares = []
+            path = []
+            square_row = r
+            square_col = c
+            while (not blocked) & (path_length < self.n_in_row) & (square_row < self.height) & (square_row >= 0) & (
+                    square_col < self.width) & (square_col >= 0):
+                if opponent_positions[square_row][square_col]:
+                    blocked = True
+                elif cur_positions[square_row][square_col]:
+                    path_cur_pawns_count += 1
+                elif ((square_col != col) | (square_row != row)):
+                    empty_squares.append([square_row, square_col])
+
+                path.append([square_row, square_col])
+                square_row += 1
+                path_length += 1
+
+            if (path_length == self.n_in_row) & (not blocked) & (path_cur_pawns_count > threshold):
+                open_paths_data.append((path_cur_pawns_count, empty_squares, path))
+
+        # check horizontal
+        for i in range(self.n_in_row):
+            r = row
+            c = col - i
+            if (r > self.height - 1) | (r < 0) | (c > self.width - 1) | (c < 0):
+                continue
+            blocked = False
+            path_length = 0
+            path_cur_pawns_count = 0
+            empty_squares = []
+            path = []
+            square_row = r
+            square_col = c
+            while (not blocked) & (path_length < self.n_in_row) & (square_row < self.height) & (square_row >= 0) & (
+                    square_col < self.width) & (square_col >= 0):
+                if opponent_positions[square_row][square_col]:
+                    blocked = True
+                elif cur_positions[square_row][square_col]:
+                    path_cur_pawns_count += 1
+                elif ((square_col != col) | (square_row != row)):
+                    empty_squares.append([square_row, square_col])
+
+                path.append([square_row, square_col])
+                square_col += 1
+                path_length += 1
+
+            if (path_length == self.n_in_row) & (not blocked) & (path_cur_pawns_count > threshold):
+                open_paths_data.append((path_cur_pawns_count, empty_squares, path))
+
+        max_length_path = max(open_paths_data)[0] if len(open_paths_data) > 0 else 0
+
+        return (open_paths_data, max_length_path)
+
+
+    def check_immediate_threats(self):
+        # THE IDEA: fill in all available squares one by one, and using already implemented functions check if the
+        # game has just ended with your win - and if it did - the square is an immediate threat.
+        immediate_threats = []
 
         width = self.width
         height = self.height
 
-        scores = np.zeros((4, width, height))
-        cur_positions_adjusted = np.zeros((width + 2, height + 2))
-        cur_positions_adjusted[1:width + 1, 1:height + 1] = cur_positions
+        for move in self.availables:
+            row = move // height
+            col = move % width
 
-        for i in range(width):
-            for j in range(height):
+            board_copy = copy.deepcopy(self)
+            board_copy.do_move(move)
+            has_winner, winner = board_copy.has_a_winner()
+            if has_winner and winner == self.current_player:  # you only check the threats that you impose on the opponent
+                immediate_threats.append((row, col))
 
-                i_hat, j_hat = i+1, j+1
+        return immediate_threats
 
-                if cur_positions[i, j] or opponent_positions[i, j]:  # taken squares get -1
-                    scores[:, i, j] = np.zeros(4)
 
-                else:
-                    """ 
-                    indicator positions for a given square:
-                    1 2 3
-                    4 _ 5
-                    6 7 8
-                    """
+    def find_all_win_scores_squares(self):
+        # THE IDEA: fill in all available squares one by one, and using already implemented functions check if the
+        # game has just ended with your win - and if it did - the square is an immediate threat. If you do not win by
+        # placing a pawn in a given square, then if for every opponent's answer, placing a pawn in the given square
+        # means you can win in your next turn, this square is an unavoidable trap.
 
-                    i1, i2, i3 = tuple(cur_positions_adjusted[i_hat-1, j_hat-1:j_hat+2])
-                    i6, i7, i8 = tuple(cur_positions_adjusted[i_hat+1, j_hat-1:j_hat+2])
-                    i5 = cur_positions_adjusted[i_hat, j_hat+1]
-                    i4 = cur_positions_adjusted[i_hat, j_hat-1]
+        """
+        EXAMPLE:
+            1.
+                assuming X has started the game, let the current board status be:
+            X _ _
+            _ _ _
+            O O X
+            If X places a pawn at (1,1),
+            he is guaranteed to win the game.
+            (1,1) is an immediate threat.
 
-                    horizontal = 0
-                    vertical = 0
-                    main_diag = 0
-                    secondary_diag = 0
+            2.
+                assuming X has started the game, let the current board status be:
+            X _ _
+            _ O _
+            O _ X
+            (1,1) is taken, but if X places a pawn at (0,2) (and in this board he has to),
+            he is guaranteed to win the game in his next turn.
+            (0,2) is an unavoidable trap.
+        """
 
-                    #horizontal path
-                    if i4 or i5:
-                        #go right (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat, j_hat+1]:
-                            horizontal += 1
-                            j_hat += 1
-                        j_hat = j + 1
+        unavoidable_traps = []
+        immediate_threats = []
 
-                        #go left (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat, j_hat - 1]:
-                            horizontal += 1
-                            j_hat -= 1
-                        j_hat = j + 1
+        width = self.width
+        height = self.height
 
-                    # vertical path
-                    if i2 or i7:
-                        # go up (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat - 1, j_hat]:
-                            vertical += 1
-                            i_hat -= 1
-                        i_hat = i + 1
+        for move in self.availables:
+            row = move // height
+            col = move % width
 
-                        # go down (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat + 1, j_hat]:
-                            vertical += 1
-                            i_hat += 1
-                        i_hat = i + 1
+            board_copy = copy.deepcopy(self)
+            board_copy.do_move(move)  # current played
 
-                    #main diagonal
-                    if i1 or i8:
-                        #go up+left (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat - 1, j_hat - 1]:
-                            main_diag += 1
-                            i_hat -= 1
-                            j_hat -= 1
-                        i_hat = i + 1
-                        j_hat = j + 1
+            has_winner, winner = board_copy.has_a_winner()
+            if has_winner and winner == self.current_player:  # (row, col) is an immediate threat.
+                immediate_threats.append((row, col))
+                continue
 
-                        # go down+right (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat + 1, j_hat + 1]:
-                            main_diag += 1
-                            i_hat += 1
-                            j_hat += 1
-                        i_hat = i + 1
-                        j_hat = j + 1
+            if len(board_copy.availables) < 2:  # there is no next turn for you after this turn
+                continue
 
-                    # secondary diagonal
-                    if i3 or i6:
-                        # go up+right (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat - 1, j_hat + 1]:
-                            secondary_diag += 1
-                            i_hat -= 1
-                            j_hat += 1
-                        i_hat = i + 1
-                        j_hat = j + 1
+            curr_flag = True
+            for opponent_move in board_copy.availables:  # for each opponent's answer
 
-                        # go down+left (guaranteed to stop because the frame is zeros)
-                        while cur_positions_adjusted[i_hat + 1, j_hat - 1]:
-                            secondary_diag += 1
-                            i_hat += 1
-                            j_hat -= 1
-                        i_hat = i + 1
-                        j_hat = j + 1
+                board_second_copy = copy.deepcopy(board_copy)
+                board_second_copy.do_move(opponent_move)
+                has_winner_opponent_move, winner_opponent_move = board_second_copy.has_a_winner()
 
-                    scores[:, i, j] = [horizontal, vertical, main_diag, secondary_diag]
-        return scores
+                # if there exists a move the opponent can
+                # do which leads to his win or blocks current player's chance of winning in the next turn,
+                # current square is not an unavoidable trap
+
+                if (has_winner_opponent_move and winner_opponent_move == board_second_copy.current_player)\
+                        or len(board_second_copy.check_immediate_threats()) == 0:
+                        curr_flag = False
+                        break
+
+            if curr_flag: # (row, col) is an unavoidable trap.
+                unavoidable_traps.append((row, col))
+
+        return (immediate_threats, unavoidable_traps)
+
 
     @staticmethod
     def compute_density_guassian(row, col, guassian_kernel):
@@ -487,6 +789,43 @@ class Board(object):
 
         # return np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / fwhm**2)
         return np.exp(-1 * ((x - x0) ** 2 + (y - y0) ** 2) / fwhm ** 2)
+
+    @staticmethod
+    def normalize_matrix(scores, width, height, cur_positions, opponent_positions):
+        sum_scores = 0.0
+        counter = 0.0
+        for r in range(width):
+            for j in range(height):
+                if cur_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'X':"
+                    scores[r][j] = -0.00001
+                elif opponent_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'O':"
+                    scores[r][j] = -0.00002
+                else:
+                    counter += 1.0
+                    if scores[r][j] > 0:
+                        sum_scores += scores[r][j]
+
+        for r in range(len(scores)):
+            for c in range(len(scores[r])):
+                if (scores[r][c] != -0.00001) & (scores[r][c] != -0.00002):
+                    if sum_scores == 0:
+                        scores[r][c] = 1.0 / counter
+                    else:
+                        # TODO: change if we don't want to eliminate negative scores
+                        if scores[r][c] >= 0:
+                            scores[r][c] = scores[r][c] / sum_scores
+                        else:
+                            scores[r][c] = 0
+
+        return scores
+
+    @staticmethod
+    def check_path_overlap(empty1, empty2, square_to_ignore=None):
+        for square in empty1:
+            if (square_to_ignore is not None and square != square_to_ignore) or (square_to_ignore is None):
+                if square in empty2:
+                    return True
+        return False
 
 
 
@@ -539,7 +878,9 @@ class Game(object):
             current_player = self.board.get_current_player()
             player_in_turn = players[current_player]
 
+
             move = player_in_turn.get_action(self.board)
+
 
             self.board.do_move(move)
             if is_shown:
@@ -602,8 +943,8 @@ class Game(object):
         while True:
             current_player = index2player[self.board.get_current_player()]
             move = current_player.get_action(self.board,
-                                                 temp=temp,
-                                                 return_prob=0)
+                                             temp=temp,
+                                             return_prob=0)
             if self.board.get_current_player() == p1:
                 # store the data
                 states.append(self.board.current_state())
@@ -620,5 +961,3 @@ class Game(object):
                 elif winner == p2:
                     reward = -1
                 return reward, zip(states, moves)
-
-
