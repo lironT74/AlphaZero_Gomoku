@@ -17,13 +17,22 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
 # from policy_value_net_keras import PolicyValueNet # Keras
 
+import os
+import io
+import tensorflow as tf
+import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter('./runs/pt_6_6_4_p4_last_move_training')
+import PIL.Image
+from torchvision.transforms import ToTensor
 
-
+# WRITER_DIR = './runs/pt_6_6_4_test_heatmap_savings_training'
+# MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_test_heatmap_savings'
 
 class TrainPipeline():
     def __init__(self, init_model=None):
+
+        self.writer = SummaryWriter(WRITER_DIR)
+
         # params of the board and the game
         self.board_width = 6
         self.board_height = 6
@@ -49,8 +58,10 @@ class TrainPipeline():
         self.play_batch_size = 1
         self.epochs = 5  # num of train_steps for each update
         self.kl_targ = 0.02
-        self.check_freq = 50
+
+        self.check_freq = 20
         self.game_batch_num = 1500
+
         self.best_win_ratio = 0.0
 
         # num of simulations used for the pure mcts, which is used as
@@ -191,6 +202,10 @@ class TrainPipeline():
 
     def run(self):
         """run the training pipeline"""
+
+        if not os.path.exists(MODEL_DIR):
+            os.makedirs(MODEL_DIR)
+
         try:
             for i in range(self.game_batch_num):
 
@@ -202,29 +217,79 @@ class TrainPipeline():
                 if len(self.data_buffer) > self.batch_size:
                     loss, entropy = self.policy_update()
 
-                    writer.add_scalar('training loss', loss, i+1)
-                    writer.add_scalar('training entropy', entropy, i+1)
+                    self.writer.add_scalar('training loss', loss, i+1)
+                    self.writer.add_scalar('training entropy', entropy, i+1)
 
                 # check the performance of the current model,
                 # and save the model params
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
                     win_ratio = self.policy_evaluate()
-                    self.policy_value_net.save_model('./models/pt_6_6_4_p4_last_move/current_policy_{}.model'.format(i+1))
+
+                    self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i+1}.model')
+                    self.save_heatmap(i)
+
                     if win_ratio > self.best_win_ratio:
 
-                        writer.add_text('best model savings', f"iteration {i + 1}", i + 1)
-
+                        self.writer.add_text('best model savings', f"iteration {i + 1}", i + 1)
                         print("New best policy!!!!!!!!")
+
                         self.best_win_ratio = win_ratio
                         # update the best_policy
-                        self.policy_value_net.save_model('./models/pt_6_6_4_p4_last_move/best_policy.model')
+                        self.policy_value_net.save_model(f'{MODEL_DIR}/best_policy.model')
                         if (self.best_win_ratio == 1.0 and
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0
+
         except KeyboardInterrupt:
             print('\n\rquit')
+
+    def save_heatmap(self, i):
+        player = MCTSPlayer(self.policy_value_net.policy_value_fn, c_puct=self.c_puct, n_playout=self.n_playout)
+        board = self.initialize_custom_board()
+        _,heatmap_buf = player.get_action(board, return_prob=0, return_heatmap=True)
+
+        image = PIL.Image.open(heatmap_buf)
+        # image = ToTensor()(image).unsqueeze(0)
+        image = ToTensor()(image)
+
+        self.writer.add_image(tag="Heatmap of current iteration model on paper board",
+                              img_tensor=image,
+                              global_step=i+1)
+
+
+    def initialize_custom_board(self):
+        board_paper = np.array([
+            [0, 1, 0, 2, 0, 0],
+            [0, 2, 1, 1, 0, 0],
+            [1, 2, 2, 2, 1, 0],
+            [2, 0, 1, 1, 2, 0],
+            [1, 0, 2, 2, 0, 0],
+            [0, 0, 0, 0, 0, 0]])
+        board_paper = np.flipud(board_paper)
+        i_board = np.zeros((2, self.board_height, self.board_width))
+        i_board[0] = board_paper == 1
+        i_board[1] = board_paper == 2
+        board = Board(width=self.board_width, height=self.board_height, n_in_row=self.n_in_row)
+        board.init_board(start_player=1, initial_state=i_board)
+        return board
+
+    # def plot_to_image(self, figure):
+    #     """Converts the matplotlib plot specified by 'figure' to a PNG image and
+    #     returns it. The supplied figure is closed and inaccessible after this call."""
+    #     # Save the plot to a PNG in memory.
+    #     buf = io.BytesIO()
+    #     plt.savefig(buf, format='png')
+    #     # Closing the figure prevents it from being displayed directly inside
+    #     # the notebook.
+    #     plt.close(figure)
+    #     buf.seek(0)
+    #     # Convert PNG buffer to TF image
+    #     image = tf.image.decode_png(buf.getvalue(), channels=4)
+    #     # Add the batch dimension
+    #     image = tf.expand_dims(image, 0)
+    #     return image
 
 
 if __name__ == '__main__':

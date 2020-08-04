@@ -55,7 +55,7 @@ def run():
 
     n = 4
     width, height = 6,6
-    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_last_move/current_policy_1500.model'
+    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_last_move/best_policy.model'
 
     # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
     # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
@@ -81,9 +81,6 @@ def run():
         board = Board(width=width, height=height, n_in_row=n)
         game = Game(board)
 
-        # ############### human VS AI ###################
-        # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
-
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=4)
         mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="AI")
 
@@ -93,28 +90,12 @@ def run():
         # best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
         # mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plains model")
 
-        # load the provided model (trained in Theano/Lasagne) into a MCTS player written in pure numpy
-        # try:
-        #     policy_param = pickle.load(open(model_file, 'rb'))
-        # except:
-        #     policy_param = pickle.load(open(model_file, 'rb'),
-        #                                encoding='bytes')  # To support python3
-        # best_policy = PolicyNet(width, height, model_file=model_file)
-
-        # policy_player = PolicyPlayer(best_policy, False)
-
-        # mcts_player = MCTSPlayer(best_policy.policy_value_fn,
-        #                          c_puct=5,
-        #                          n_playout=400)  # set larger n_playout for better performance
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
 
         # human player, input your move in the format: 2,3
         human = Human()
-
-        # set start_player=1 for human first
-        # game.start_play(mcts_player_1, human, start_player=1, is_shown=1)
 
         results = {-1:0, 1:0, 2:0}
 

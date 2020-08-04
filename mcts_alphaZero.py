@@ -8,12 +8,8 @@ network to guide the tree search and evaluate the leaf nodes
 
 import numpy as np
 import copy
-from tensorboardX import SummaryWriter
 import matplotlib.pyplot as plt
-import matplotlib as mpl
-
-writer = SummaryWriter("directory path here")
-
+import io
 
 def softmax(x):
     probs = np.exp(x - np.max(x))
@@ -197,7 +193,7 @@ class MCTSPlayer(object):
     def reset_player(self):
         self.mcts.update_with_move(-1)
 
-    def get_action(self, board, temp=1e-3, return_prob=0):
+    def get_action(self, board, temp=1e-3, return_prob=0, return_heatmap = False, show=False):
         sensible_moves = board.availables
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
@@ -206,9 +202,6 @@ class MCTSPlayer(object):
             acts, probas = self.mcts.get_move_probs(board, temp)
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
-
-            # this call is relevant only during playtime
-            self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width, board.height, self.name, board)
 
             move_probs[list(acts)] = probas
 
@@ -230,10 +223,18 @@ class MCTSPlayer(object):
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
-            if return_prob:
-                return move, move_probs
+            if return_heatmap:
+                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width, board.height, self.name, board, show)
+                if return_prob:
+                    return move, move_probs, buf
+                else:
+                    return move, buf
             else:
-                return move
+                if return_prob:
+                    return move, move_probs
+                else:
+                    return move
+
         else:
             print("WARNING: the board is full")
 
@@ -241,25 +242,33 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
 
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board):
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board, show=False):
 
         fontsize = 15
-        my_marker = "X" if self.player == 1 else "O"
-        if self.player == 1:
+
+        if hasattr(self, 'player'):
+
+            my_marker = "X" if self.player == 1 else "O"
+
+            if self.player == 1:
+                x_positions = board.current_state()[0]
+                o_positions = board.current_state()[1]
+            else:
+                x_positions = board.current_state()[1]
+                o_positions = board.current_state()[0]
+
+        else:
+            # This is training time. Make sure that in the board you've sent, its X's turn to play (or as you wish)
+            my_marker = "X"
+
             x_positions = board.current_state()[0]
             o_positions = board.current_state()[1]
-        else:
-            x_positions = board.current_state()[1]
-            o_positions = board.current_state()[0]
-
 
         y_axis = range(width - 1, -1, -1)
         x_axis = range(0, height, 1)
 
-
         fig, axes = plt.subplots(2, figsize=(10,15))
         (ax1, ax2) = axes
-
 
         move_probs_mcts = np.zeros(width * height)
         move_probs_mcts[list(acts_mcts)] = probas_mcts
@@ -312,6 +321,10 @@ class MCTSPlayer(object):
 
         fig.tight_layout()
 
+        if show:
+            plt.show()
 
-        plt.show()
-
+        buf = io.BytesIO()
+        plt.savefig(buf, format='jpeg')
+        buf.seek(0)
+        return buf
