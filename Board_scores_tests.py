@@ -62,12 +62,21 @@ def graphic(board, player1, player2):
 n = 4
 width, height = 6,6
 
-initial_board = np.array([[0,0,0,0,0,0],
-                          [0,2,0,0,0,0],
-                          [0,0,0,0,0,0],
-                          [0,0,0,0,0,0],
-                          [2,1,0,0,2,0],
-                          [0,0,1,1,1,2]])
+# initial_board = np.array([[0,0,0,0,0,0],
+#                           [0,2,0,0,0,0],
+#                           [0,0,0,0,0,0],
+#                           [0,0,0,0,0,0],
+#                           [2,1,0,0,2,0],
+#                           [0,0,1,1,1,2]])
+
+initial_board = np.array([
+    [0, 1, 0, 2, 0, 0],
+    [0, 2, 1, 1, 0, 0],
+    [1, 2, 2, 2, 1, 0],
+    [2, 0, 1, 1, 2, 0],
+    [1, 0, 2, 2, 0, 0],
+    [0, 0, 0, 0, 0, 0]])
+
 
 # initial_board = np.array([[0,0,0],
 #                           [0,1,0],
@@ -81,7 +90,7 @@ i_board[1] = initial_board == 2
 
 board = Board(width=width, height=height, n_in_row=n)
 
-board.init_board(start_player=0, initial_state=i_board)
+board.init_board(start_player=1, initial_state=i_board)
 
 # graphic(board, 1, 2)
 
@@ -89,8 +98,4 @@ print(initial_board)
 
 print("Current player is {}".format(board.current_player))
 
-print(board.calc_all_heuristics(exp=1, o_weight=1)[1])
-
-FE = FeatureExtractor(streak_size=n)
-
-
+print(board.calc_all_heuristics(exp=1, o_weight=1))

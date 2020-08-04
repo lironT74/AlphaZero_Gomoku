@@ -49,21 +49,37 @@ class Human(object):
 
 
 def run():
-    n = 5
-    width, height = 8,8
-    model_1_file = './best_policy_8_8_5.model'
+    # n = 5
+    # width, height = 8,8
+    # model_1_file = './best_policy_8_8_5.model'
 
-    # n = 3
-    # width, height = 4,4
-    # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_4_4_3_p4/best_policy.model'
+    n = 4
+    width, height = 6,6
+    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_last_move/current_policy_1500.model'
 
     # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
     # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
 
     try:
+
+        initial_board = np.array([
+            [0, 1, 0, 2, 0, 0],
+            [0, 2, 1, 1, 0, 0],
+            [1, 2, 2, 2, 1, 0],
+            [2, 0, 1, 1, 2, 0],
+            [1, 0, 2, 2, 0, 0],
+            [0, 0, 0, 0, 0, 0]])
+
+        initial_board = np.flipud(initial_board)
+
+        i_board = np.zeros((2, height, width))
+
+        i_board[0] = initial_board == 1
+        i_board[1] = initial_board == 2
+
+
         board = Board(width=width, height=height, n_in_row=n)
         game = Game(board)
-
 
         # ############### human VS AI ###################
         # load the trained policy_value_net in either Theano/Lasagne, PyTorch or TensorFlow
@@ -102,10 +118,11 @@ def run():
 
         results = {-1:0, 1:0, 2:0}
 
-        start_player = 0
+        start_player = 1
 
         for i in range(1):
-            winner = game.start_play(mcts_player_1, human, start_player=start_player, is_shown=1)
+
+            winner = game.start_play(mcts_player_1, human, start_player=start_player, is_shown=1, start_board=i_board)
 
             results[winner] += 1
             start_player = 1 - start_player

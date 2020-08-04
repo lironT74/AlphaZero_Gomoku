@@ -859,13 +859,13 @@ class Game(object):
                     print('_'.center(8), end='')
             print('\r\n\r\n')
 
-    def start_play(self, player1, player2, start_player=0, is_shown=1):
+    def start_play(self, player1, player2, start_player=0, is_shown=1, start_board=None):
         """start a game between two players"""
         if start_player not in (0, 1):
             raise Exception('start_player should be either 0 (player1 first) '
                             'or 1 (player2 first)')
 
-        self.board.init_board(start_player)
+        self.board.init_board(start_player, start_board)
 
         p1, p2 = self.board.players
         player1.set_player_ind(p1)

@@ -18,16 +18,16 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_value_net_keras import PolicyValueNet # Keras
 
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter('./runs/pt_4_4_3_p3_training')
+writer = SummaryWriter('./runs/pt_6_6_4_p4_last_move_training')
 
 
 
 class TrainPipeline():
     def __init__(self, init_model=None):
         # params of the board and the game
-        self.board_width = 4
-        self.board_height = 4
-        self.n_in_row = 3
+        self.board_width = 6
+        self.board_height = 6
+        self.n_in_row = 4
 
         self.board = Board(width=self.board_width,
                            height=self.board_height,
@@ -210,12 +210,15 @@ class TrainPipeline():
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
                     win_ratio = self.policy_evaluate()
-                    self.policy_value_net.save_model('./models/pt_4_4_3_p4/current_policy.model')
+                    self.policy_value_net.save_model('./models/pt_6_6_4_p4_last_move/current_policy_{}.model'.format(i+1))
                     if win_ratio > self.best_win_ratio:
+
+                        writer.add_text('best model savings', f"iteration {i + 1}", i + 1)
+
                         print("New best policy!!!!!!!!")
                         self.best_win_ratio = win_ratio
                         # update the best_policy
-                        self.policy_value_net.save_model('./models/pt_4_4_3_p4/best_policy.model')
+                        self.policy_value_net.save_model('./models/pt_6_6_4_p4_last_move/best_policy.model')
                         if (self.best_win_ratio == 1.0 and
                                 self.pure_mcts_playout_num < 5000):
                             self.pure_mcts_playout_num += 1000
