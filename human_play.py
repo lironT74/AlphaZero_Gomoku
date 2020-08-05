@@ -31,7 +31,7 @@ class Human(object):
     def set_player_ind(self, p):
         self.player = p
 
-    def get_action(self, board):
+    def get_action(self, board, **kwargs):
         try:
             location = input("Your move: ")
             if isinstance(location, str):  # for python3

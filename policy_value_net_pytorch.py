@@ -138,7 +138,6 @@ class PolicyValueNet():
         if self.use_gpu:
             state_batch = Variable(torch.FloatTensor(state_batch).cuda(device=self.cuda_to_use))
             log_act_probs, value = self.policy_value_net(state_batch)
-
             act_probs = np.exp(log_act_probs.data.cpu().numpy())
             return act_probs, value.data.cpu().numpy()
 

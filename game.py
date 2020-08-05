@@ -6,7 +6,6 @@
 from __future__ import print_function
 import numpy as np
 import copy
-from FeatureExtractor import FeatureExtractor
 import math
 
 WIN_SCORE = 9
@@ -878,8 +877,10 @@ class Game(object):
             current_player = self.board.get_current_player()
             player_in_turn = players[current_player]
 
-
-            move = player_in_turn.get_action(self.board)
+            if is_shown: #then show heatmaps too
+                move = player_in_turn.get_action(self.board, show_fig=True)
+            else:
+                move = player_in_turn.get_action(self.board)
 
 
             self.board.do_move(move)

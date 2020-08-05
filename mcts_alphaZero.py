@@ -8,6 +8,8 @@ network to guide the tree search and evaluate the leaf nodes
 
 import numpy as np
 import copy
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import io
 
@@ -193,8 +195,12 @@ class MCTSPlayer(object):
     def reset_player(self):
         self.mcts.update_with_move(-1)
 
-    def get_action(self, board, temp=1e-3, return_prob=0, return_heatmap = False, show=False):
+    def get_action(self, board, temp=1e-3, return_prob=0, **kwargs):
         sensible_moves = board.availables
+
+
+        return_fig = kwargs.get('return_fig', False)
+        show_fig = kwargs.get('show_fig', False)
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width * board.height)
@@ -223,13 +229,19 @@ class MCTSPlayer(object):
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
-            if return_heatmap:
-                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width, board.height, self.name, board, show)
+            if return_fig:
+                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width,
+                                                 board.height, self.name, board, return_fig=True, show_fig=False)
+
                 if return_prob:
                     return move, move_probs, buf
                 else:
                     return move, buf
             else:
+                if show_fig:
+                    self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width,
+                                               board.height, self.name, board, return_fig=False, show_fig=True)
+
                 if return_prob:
                     return move, move_probs
                 else:
@@ -242,7 +254,21 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
 
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board, show=False):
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board, return_fig=False, show_fig=False):
+
+        """
+        :param acts_policy:
+        :param probas_policy:
+        :param acts_mcts:
+        :param probas_mcts:
+        :param width:
+        :param height:
+        :param name:
+        :param board:
+        :param return_fig:
+        :param show_fig:
+        :return:
+        """
 
         fontsize = 15
 
@@ -295,8 +321,6 @@ class MCTSPlayer(object):
                                ha="center", va="center", color="w", fontsize=fontsize)
         ax1.set_title("Heatmap of action probas of \n{} which plays {} ".format(name, my_marker), fontsize=fontsize+4)
 
-
-
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
         move_probs_policy = move_probs_policy.reshape(width, height)
@@ -321,10 +345,13 @@ class MCTSPlayer(object):
 
         fig.tight_layout()
 
-        if show:
+        if return_fig:
+            buf = io.BytesIO()
+            plt.savefig(buf, format='jpeg')
+            buf.seek(0)
+            return buf
+
+        elif show_fig:
             plt.show()
 
-        buf = io.BytesIO()
-        plt.savefig(buf, format='jpeg')
-        buf.seek(0)
-        return buf
+
