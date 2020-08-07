@@ -9,8 +9,9 @@ network to guide the tree search and evaluate the leaf nodes
 import numpy as np
 import copy
 import matplotlib as mpl
-mpl.use('Agg')
+
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io
 
 def softmax(x):
@@ -270,6 +271,9 @@ class MCTSPlayer(object):
         :return:
         """
 
+        if return_fig:
+            mpl.use('Agg')
+
         fontsize = 15
 
         if hasattr(self, 'player'):
@@ -294,6 +298,8 @@ class MCTSPlayer(object):
         x_axis = range(0, height, 1)
 
         fig, axes = plt.subplots(2, figsize=(10,15))
+        # fig, axes = plt.subplots(1, 2, figsize=(15,10))
+
         (ax1, ax2) = axes
 
         move_probs_mcts = np.zeros(width * height)
@@ -303,18 +309,16 @@ class MCTSPlayer(object):
         move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
 
         im1 = ax1.imshow(move_probs_mcts, cmap='jet')
-        fig.colorbar(im1, ax=ax1).ax.tick_params(labelsize=fontsize)
+        divider1 = make_axes_locatable(ax1)
+        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im1, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
 
-        # We want to show all ticks...
         ax1.set_xticks(np.arange(len(x_axis)))
         ax1.set_yticks(np.arange(len(y_axis)))
-        # ... and label them with the respective list entries
         ax1.set_xticklabels(x_axis, fontsize=fontsize)
         ax1.set_yticklabels(y_axis, fontsize=fontsize)
-        # Rotate the tick labels and set their alignment.
-        plt.setp(ax1.get_xticklabels(), ha="right",
-                 rotation_mode="anchor")
-        # Loop over data dimensions and create text annotations.
+        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
+
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
                 text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
@@ -328,14 +332,15 @@ class MCTSPlayer(object):
         move_probs_policy = np.round_(move_probs_policy, decimals=3)
 
         im2 = ax2.imshow(move_probs_policy, cmap='jet')
-        fig.colorbar(im2, ax=ax2).ax.tick_params(labelsize=fontsize)
+        divider2 = make_axes_locatable(ax2)
+        cax2 = divider2.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im2, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
 
         ax2.set_xticks(np.arange(len(x_axis)))
         ax2.set_yticks(np.arange(len(y_axis)))
         ax2.set_xticklabels(x_axis, fontsize=fontsize)
         ax2.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax1.get_xticklabels(), ha="right",
-                 rotation_mode="anchor")
+        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
                 text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
@@ -345,6 +350,8 @@ class MCTSPlayer(object):
 
         fig.tight_layout()
 
+
+
         if return_fig:
             buf = io.BytesIO()
             plt.savefig(buf, format='jpeg')
@@ -353,5 +360,6 @@ class MCTSPlayer(object):
 
         elif show_fig:
             plt.show()
+
 
 

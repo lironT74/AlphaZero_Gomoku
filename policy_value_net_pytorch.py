@@ -12,8 +12,11 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-from torch.utils.tensorboard import SummaryWriter
-# writer = SummaryWriter('./runs/pt_4_4_3_p3_training')
+# from torch.utils.tensorboard import SummaryWriter
+
+# from tensorboardX import SummaryWriter
+# WRITER_DIR = './runs/pt_6_6_4_p4_v4_training'
+# writer = SummaryWriter(WRITER_DIR)
 
 
 def set_learning_rate(optimizer, lr):

@@ -16,17 +16,20 @@ from mcts_alphaZero import MCTSPlayer
 from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
 # from policy_value_net_keras import PolicyValueNet # Keras
+import copy
 
 import os
 from tensorboardX import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
+
 import PIL.Image
 from torchvision.transforms import ToTensor
 
 import matplotlib as mpl
 mpl.use('Agg')
 
-WRITER_DIR = './runs/pt_6_6_4_p4_v3_training'
-MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v3'
+WRITER_DIR = './runs/pt_6_6_4_p4_v4_training'
+MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4'
 
 class TrainPipeline():
     def __init__(self, init_model=None):
@@ -63,7 +66,6 @@ class TrainPipeline():
         self.game_batch_num = 2500
 
         self.improvement_counter = 100
-
         self.best_win_ratio = 0.0
 
         # num of simulations used for the pure mcts, which is used as
@@ -130,7 +132,7 @@ class TrainPipeline():
             self.data_buffer.extend(play_data)
 
 
-    def policy_update(self):
+    def policy_update(self, iteration):
         """update the policy-value net"""
         mini_batch = random.sample(self.data_buffer, self.batch_size)
         state_batch = [data[0] for data in mini_batch]
@@ -140,18 +142,18 @@ class TrainPipeline():
 
         for i in range(self.epochs):
             loss, entropy = self.policy_value_net.train_step(
-                    state_batch,
-                    mcts_probs_batch,
-                    winner_batch,
-                    self.learn_rate*self.lr_multiplier)
+                state_batch,
+                mcts_probs_batch,
+                winner_batch,
+                self.learn_rate * self.lr_multiplier)
             new_probs, new_v = self.policy_value_net.policy_value(state_batch)
             kl = np.mean(np.sum(old_probs * (
                     np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
-                    axis=1)
-            )
+                                axis=1)
+                         )
             if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
                 break
-        # adaptively adjust the learning rate
+            # adaptively adjust the learning rate
         if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
             self.lr_multiplier /= 1.5
         elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
@@ -163,21 +165,42 @@ class TrainPipeline():
         explained_var_new = (1 -
                              np.var(np.array(winner_batch) - new_v.flatten()) /
                              np.var(np.array(winner_batch)))
-        print(("kl:{:.5f},"
-               "lr_multiplier:{:.3f},"
-               "loss:{},"
-               "entropy:{},"
-               "explained_var_old:{:.3f},"
+
+        train_str = ("kl:{:.5f}, "
+               "lr_multiplier:{:.3f}, "
+               "loss:{}, "
+               "entropy:{}, "
+               "explained_var_old:{:.3f}, "
                "explained_var_new:{:.3f}"
                ).format(kl,
                         self.lr_multiplier,
                         loss,
                         entropy,
                         explained_var_old,
-                        explained_var_new))
+                        explained_var_new)
+
+        print(train_str)
+
+        self.writer.add_scalar('lr multiplier', self.lr_multiplier, iteration + 1)
+        self.writer.add_scalar('kl_', kl, iteration + 1)
+        self.writer.add_scalar('explained var old', explained_var_old, iteration + 1)
+        self.writer.add_scalar('explained var new', explained_var_new, iteration + 1)
+        self.writer.add_scalar('training loss', loss, iteration + 1)
+        self.writer.add_scalar('training entropy', entropy, iteration + 1)
+
+        # self.writer.add_scalars("training tracking", {'lr multiplier': self.lr_multiplier,
+        #                                               'kl': kl,
+        #                                               'explained var old': explained_var_old,
+        #                                               'explained var new': explained_var_new,
+        #                                               'training loss':loss,
+        #                                               'training entropy':entropy},
+        #                         i+1)
+
+
         return loss, entropy
 
-    def policy_evaluate(self, n_games=10):
+
+    def policy_evaluate(self, iteration, n_games=10):
         """
         Evaluate the trained policy by playing against the pure MCTS player
         Note: this is only for monitoring the progress of training
@@ -200,6 +223,11 @@ class TrainPipeline():
         print("num_playouts: {}, win: {}, lose: {}, tie:{}".format(
                 self.pure_mcts_playout_num,
                 win_cnt[1], win_cnt[2], win_cnt[-1]))
+
+        self.writer.add_text(tag='evaluation results',
+                             text_string=f"num_playouts: {self.pure_mcts_playout_num}, win: {win_cnt[1]}, lose: {win_cnt[2]}, tie:{win_cnt[-1]}",
+                             global_step=iteration+1)
+
         return win_ratio
 
     def run(self):
@@ -218,25 +246,28 @@ class TrainPipeline():
                 print("batch i:{}, episode_len:{}".format(
                         i+1, self.episode_len))
 
-                if len(self.data_buffer) > self.batch_size:
-                    loss, entropy = self.policy_update()
+                self.writer.add_scalar('episode len', self.episode_len, i + 1)
 
-                    self.writer.add_scalar('training loss', loss, i+1)
-                    self.writer.add_scalar('training entropy', entropy, i+1)
+                if len(self.data_buffer) > self.batch_size:
+                    loss, entropy = self.policy_update(iteration=i)
+
 
                 # check the performance of the current model,
                 # and save the model params
                 if (i+1) % self.check_freq == 0:
                     print("current self-play batch: {}".format(i+1))
-                    win_ratio = self.policy_evaluate()
+                    win_ratio = self.policy_evaluate(iteration=i)
 
                     self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i+1}.model')
-                    self.save_heatmap(i)
+
+                    self.save_heatmap(iteration=i)
 
                     if win_ratio > self.best_win_ratio:
 
-                        self.writer.add_text('best model savings', f"iteration {i + 1}", i + 1)
+                        self.writer.add_text('best model savings', 'better model found', i + 1)
+
                         print("New best policy!!!!!!!!")
+
                         improvement_counter_local = 0
                         self.best_win_ratio = win_ratio
 
@@ -253,22 +284,31 @@ class TrainPipeline():
                         if improvement_counter_local == self.improvement_counter:
                             print(f"No better policy was found in the last {self.improvement_counter} "
                                   f"checks. Ending training. ")
+
+                            self.writer.add_text('best model savings', f"No better policy was found "
+                                                                       f"in the last {self.improvement_counter} "
+                                                                       f"checks. Ending training. ", i + 1)
+
                             break
+
 
         except KeyboardInterrupt:
             print('\n\rquit')
 
-    def save_heatmap(self, i):
-        player = MCTSPlayer(self.policy_value_net.policy_value_fn, c_puct=self.c_puct, n_playout=self.n_playout)
+    def save_heatmap(self, iteration):
+
+        policy_copy = copy.deepcopy(self.policy_value_net)
+        player = MCTSPlayer(policy_copy.policy_value_fn, c_puct=self.c_puct, n_playout=self.n_playout)
+
         board = self.initialize_paper_board()
         _,heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
 
         image = PIL.Image.open(heatmap_buf)
         image = ToTensor()(image)
 
-        self.writer.add_image(tag="Heatmap of current iteration model on paper board",
+        self.writer.add_image(tag='Heatmap on paper board',
                               img_tensor=image,
-                              global_step=i+1)
+                              global_step=iteration + 1)
 
     def initialize_paper_board(self):
         board_paper = np.array([

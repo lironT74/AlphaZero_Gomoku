@@ -55,7 +55,7 @@ def run():
 
     n = 4
     width, height = 6,6
-    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_last_move/best_policy.model'
+    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4/current_policy_2400.model'
 
     # model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3/best_policy.model'
     # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4/best_policy.model'
