@@ -19,6 +19,8 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 # from policy_net_keras import PolicyNet
 from policy_player import PolicyPlayer
 import numpy as np
+# from policy_value_net_keras import PolicyValueNet # Keras
+
 
 class Human(object):
     """
@@ -48,6 +50,23 @@ class Human(object):
         return "Human {}".format(self.player)
 
 
+def initialize_paper_board(self):
+    board_paper = np.array([
+        [0, 1, 0, 2, 0, 0],
+        [0, 2, 1, 1, 0, 0],
+        [1, 2, 2, 2, 1, 0],
+        [2, 0, 1, 1, 2, 0],
+        [1, 0, 2, 2, 0, 0],
+        [0, 0, 0, 0, 0, 0]])
+    board_paper = np.flipud(board_paper)
+    i_board = np.zeros((2, self.board_height, self.board_width))
+    i_board[0] = board_paper == 1
+    i_board[1] = board_paper == 2
+    board = Board(width=self.board_width, height=self.board_height, n_in_row=self.n_in_row)
+    board.init_board(start_player=1, initial_state=i_board)
+    return board
+
+
 def run():
     # n = 5
     # width, height = 8,8
@@ -62,64 +81,36 @@ def run():
 
     try:
 
-        initial_board = np.array([
-            [0, 1, 0, 2, 0, 0],
-            [0, 2, 1, 1, 0, 0],
-            [1, 2, 2, 2, 1, 0],
-            [2, 0, 1, 1, 2, 0],
-            [1, 0, 2, 2, 0, 0],
-            [0, 0, 0, 0, 0, 0]])
-
-        initial_board = np.flipud(initial_board)
-
-        i_board = np.zeros((2, height, width))
-
-        i_board[0] = initial_board == 1
-        i_board[1] = initial_board == 2
-
-
-        board = Board(width=width, height=height, n_in_row=n)
+        board = initialize_paper_board()
         game = Game(board)
 
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=4)
         mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="AI")
 
-        # best_policy_1 = PolicyValueNet(width, height, model_file = model_1_file, input_plains_num=3)
-        # mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="3 plains model")
-
-        # best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        # mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="4 plains model")
-
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
 
-        # human player, input your move in the format: 2,3
         human = Human()
 
         results = {-1:0, 1:0, 2:0}
 
         start_player = 1
 
-        for i in range(1):
+        winner = game.start_play(mcts_player_1, human, start_player=start_player, is_shown=1, start_board=i_board)
 
-            winner = game.start_play(mcts_player_1, human, start_player=start_player, is_shown=1, start_board=i_board)
+        results[winner] += 1
+        start_player = 1 - start_player
 
-            results[winner] += 1
-            start_player = 1 - start_player
-
-            print("Game {}: {} plains model has started, {} plains model has won".format(
-                i+1,
-                start_player + 3,
-                winner + 2,
-            ))
-
+        print(f"{start_player + 3} plains model has started, {winner + 2} plains model has won")
         print("\n\nWins of 3 plains model: ", results[1])
         print("Wins of 4 plains model: ", results[2])
         print("Ties: ", results[-1])
 
+
     except KeyboardInterrupt:
         print('\n\rquit')
+
 
 
 

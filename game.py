@@ -8,8 +8,9 @@ import numpy as np
 import copy
 import math
 
-WIN_SCORE = 9
-FORCING_BONUS = 11
+WIN_SCORE = 20
+FORCING_BONUS = 10
+OPPONENT_THREAT_SCORE = 15
 
 class BoardSlim(object):
     """board for the game"""
@@ -395,6 +396,27 @@ class Board(object):
                         gaussian_kernel.append(self.makeGaussian(width, fwhm=sig, center=[row, col]))
 
         immediate_threats, unavoidable_traps = self.find_all_win_scores_squares()
+        immediate_oponnent_threats, sure_loss_moves, sure_loss = self.find_opponent_threats()
+
+        if len(immediate_threats)>0 and sure_loss:
+            raise Exception("it cant be that loss_immediate_danger=True because current player has an immediate_threats")
+
+        # if i cant win and the opponent can, i must block my opponent:
+        if len(immediate_oponnent_threats) > 0 and len(immediate_threats) == 0:
+            for row in range(width):
+                for col in range(height):
+                    if (row, col) in immediate_oponnent_threats:
+                        scores[:, row, col] = OPPONENT_THREAT_SCORE
+                    else:
+                        scores[:, row, col] = 0
+
+
+        # TODO: Ask Ofra/Yuval what should we do with all the other cases -
+        #  1. Should we give a special score to the "sure loss moves"
+        #     (the ones that guarantee opponent's win if we play them)?
+        #  2. If sure_loss==True, which means that there is a trap which the current player can't avoid,
+        #     (in another words, sure loss moves == all available moves) what should we do?
+
 
         for row in range(width):
             for col in range(height):
@@ -448,41 +470,42 @@ class Board(object):
         return scores
 
 
+
     def calc_blocking_bonus(self, max_path, row, col, cur_positions, opponent_positions, o_weight):
-
-        # Calculate blocking scores
-        blocking_score_x = 0.0
-
-        # Calculate open paths for Opponent player
-        open_paths_data_o, max_path_o = \
-            self.find_open_paths(row=row,
-                                 col=col,
-                                 cur_positions=opponent_positions,
-                                 opponent_positions=cur_positions) #!!!!!!!
-
-        blocking_score_o = 0.0
-
-        # Calculate blocking score
-        if (max_path == (self.n_in_row - 1)): # give score for forcing O
-            blocking_score_x += FORCING_BONUS
-
-        elif (max_path_o == (self.n_in_row - 1)):  # give score for forcing X
-            blocking_score_o += FORCING_BONUS
-
-        if o_weight == 0.5:
-            blocking_score = blocking_score_x + blocking_score_o
-
-        elif o_weight == 0:
-            blocking_score = blocking_score_x  # o blindness for x player disregard O
-
-        elif o_weight == 1.0:
-            ### Osher: in this case, shouldn't we ignore the blocking_score_x?
-            blocking_score = blocking_score_x  # o blindness - just use for score how good it would be to block x
-
-        if blocking_score > WIN_SCORE:
-            blocking_score = WIN_SCORE
-
-        return blocking_score
+        pass
+        # # Calculate blocking scores
+        # blocking_score_x = 0.0
+        #
+        # # Calculate open paths for Opponent player
+        # open_paths_data_o, max_path_o = \
+        #     self.find_open_paths(row=row,
+        #                          col=col,
+        #                          cur_positions=opponent_positions,
+        #                          opponent_positions=cur_positions) #!!!!!!!
+        #
+        # blocking_score_o = 0.0
+        #
+        # # Calculate blocking score
+        # if (max_path == (self.n_in_row - 1)): # give score for forcing O
+        #     blocking_score_x += FORCING_BONUS
+        #
+        # elif (max_path_o == (self.n_in_row - 1)):  # give score for forcing X
+        #     blocking_score_o += FORCING_BONUS
+        #
+        # if o_weight == 0.5:
+        #     blocking_score = blocking_score_x + blocking_score_o
+        #
+        # elif o_weight == 0:
+        #     blocking_score = blocking_score_x  # o blindness for x player disregard O
+        #
+        # elif o_weight == 1.0:
+        #     ### Osher: in this case, shouldn't we ignore the blocking_score_x?
+        #     blocking_score = blocking_score_x  # o blindness - just use for score how good it would be to block x
+        #
+        # if blocking_score > WIN_SCORE:
+        #     blocking_score = WIN_SCORE
+        #
+        # return blocking_score
 
 
 
@@ -692,7 +715,7 @@ class Board(object):
         return immediate_threats
 
 
-    def find_all_win_scores_squares(self):
+    def find_all_win_scores_squares(self, **kwargs):
         # THE IDEA: fill in all available squares one by one, and using already implemented functions check if the
         # game has just ended with your win - and if it did - the square is an immediate threat. If you do not win by
         # placing a pawn in a given square, then if for every opponent's answer, placing a pawn in the given square
@@ -725,15 +748,17 @@ class Board(object):
         width = self.width
         height = self.height
 
+        board = copy.deepcopy(self)
+
         for move in self.availables:
             row = move // height
             col = move % width
 
-            board_copy = copy.deepcopy(self)
+            board_copy = copy.deepcopy(board)
             board_copy.do_move(move)  # current played
 
             has_winner, winner = board_copy.has_a_winner()
-            if has_winner and winner == self.current_player:  # (row, col) is an immediate threat.
+            if has_winner and winner == board.current_player:  # (row, col) is an immediate threat.
                 immediate_threats.append((row, col))
                 continue
 
@@ -760,6 +785,52 @@ class Board(object):
                 unavoidable_traps.append((row, col))
 
         return (immediate_threats, unavoidable_traps)
+
+
+    def find_opponent_threats(self, **kwargs):
+
+        sure_loss_moves = []
+
+        width = self.width
+        height = self.height
+        board = copy.deepcopy(self)
+
+        board.flip_current_player()
+
+        # Winning opponent moves
+        immediate_oponnent_threats = board.check_immediate_threats()
+
+        board.flip_current_player()
+
+        # can he win in the next turn for any move i make?
+        loss_immediate_danger = True
+
+        for move in self.availables:
+            row = move // height
+            col = move % width
+
+            board_copy = copy.deepcopy(board)
+            board_copy.do_move(move)  # I move
+
+            has_winner, winner = board_copy.has_a_winner()
+            if has_winner and winner == board.current_player:  # I can win right now (my immediate threat)
+                loss_immediate_danger = False
+                continue
+
+            else:
+                # I cant win right now, my opponent can win in next turn
+                if len(board_copy.check_immediate_threats()) > 0:
+                    sure_loss_moves.append((row, col))
+
+                # for this move, my opponent cant win in his next move
+                else:
+                    loss_immediate_danger = False
+
+        return immediate_oponnent_threats, sure_loss_moves, loss_immediate_danger
+
+
+    def flip_current_player(self):
+        self.current_player = (self.players[0] if self.current_player == self.players[1] else self.players[1])
 
 
     @staticmethod
@@ -827,7 +898,6 @@ class Board(object):
         return False
 
 
-
 class Game(object):
     """game server"""
 
@@ -858,7 +928,7 @@ class Game(object):
                     print('_'.center(8), end='')
             print('\r\n\r\n')
 
-    def start_play(self, player1, player2, start_player=0, is_shown=1, start_board=None):
+    def start_play(self, player1, player2, start_player=0, is_shown=1, start_board=None, **kwargs):
         """start a game between two players"""
         if start_player not in (0, 1):
             raise Exception('start_player should be either 0 (player1 first) '

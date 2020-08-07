@@ -25,9 +25,6 @@ from tensorboardX import SummaryWriter
 import PIL.Image
 from torchvision.transforms import ToTensor
 
-import matplotlib as mpl
-mpl.use('Agg')
-
 WRITER_DIR = './runs/pt_6_6_4_p4_v4_training'
 MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4'
 

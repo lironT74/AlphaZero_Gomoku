@@ -297,8 +297,8 @@ class MCTSPlayer(object):
         y_axis = range(width - 1, -1, -1)
         x_axis = range(0, height, 1)
 
-        fig, axes = plt.subplots(2, figsize=(10,15))
-        # fig, axes = plt.subplots(1, 2, figsize=(15,10))
+        # fig, axes = plt.subplots(2, figsize=(10,15))
+        fig, axes = plt.subplots(1, 2, figsize=(15,10))
 
         (ax1, ax2) = axes
 
@@ -323,7 +323,7 @@ class MCTSPlayer(object):
             for j in range(len(x_axis)):
                 text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
                                ha="center", va="center", color="w", fontsize=fontsize)
-        ax1.set_title("Heatmap of action probas of \n{} which plays {} ".format(name, my_marker), fontsize=fontsize+4)
+        ax1.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize+4)
 
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
@@ -346,11 +346,9 @@ class MCTSPlayer(object):
                 text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
                     "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
-        ax2.set_title("Heatmap of action probas of \nthe corresponding policy value fn", fontsize=fontsize+4)
+        ax2.set_title("Probas of the policy value fn", fontsize=fontsize+4)
 
         fig.tight_layout()
-
-
 
         if return_fig:
             buf = io.BytesIO()

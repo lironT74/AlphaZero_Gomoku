@@ -1,19 +1,115 @@
-from mcts_pure import MCTS, MCTSPlayer
-from policy_player import PolicyPlayer
-from policy_net_keras import PolicyNet
-from game import Game, BoardSlim
+# from mcts_pure import MCTS, MCTSPlayer
+from mcts_alphaZero import MCTSPlayer
+
+# from policy_player import PolicyPlayer
+# from policy_net_keras import PolicyNet
 import numpy as np
 import tqdm
+from game import Board, Game, BoardSlim
+from tensorboardX import SummaryWriter
+from policy_value_net_pytorch import PolicyValueNet  # Pytorch
+import PIL.Image
+from torchvision.transforms import ToTensor
+import matplotlib.pyplot as plt
 
-PATH2MODEL = "/Users/danamir/tictactoe/AlphaZero_Gomoku/1555508174/policy14999.h5"
-BOARD_SHAPE = (6,6)
-playouts = [1]
-num_games = 20
 
-def load_player():
-    network = PolicyNet(BOARD_SHAPE[0], BOARD_SHAPE[1], PATH2MODEL)
-    player = PolicyPlayer(network, is_selfplay=False)
-    return player
+BOARD_1_FULL = np.array([[0, 1, 0, 2, 0, 0],
+                [0, 2, 1, 1, 0, 0],
+                [1, 2, 2, 2, 1, 0],
+                [2, 0, 1, 1, 2, 0],
+                [1, 0, 2, 2, 0, 0],
+                [0, 0, 0, 0, 0, 0]])
+
+BOARD_1_TRUNCATED = np.array([[0, 1, 2, 2, 0, 0],
+                    [0, 2, 1, 1, 0, 0],
+                    [1, 2, 2, 2, 1, 0],
+                    [2, 0, 1, 1, 2, 1],
+                    [1, 0, 2, 2, 0, 0],
+                    [0, 0, 0, 0, 0, 0]])
+
+BOARD_2_FULL =  np.array([[0, 2, 0, 0, 1, 0],
+                    [0, 2, 1, 2, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 1, 0, 2, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 2, 0, 0, 2, 0]])
+
+BOARD_2_TRUNCATED = np.array([[0, 2, 0, 1, 1, 0],
+                    [0, 2, 1, 2, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [2, 1, 0, 2, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 2, 0, 0, 2, 0]])
+
+PAPER_BOARDS = [(BOARD_1_FULL, "board 1 full"), (BOARD_1_TRUNCATED, "board 1 truncated"), (BOARD_2_FULL, "board 2 full"), (BOARD_2_TRUNCATED, "board 2 truncated")]
+
+START_POSITIONS_10 = np.array([
+                  [[0,0,0,2,0,0,0,0,0,0],
+                   [0,0,0,1,0,2,0,0,0,0],
+                   [0,2,2,0,0,1,1,0,2,0],
+                   [0,0,2,1,2,0,0,0,0,0],
+                   [0,1,1,0,0,0,0,0,0,0],
+                   [0,1,1,0,2,0,0,0,0,0],
+                   [0,0,1,0,2,0,0,0,0,0],
+                   [0,0,1,0,0,0,0,0,0,0],
+                   [0,0,2,0,0,2,2,0,0,0],
+                   [0,0,0,0,1,0,0,0,0,0]],
+
+                 [[0,0,0,2,0,0,0,0,0,0],
+                  [0,0,0,1,0,2,0,0,0,0],
+                  [0,2,2,0,1,1,1,0,2,0],
+                  [0,0,2,1,2,0,0,0,0,0],
+                  [0,1,1,0,0,0,0,0,0,0],
+                  [0,1,1,0,2,0,0,0,0,0],
+                  [2,0,1,0,2,0,0,0,0,0],
+                  [0,0,1,0,0,0,0,0,0,0],
+                  [0,0,2,0,0,2,2,0,0,0],
+                  [0,0,0,0,1,0,0,0,0,0]],
+
+
+                [[0,0,0,0,1,0,2,0,0,0],
+                 [0,0,0,0,2,1,1,1,0,0],
+                 [0,0,0,1,2,2,2,1,0,0],
+                 [0,0,0,2,2,1,1,2,1,1],
+                 [2,0,0,1,0,2,2,0,0,0],
+                 [1,0,0,0,0,0,0,0,0,0],
+                 [1,1,0,0,0,0,0,0,0,0],
+                 [2,2,0,0,0,0,1,0,0,0],
+                 [0,0,0,0,0,0,1,0,0,0],
+                 [0,0,0,0,0,2,2,2,0,0]],
+
+                  [[0,0,0,0,1,2,2,0,0,0],
+                   [0,0,0,0,2,1,1,1,0,0],
+                   [0,0,0,1,2,2,2,1,0,0],
+                   [0,0,0,2,2,1,1,2,1,1],
+                   [2,0,0,1,0,2,2,0,0,1],
+                   [1,0,0,0,0,0,0,0,0,0],
+                   [1,1,0,0,0,0,0,0,0,0],
+                   [2,2,0,0,0,0,1,0,0,0],
+                   [0,0,0,0,0,0,1,0,0,0],
+                   [0,0,0,0,0,2,2,2,0,0]],
+
+                [[0,0,0,0,0,0,0,0,0,0],
+                 [0,0,0,0,0,0,0,0,0,0],
+                 [0,0,1,0,0,2,0,0,0,0],
+                 [0,0,0,1,1,0,0,0,0,0],
+                 [0,0,0,0,2,2,2,1,2,0],
+                 [0,0,0,0,0,1,2,2,0,0],
+                 [0,0,0,1,0,2,0,0,0,0],
+                 [0,0,0,0,1,1,0,0,0,0],
+                 [0,0,0,0,0,1,0,0,0,0],
+                 [0,0,0,0,0,0,2,0,0,0]],
+
+                 [[0,0,0,0,0,0,0,0,0,0],
+                  [0,0,0,0,0,0,0,0,0,0],
+                  [0,0,1,0,0,2,0,0,0,0],
+                  [0,0,1,1,1,2,0,0,0,0],
+                  [0,0,0,0,2,2,2,1,2,0],
+                  [0,0,0,0,0,1,2,2,0,0],
+                  [0,0,0,1,0,2,0,0,0,0],
+                  [0,0,0,0,1,1,0,0,0,0],
+                  [0,0,0,0,0,1,0,0,0,0],
+                  [0,0,0,0,0,0,2,0,0,0]]])
 
 
 def evaluate_player(player, opponent, show_game=False):
@@ -42,14 +138,51 @@ def evaluate_player(player, opponent, show_game=False):
         stats["length"].append(BOARD_SHAPE[0] * BOARD_SHAPE[1] - len(board.availables))
     return stats
 
+def initialize_board(board_height, board_width, input_board):
+    n_in_row = 4
+    board = input_board
+    board = np.flipud(board)
+    i_board = np.zeros((2, board_height, board_width))
+    i_board[0] = board == 1
+    i_board[1] = board == 2
+    board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
+    board.init_board(start_player=1, initial_state=i_board)
+    return board
 
+def save_heatmaps():
+
+    WRITER_DIR = './runs/pt_6_6_4_p4_v4_paper_heatmaps'
+    writer = SummaryWriter(WRITER_DIR)
+    n = 4
+    width, height = 6, 6
+
+    for board_state, board_name in PAPER_BOARDS:
+        board = initialize_board(height, width, input_board=board_state)
+
+        for i in range(50,2550,50):
+            model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4/current_policy_{i}.model'
+            policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=4)
+            player = MCTSPlayer(policy.policy_value_fn, c_puct=5, n_playout=400, name="AI")
+
+            _, heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
+
+            image = PIL.Image.open(heatmap_buf)
+            image = ToTensor()(image)
+
+            writer.add_image(tag=f'Heatmap on {board_name}',
+                                  img_tensor=image,
+                                  global_step= i)
+            plt.close('all')
 
 if __name__ == "__main__":
-    player = load_player()
-    for playout in playouts:
-        mcts_player = MCTSPlayer(n_playout=playout)
-        stats = evaluate_player(player, mcts_player, show_game=True)
-        print()
-        print("win ratio agains %d playouts: " % playout, stats["wins"] / num_games)
-        print("tie ratio agains %d playouts: " % playout, stats["ties"] / num_games)
-        print("average game length agains %d playouts: ", np.mean(stats["length"]))
+
+    save_heatmaps()
+
+    # player = load_player()
+    # for playout in playouts:
+    #     mcts_player = MCTSPlayer(n_playout=playout)
+    #     stats = evaluate_player(player, mcts_player, show_game=True)
+    #     print()
+    #     print("win ratio agains %d playouts: " % playout, stats["wins"] / num_games)
+    #     print("tie ratio agains %d playouts: " % playout, stats["ties"] / num_games)
+    #     print("average game length agains %d playouts: ", np.mean(stats["length"]))
