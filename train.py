@@ -257,7 +257,8 @@ class TrainPipeline():
 
                     self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i+1}.model')
 
-                    self.save_heatmap(iteration=i)
+                    # Should better do this after training
+                    # self.save_heatmap(iteration=i)
 
                     if win_ratio > self.best_win_ratio:
 

@@ -11,7 +11,7 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 import PIL.Image
 from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
-
+import os
 
 BOARD_1_FULL = np.array([[0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
@@ -149,29 +149,45 @@ def initialize_board(board_height, board_width, input_board):
     board.init_board(start_player=1, initial_state=i_board)
     return board
 
-def save_heatmaps():
+def save_heatmaps(model_name = "pt_6_6_4_p4_v4" ,
+                  save_to_tensorboard=True,
+                  save_to_local=False,
+                  max_model_iter = 2500,
+                  model_check_rfeq=50,
+                  width=6,
+                  height=6,
+                  n=4,
+                  input_plains_num=4,
+                  c_puct=5,
+                  n_playout=400):
 
-    WRITER_DIR = './runs/pt_6_6_4_p4_v4_paper_heatmaps'
+    WRITER_DIR = f'./runs/{model_name}_paper_heatmaps'
     writer = SummaryWriter(WRITER_DIR)
-    n = 4
-    width, height = 6, 6
 
     for board_state, board_name in PAPER_BOARDS:
         board = initialize_board(height, width, input_board=board_state)
 
-        for i in range(50,2550,50):
-            model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4/current_policy_{i}.model'
-            policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=4)
-            player = MCTSPlayer(policy.policy_value_fn, c_puct=5, n_playout=400, name="AI")
+        for i in range(model_check_rfeq, max_model_iter + model_check_rfeq,model_check_rfeq):
+
+            model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
+
+            policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num)
+            player = MCTSPlayer(policy.policy_value_fn, c_puct=c_puct, n_playout=n_playout, name="AI")
 
             _, heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
-
             image = PIL.Image.open(heatmap_buf)
-            image = ToTensor()(image)
 
-            writer.add_image(tag=f'Heatmap on {board_name}',
-                                  img_tensor=image,
-                                  global_step= i)
+            if save_to_local:
+                heatmap_save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/heatmaps/{model_name}/iteration_{i}/'
+                if not os.path.exists(heatmap_save_path):
+                    os.makedirs(heatmap_save_path)
+                plt.savefig(heatmap_save_path + f"{board_name}.png")
+
+            if save_to_tensorboard:
+                image_tensor = ToTensor()(image)
+                writer.add_image(tag=f'Heatmap on {board_name}',
+                                      img_tensor=image_tensor,
+                                      global_step= i)
             plt.close('all')
 
 if __name__ == "__main__":
