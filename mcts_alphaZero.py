@@ -298,10 +298,10 @@ class MCTSPlayer(object):
         move_probs_policy = np.flipud(move_probs_policy)
         move_probs_policy = np.round_(move_probs_policy, decimals=3)
 
-        im2 = ax1.imshow(move_probs_policy, cmap='jet')
-        divider2 = make_axes_locatable(ax1)
-        cax2 = divider2.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im2, ax=ax1, cax=cax2).ax.tick_params(labelsize=fontsize)
+        im1 = ax1.imshow(move_probs_policy, cmap='jet')
+        divider1 = make_axes_locatable(ax1)
+        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im1, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
 
         ax1.set_xticks(np.arange(len(x_axis)))
         ax1.set_yticks(np.arange(len(y_axis)))
@@ -315,30 +315,6 @@ class MCTSPlayer(object):
                                 ha="center", va="center", color="w", fontsize=fontsize)
         ax1.set_title("Probas of the policy value fn", fontsize=fontsize+4)
 
-        move_probs_mcts = np.zeros(width * height)
-        move_probs_mcts[list(acts_mcts)] = probas_mcts
-        move_probs_mcts = move_probs_mcts.reshape(width, height)
-        move_probs_mcts = np.flipud(move_probs_mcts)
-        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
-
-        im1 = ax2.imshow(move_probs_mcts, cmap='jet')
-        divider1 = make_axes_locatable(ax2)
-        cax2 = divider1.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im1, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
-
-        ax2.set_xticks(np.arange(len(x_axis)))
-        ax2.set_yticks(np.arange(len(y_axis)))
-        ax2.set_xticklabels(x_axis, fontsize=fontsize)
-        ax2.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax2.get_xticklabels(), ha="right", rotation_mode="anchor")
-
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
-                                ha="center", va="center", color="w", fontsize=fontsize)
-        ax2.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize + 4)
-
 
         normalized_visits = np.zeros(width * height)
         visits_mcts = visits_mcts / np.sum(visits_mcts)
@@ -347,7 +323,32 @@ class MCTSPlayer(object):
         normalized_visits = np.flipud(normalized_visits)
         normalized_visits = np.round_(normalized_visits, decimals=3)
 
-        im3 = ax3.imshow(normalized_visits, cmap='jet')
+        im2 = ax2.imshow(normalized_visits, cmap='jet')
+        divider2 = make_axes_locatable(ax2)
+        cax2 = divider2.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im2, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
+
+        ax2.set_xticks(np.arange(len(x_axis)))
+        ax2.set_yticks(np.arange(len(y_axis)))
+        ax2.set_xticklabels(x_axis, fontsize=fontsize)
+        ax2.set_yticklabels(y_axis, fontsize=fontsize)
+        plt.setp(ax2.get_xticklabels(), ha="right", rotation_mode="anchor")
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else normalized_visits[i, j]),
+                                ha="center", va="center", color="w", fontsize=fontsize)
+        ax2.set_title("Normalized visit counts of MCTS", fontsize=fontsize + 4)
+
+
+
+        move_probs_mcts = np.zeros(width * height)
+        move_probs_mcts[list(acts_mcts)] = probas_mcts
+        move_probs_mcts = move_probs_mcts.reshape(width, height)
+        move_probs_mcts = np.flipud(move_probs_mcts)
+        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
+
+        im3 = ax3.imshow(move_probs_mcts, cmap='jet')
         divider3 = make_axes_locatable(ax3)
         cax3 = divider3.append_axes("right", size="5%", pad=0.05)
         fig.colorbar(im3, ax=ax3, cax=cax3).ax.tick_params(labelsize=fontsize)
@@ -357,12 +358,16 @@ class MCTSPlayer(object):
         ax3.set_xticklabels(x_axis, fontsize=fontsize)
         ax3.set_yticklabels(y_axis, fontsize=fontsize)
         plt.setp(ax3.get_xticklabels(), ha="right", rotation_mode="anchor")
+
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
                 text = ax3.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else normalized_visits[i, j]),
+                    "O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
-        ax3.set_title("Normalized visit counts of MCTS", fontsize=fontsize + 4)
+        ax3.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize + 4)
+
+
+
 
 
 
