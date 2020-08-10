@@ -25,8 +25,8 @@ from tensorboardX import SummaryWriter
 import PIL.Image
 from torchvision.transforms import ToTensor
 
-WRITER_DIR = './runs/pt_6_6_4_p4_v4_training'
-MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v4'
+WRITER_DIR = './runs/pt_6_6_4_p4_v5_training'
+MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v5'
 
 class TrainPipeline():
     def __init__(self, init_model=None):
@@ -60,7 +60,7 @@ class TrainPipeline():
         self.kl_targ = 0.02
 
         self.check_freq = 50
-        self.game_batch_num = 2500
+        self.game_batch_num = 5000
 
         self.improvement_counter = 100
         self.best_win_ratio = 0.0

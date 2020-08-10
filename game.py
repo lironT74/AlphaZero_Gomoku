@@ -198,7 +198,9 @@ class Board(object):
                     "Player1" if len(p2_moves) > len(p1_moves) else "Player2"))
 
             if len(p1_moves) == len(p2_moves):
-                self.current_player = start_player + 1
+                self.current_player = 1 - start_player
+                ## IT WAS STARTPLAYER + 1 FOR SOME REASON....
+
             else:
                 if len(p1_moves) > len(p2_moves):
                     self.last_move = self.last_move_p1

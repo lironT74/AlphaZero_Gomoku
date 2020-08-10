@@ -141,12 +141,14 @@ class MCTS(object):
         # Update value and visit count of nodes in this traversal.
         node.update_recursive(-leaf_value)
 
-    def get_move_probs(self, state, temp=1e-3):
+    def get_move_probs(self, state, temp=1e-3, **kwargs):
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
         state: the current game state
         temp: temperature parameter in (0, 1] controls the level of exploration
         """
+
+        return_visits = kwargs.get('return_visits', False)
 
         for n in range(self._n_playout):
             state_copy = copy.deepcopy(state)
@@ -158,13 +160,13 @@ class MCTS(object):
 
         acts, visits = zip(*act_visits)
 
-        # print(visits)
-
         act_probs = softmax((1.0 / temp) * np.log(np.array(visits) + 1e-10))
 
-        # print(act_probs)
+        if return_visits:
+            return acts, act_probs, visits
 
-        return acts, act_probs
+        else:
+            return acts, act_probs
 
     def update_with_move(self, last_move):
         """Step forward in the tree, keeping everything we already know
@@ -206,32 +208,33 @@ class MCTSPlayer(object):
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width * board.height)
         if len(sensible_moves) > 0:
-            acts, probas = self.mcts.get_move_probs(board, temp)
+
+            acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
-            move_probs[list(acts)] = probas
+            move_probs[list(acts_mcts)] = probas_mcts
 
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
                 move = np.random.choice(
-                    acts,
-                    p=0.75 * probas + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probas)))
+                    acts_mcts,
+                    p=0.75 * probas_mcts + 0.25 * np.random.dirichlet(0.3 * np.ones(len(probas_mcts)))
                 )
                 # update the root node and reuse the search tree
                 self.mcts.update_with_move(move)
             else:
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
-                move = np.random.choice(acts, p=probas)
+                move = np.random.choice(acts_mcts, p=probas_mcts)
                 # reset the root node
                 self.mcts.update_with_move(-1)
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
             if return_fig:
-                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width,
+                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, board.width,
                                                  board.height, self.name, board, return_fig=True, show_fig=False)
 
                 if return_prob:
@@ -240,7 +243,7 @@ class MCTSPlayer(object):
                     return move, buf
             else:
                 if show_fig:
-                    self.create_probas_heatmap(acts_policy, probas_policy, acts, probas, board.width,
+                    self.create_probas_heatmap(acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, board.width,
                                                board.height, self.name, board, return_fig=False, show_fig=True)
 
                 if return_prob:
@@ -255,21 +258,7 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
 
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, width, height, name, board, return_fig=False, show_fig=False):
-
-        """
-        :param acts_policy:
-        :param probas_policy:
-        :param acts_mcts:
-        :param probas_mcts:
-        :param width:
-        :param height:
-        :param name:
-        :param board:
-        :param return_fig:
-        :param show_fig:
-        :return:
-        """
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, name, board, return_fig=False, show_fig=False):
 
         if return_fig:
             mpl.use('Agg')
@@ -298,32 +287,10 @@ class MCTSPlayer(object):
         x_axis = range(0, height, 1)
 
         # fig, axes = plt.subplots(2, figsize=(10,15))
-        fig, axes = plt.subplots(1, 2, figsize=(15,10))
+        fig, axes = plt.subplots(1, 3, figsize=(25,10))
 
-        (ax1, ax2) = axes
+        (ax1, ax2, ax3) = axes
 
-        move_probs_mcts = np.zeros(width * height)
-        move_probs_mcts[list(acts_mcts)] = probas_mcts
-        move_probs_mcts = move_probs_mcts.reshape(width, height)
-        move_probs_mcts = np.flipud(move_probs_mcts)
-        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
-
-        im1 = ax1.imshow(move_probs_mcts, cmap='jet')
-        divider1 = make_axes_locatable(ax1)
-        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im1, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
-
-        ax1.set_xticks(np.arange(len(x_axis)))
-        ax1.set_yticks(np.arange(len(y_axis)))
-        ax1.set_xticklabels(x_axis, fontsize=fontsize)
-        ax1.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
-
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else ("O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
-                               ha="center", va="center", color="w", fontsize=fontsize)
-        ax1.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize+4)
 
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
@@ -331,22 +298,74 @@ class MCTSPlayer(object):
         move_probs_policy = np.flipud(move_probs_policy)
         move_probs_policy = np.round_(move_probs_policy, decimals=3)
 
-        im2 = ax2.imshow(move_probs_policy, cmap='jet')
-        divider2 = make_axes_locatable(ax2)
+        im2 = ax1.imshow(move_probs_policy, cmap='jet')
+        divider2 = make_axes_locatable(ax1)
         cax2 = divider2.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im2, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
+        fig.colorbar(im2, ax=ax1, cax=cax2).ax.tick_params(labelsize=fontsize)
+
+        ax1.set_xticks(np.arange(len(x_axis)))
+        ax1.set_yticks(np.arange(len(y_axis)))
+        ax1.set_xticklabels(x_axis, fontsize=fontsize)
+        ax1.set_yticklabels(y_axis, fontsize=fontsize)
+        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                ha="center", va="center", color="w", fontsize=fontsize)
+        ax1.set_title("Probas of the policy value fn", fontsize=fontsize+4)
+
+        move_probs_mcts = np.zeros(width * height)
+        move_probs_mcts[list(acts_mcts)] = probas_mcts
+        move_probs_mcts = move_probs_mcts.reshape(width, height)
+        move_probs_mcts = np.flipud(move_probs_mcts)
+        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
+
+        im1 = ax2.imshow(move_probs_mcts, cmap='jet')
+        divider1 = make_axes_locatable(ax2)
+        cax2 = divider1.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im1, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
 
         ax2.set_xticks(np.arange(len(x_axis)))
         ax2.set_yticks(np.arange(len(y_axis)))
         ax2.set_xticklabels(x_axis, fontsize=fontsize)
         ax2.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
+        plt.setp(ax2.get_xticklabels(), ha="right", rotation_mode="anchor")
+
         for i in range(len(y_axis)):
             for j in range(len(x_axis)):
                 text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                    "O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
-        ax2.set_title("Probas of the policy value fn", fontsize=fontsize+4)
+        ax2.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize + 4)
+
+
+        normalized_visits = np.zeros(width * height)
+        visits_mcts = visits_mcts / np.sum(visits_mcts)
+        normalized_visits[list(acts_mcts)] = visits_mcts
+        normalized_visits = normalized_visits.reshape(width, height)
+        normalized_visits = np.flipud(normalized_visits)
+        normalized_visits = np.round_(normalized_visits, decimals=3)
+
+        im3 = ax3.imshow(normalized_visits, cmap='jet')
+        divider3 = make_axes_locatable(ax3)
+        cax3 = divider3.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im3, ax=ax3, cax=cax3).ax.tick_params(labelsize=fontsize)
+
+        ax3.set_xticks(np.arange(len(x_axis)))
+        ax3.set_yticks(np.arange(len(y_axis)))
+        ax3.set_xticklabels(x_axis, fontsize=fontsize)
+        ax3.set_yticklabels(y_axis, fontsize=fontsize)
+        plt.setp(ax3.get_xticklabels(), ha="right", rotation_mode="anchor")
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax3.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else normalized_visits[i, j]),
+                                ha="center", va="center", color="w", fontsize=fontsize)
+        ax3.set_title("Normalized visit counts of MCTS", fontsize=fontsize + 4)
+
+
+
 
         fig.tight_layout()
 

@@ -50,7 +50,7 @@ class Human(object):
         return "Human {}".format(self.player)
 
 
-def initialize_paper_board(self):
+def initialize_paper_board(board_width, board_height, n_in_row):
     board_paper = np.array([
         [0, 1, 0, 2, 0, 0],
         [0, 2, 1, 1, 0, 0],
@@ -59,12 +59,12 @@ def initialize_paper_board(self):
         [1, 0, 2, 2, 0, 0],
         [0, 0, 0, 0, 0, 0]])
     board_paper = np.flipud(board_paper)
-    i_board = np.zeros((2, self.board_height, self.board_width))
+    i_board = np.zeros((2, board_height, board_width))
     i_board[0] = board_paper == 1
     i_board[1] = board_paper == 2
-    board = Board(width=self.board_width, height=self.board_height, n_in_row=self.n_in_row)
+    board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
     board.init_board(start_player=1, initial_state=i_board)
-    return board
+    return i_board, board
 
 
 def run():
@@ -81,12 +81,11 @@ def run():
 
     try:
 
-        board = initialize_paper_board()
+        i_board, board = initialize_paper_board(width, height, n)
         game = Game(board)
 
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=4)
         mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="AI")
-
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
