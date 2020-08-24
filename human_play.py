@@ -101,9 +101,10 @@ def run():
     n = 4
     width, height = 6,6
 
-    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_3500.model'
+    model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_2100.model'
 
-    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model'
+    # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model'
+    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_3500.model'
 
     try:
 
@@ -112,10 +113,10 @@ def run():
         game = Game(board)
 
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v9_3500")
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100")
 
-        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000")
+        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=3)
+        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v9_3500")
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
@@ -138,10 +139,10 @@ def run():
             results[winner] += 1
             start_player = 3 - start_player
 
-            print(f"Game {i+1}: {start_player + 2} plains model has started, {winner + 2} plains model has won")
+            print(f"Game {i+1}: player {start_player} has started, player {winner} has won")
 
-        print("\n\nWins of 3 plains model: ", results[1])
-        print("Wins of 4 plains model: ", results[2])
+        print("\n\nWins of player 1: ", results[1])
+        print("Wins of player 1: ", results[2])
         print("Ties: ", results[-1])
 
 

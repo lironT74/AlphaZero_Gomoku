@@ -1,6 +1,7 @@
 # from mcts_pure import MCTS, MCTSPlayer
 from mcts_alphaZero import MCTSPlayer
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import io
 
 # from policy_player import PolicyPlayer
 # from policy_net_keras import PolicyNet
@@ -251,10 +252,10 @@ def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model
                          BOARD, n=4, width=6, height=6, tell_last_move1=False, tell_last_move2=False,
                          n_playout=400, c_puct=5):
 
-    last_move_str_1 = "with last move" if tell_last_move1 else ""
-    last_move_str_2 = "with last move" if tell_last_move2 else ""
+    last_move_str_1 = " with last move " if tell_last_move1 else " "
+    last_move_str_2 = " with last move" if tell_last_move2 else ""
 
-    save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models_emd_comparison/{model1_name} {last_move_str_1} and {model2_name} {last_move_str_2}/'
+    save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models emd comparison/{model1_name}{last_move_str_1}and {model2_name}{last_move_str_2}/'
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
@@ -266,7 +267,8 @@ def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model
     index = [f"{model1_name}__{i}" for i in sub_models_1]
     columns = [f"{model2_name}__{i}" for i in sub_models_2]
 
-    result = np.zeros((len(index), len(columns))) - 1
+    # result = np.random.rand(len(index), len(columns))
+    result = np.empty((len(index), len(columns)))
 
     board_state, board_name, last_move_p1, last_move_p2 = BOARD
 
@@ -296,23 +298,28 @@ def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model
     df = pd.DataFrame(result, index=index, columns=columns)
     df.to_csv(f"{save_path}on {board_name}.csv",index = True, header=True)
 
-    fig, ax = plt.subplots(1)
-    fontsize = 10
+    fig, ax = plt.subplots(1, figsize=(20, 20))
+    fontsize = 12
 
     im = ax.imshow(result, cmap='hot', interpolation='nearest')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(im, ax=ax, cax=cax).ax.tick_params(labelsize=fontsize)
+    fig.colorbar(im, ax=ax, cax=cax).ax.tick_params(labelsize=fontsize*2)
 
-    ax.set_title(f"{model1_name} {last_move_str_1} vs {model2_name} {last_move_str_2}\non {board_name}", fontsize=fontsize+4)
+    ax.set_title(f"EMD of {model1_name}{last_move_str_1}and {model2_name}{last_move_str_2}\non {board_name}", fontsize=3*fontsize)
     ax.set_xticks(list(range(len(sub_models_1))))
     ax.set_yticks(list(range(len(sub_models_1))))
 
     ax.set_xticklabels([str(i) for i in sub_models_1], rotation=90, fontsize=fontsize)
     ax.set_yticklabels([str(i) for i in sub_models_2], fontsize=fontsize)
 
-    ax.set_xlabel(model1_name)
-    ax.set_ylabel(model2_name, rotation=90)
+    ax.set_xlabel(model1_name, fontsize=fontsize*2.5)
+    ax.set_ylabel(model2_name, rotation=90, fontsize=fontsize*2.5)
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
 
     plt.savefig(f"{save_path}on {board_name}.png")
 
@@ -360,16 +367,64 @@ def generate_matrix_dist_metric(dim, norm=True):
     return distances
 
 
-
 if __name__ == "__main__":
 
-    # print(EMD_between_two_models_on_board(model1_name="pt_6_6_4_p4_v8", input_plains_num_1=4, i1=4700,
-    #                              model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, i2=2100,
-    #                              board=board))
 
-    # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000, model1_check_freq=50, tell_last_move1=True,
-    #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000, model2_check_freq=50, tell_last_move2=False,
-    #                      BOARD=BOARD_1_TRUNCATED, n=4, width=6, height=6,
-    #                      n_playout=400, c_puct=5)
+    # for board in PAPER_TRUNCATED_BOARDS:
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=True,
+        #                      model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+        #
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=True,
+        #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
 
-    save_heatmaps()
+        # EMD_model_comparison(model1_name="pt_6_6_4_p3_v7", input_plains_num_1=3, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+        #
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+        #
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+
+
+    for board in PAPER_FULL_BOARDS:
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+        #
+        # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)
+
+        EMD_model_comparison(model1_name="pt_6_6_4_p3_v7", input_plains_num_1=3, max_model1_iter=5000,
+                             model1_check_freq=50, tell_last_move1=False,
+                             model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+                             model2_check_freq=50, tell_last_move2=False,
+                             BOARD=board, n=4, width=6, height=6,
+                             n_playout=400, c_puct=5)

@@ -282,23 +282,17 @@ class MCTSPlayer(object):
 
         fontsize = 15
 
-        if hasattr(self, 'player'):
 
-            my_marker = "X" if self.player == 1 else "O"
+        my_marker = "X" if self.player == 1 else "O"
 
-            if self.player == 1:
-                x_positions = board.current_state()[0]
-                o_positions = board.current_state()[1]
-            else:
-                x_positions = board.current_state()[1]
-                o_positions = board.current_state()[0]
-
-        else:
-            # This is training time. Make sure that in the board you've sent, its X's turn to play (or as you wish)
-            my_marker = "X"
-
+        if self.player == 1:
             x_positions = board.current_state()[0]
             o_positions = board.current_state()[1]
+        else:
+            x_positions = board.current_state()[1]
+            o_positions = board.current_state()[0]
+
+
 
         x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
         y_axis = range(height, 0, -1)
