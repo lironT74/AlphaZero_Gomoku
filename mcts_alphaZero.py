@@ -5,7 +5,7 @@ network to guide the tree search and evaluate the leaf nodes
 
 @author: Junxiao Song
 """
-
+import string
 import numpy as np
 import copy
 import matplotlib as mpl
@@ -198,9 +198,9 @@ class MCTSPlayer(object):
     def reset_player(self):
         self.mcts.update_with_move(-1)
 
-    def get_action(self, board, temp=1e-3, return_prob=0, **kwargs):
-        sensible_moves = board.availables
+    def get_action(self, board, temp=1e-3, return_prob=False, **kwargs):
 
+        sensible_moves = board.availables
 
         return_fig = kwargs.get('return_fig', False)
         show_fig = kwargs.get('show_fig', False)
@@ -234,17 +234,34 @@ class MCTSPlayer(object):
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
             if return_fig:
-                buf = self.create_probas_heatmap(acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, board.width,
-                                                 board.height, self.name, board, return_fig=True, show_fig=False)
+                buf =self.create_probas_heatmap(acts_policy=acts_policy,
+                                               probas_policy=probas_policy,
+                                               acts_mcts=acts_mcts,
+                                               probas_mcts=probas_mcts,
+                                               visits_mcts=visits_mcts,
+                                               width=board.width,
+                                               height=board.height,
+                                               board=board,
+                                               return_fig=True,
+                                               show_fig=False)
 
                 if return_prob:
                     return move, move_probs, buf
                 else:
                     return move, buf
+
             else:
                 if show_fig:
-                    self.create_probas_heatmap(acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, board.width,
-                                               board.height, self.name, board, return_fig=False, show_fig=True)
+                    self.create_probas_heatmap(acts_policy=acts_policy,
+                                               probas_policy=probas_policy,
+                                               acts_mcts=acts_mcts,
+                                               probas_mcts=probas_mcts,
+                                               visits_mcts=visits_mcts,
+                                               width=board.width,
+                                               height=board.height,
+                                               board=board,
+                                               return_fig=False,
+                                               show_fig=True)
 
                 if return_prob:
                     return move, move_probs
@@ -258,7 +275,7 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
 
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, name, board, return_fig=False, show_fig=False):
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, board, return_fig=False, show_fig=False):
 
         if return_fig:
             mpl.use('Agg')
@@ -283,11 +300,14 @@ class MCTSPlayer(object):
             x_positions = board.current_state()[0]
             o_positions = board.current_state()[1]
 
-        y_axis = range(width - 1, -1, -1)
-        x_axis = range(0, height, 1)
+        x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
+        y_axis = range(height, 0, -1)
 
         # fig, axes = plt.subplots(2, figsize=(10,15))
         fig, axes = plt.subplots(1, 3, figsize=(25,10))
+
+
+        fig.suptitle(f"Model: {self.name}, MCTS playouts: {self.mcts._n_playout}", fontsize=fontsize+5)
 
         (ax1, ax2, ax3) = axes
 
@@ -366,13 +386,9 @@ class MCTSPlayer(object):
                                 ha="center", va="center", color="w", fontsize=fontsize)
         ax3.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize + 4)
 
-
-
-
-
-
-
         fig.tight_layout()
+
+        fig.subplots_adjust(top=0.88)
 
         if return_fig:
             buf = io.BytesIO()

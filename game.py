@@ -7,6 +7,9 @@ from __future__ import print_function
 import numpy as np
 import copy
 import math
+import PIL.Image
+import matplotlib.pyplot as plt
+import os
 
 WIN_SCORE = 20
 FORCING_BONUS = 10
@@ -166,12 +169,15 @@ class Board(object):
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
 
-    def init_board(self, start_player=0, initial_state=None):
+
+    def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
+
+        last_move_p1 = kwargs.get('last_move_p1', None)
+        last_move_p2 = kwargs.get('last_move_p2', None)
 
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
                             'less than {}'.format(self.n_in_row))
-        self.current_player = self.players[start_player]  # start player
 
         # keep available moves in a list
         self.availables = list(range(self.width * self.height))
@@ -181,40 +187,58 @@ class Board(object):
         self.last_move_p1 = -1
         self.last_move_p2 = -1
 
+        self.start_player = self.players[start_player - 1] # start player
+        self.current_player = self.players[start_player - 1]  # start player
+
         if initial_state is not None:
             p1_moves = np.transpose(np.nonzero(initial_state[0])).tolist()
             p2_moves = np.transpose(np.nonzero(initial_state[1])).tolist()
+
+            if last_move_p1 is not None:
+                try:
+                    p1_moves.remove(last_move_p1)
+                except:
+                    raise Exception("The given last move for player 1 was never played")
+
+                p1_moves.append(last_move_p1)
+
+            if last_move_p2 is not None:
+                try:
+                    p2_moves.remove(last_move_p2)
+                except:
+                    raise Exception("The given last move for player 2 was never played")
+
+                p2_moves.append(last_move_p2)
 
             player_to_moves = {
                 1: p1_moves,
                 2: p2_moves
             }
 
-            self.last_move_p1 = p1_moves[-1] if len(p1_moves) > 0 else -1
-            self.last_move_p2 = p2_moves[-1] if len(p2_moves) > 0 else -1
-
             if abs(len(p1_moves) - len(p2_moves)) > 1:
                 raise Exception("Invalid Board ({}'s turn was skipped)".format(
                     "Player1" if len(p2_moves) > len(p1_moves) else "Player2"))
 
             if len(p1_moves) == len(p2_moves):
-                self.current_player = 1 - start_player
-                ## IT WAS STARTPLAYER + 1 FOR SOME REASON....
-
+                self.current_player = self.players[start_player - 1]  #not the current player, but the one that should start in the coming for loop
+                self.start_player = self.players[start_player - 1]
             else:
                 if len(p1_moves) > len(p2_moves):
-                    self.last_move = self.last_move_p1
-                    self.current_player = self.players[0]
 
-                    if start_player != 0:
-                        raise Exception("It cant be that player 2 was first to play (he made less moves)")
-
-                else:
-                    self.last_move = self.last_move_p2
-                    self.current_player = self.players[1]
+                    self.current_player = self.players[0] #not the current player, but the one that should start in the coming for loop
+                    self.start_player = self.players[0]
 
                     if start_player != 1:
+                        raise Exception("It cant be that player 2 was first to play (he made less moves)")
+
+                elif len(p1_moves) < len(p2_moves):
+
+                    self.current_player = self.players[1] #not the current player, but the one that should start in the coming for loop
+                    self.start_player = self.players[1]
+
+                    if start_player != 2:
                         raise Exception("It cant be that player 1 was first to play (he made less moves)")
+
 
             for i in range(len(p1_moves) + len(p2_moves)):
                 loc = player_to_moves[self.current_player].pop(0)
@@ -222,6 +246,7 @@ class Board(object):
                 move = self.location_to_move(loc)
                 # print(move)
                 self.do_move(move)
+
 
     def move_to_location(self, move):
         """
@@ -265,21 +290,27 @@ class Board(object):
                 square_state[1][move_oppo // self.width,
                                 move_oppo % self.height] = 1.0
 
-            if len(self.states) % 2 == 0:
 
-                if self.last_move_p1 != -1:
-                    # indicate the last move location OF THE CURRENT PLAYER!!!!
-                    square_state[2][self.last_move_p1 // self.width,
-                                    self.last_move_p1 % self.height] = 1.0
+            last_moves = {1: self.last_move_p1, 2: self.last_move_p2}
 
-                square_state[3][:, :] = 1.0  # indicate the colour to play
 
-            else:
+            if len(self.states) % 2 == 0: #start player's turn
 
-                if self.last_move_p2 != -1:
-                    # indicate the last move location OF THE CURRENT PLAYER!!!!
-                    square_state[2][self.last_move_p2 // self.width,
-                                    self.last_move_p2 % self.height] = 1.0
+                if last_moves[self.start_player] != -1: #if there is a last move
+                    square_state[2][last_moves[self.start_player] // self.width,
+                                    last_moves[self.start_player] % self.height] = 1.0
+
+                square_state[3][:, :] = self.start_player - 1  # indicate the color to play (0-Player1, 1-Player2)
+
+
+            elif len(self.states) % 2 != 0: #other player's turn
+
+                if last_moves[3 - self.start_player] != -1:  # if there is a last move
+                    square_state[2][last_moves[3 - self.start_player] // self.width,
+                                    last_moves[3 - self.start_player] % self.height] = 1.0
+
+                square_state[3][:, :] = (3 - self.start_player) - 1  # indicate the color to play (0-Player1, 1-Player2)
+
 
             return square_state[:, ::-1, :]
 
@@ -296,8 +327,13 @@ class Board(object):
                 square_state[1][move_oppo // self.width,
                                 move_oppo % self.height] = 1.0
 
+
             if len(self.states) % 2 == 0:
-                square_state[2][:, :] = 1.0  # indicate the colour to play
+                square_state[2][:, :] = self.start_player - 1  # indicate the color to play (0-Player1, 1-Player2)
+
+            else:
+                square_state[2][:, :] = (3 - self.start_player) - 1  # indicate the color to play (0-Player1, 1-Player2)
+
 
             return square_state[:, ::-1, :]
 
@@ -412,6 +448,10 @@ class Board(object):
                     else:
                         scores[:, row, col] = 0
 
+            if normalized_density_scores:
+                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
+
+            return scores
 
         # TODO: Ask Ofra/Yuval what should we do with all the other cases -
         #  1. Should we give a special score to the "sure loss moves"
@@ -930,27 +970,48 @@ class Game(object):
                     print('_'.center(8), end='')
             print('\r\n\r\n')
 
-    def start_play(self, player1, player2, start_player=0, is_shown=1, start_board=None, **kwargs):
-        """start a game between two players"""
-        if start_player not in (0, 1):
-            raise Exception('start_player should be either 0 (player1 first) '
-                            'or 1 (player2 first)')
+    def start_play(self, player1, player2, start_player=1, is_shown=1, start_board=None, **kwargs):
 
-        self.board.init_board(start_player, start_board)
+        last_move_p1 = kwargs.get('last_move_p1', None)
+        last_move_p2 = kwargs.get('last_move_p2', None)
+        savefig = kwargs.get('savefig', False)
+
+        """start a game between two players"""
+        if start_player not in (1, 2):
+            raise Exception('start_player should be either 1 (player1 first) '
+                            'or 2 (player2 first)')
+
+        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
 
         p1, p2 = self.board.players
         player1.set_player_ind(p1)
         player2.set_player_ind(p2)
         players = {p1: player1, p2: player2}
 
+        counter = 0
+
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
         while True:
+            counter+=1
             current_player = self.board.get_current_player()
             player_in_turn = players[current_player]
 
-            if is_shown: #then show heatmaps too
+            if is_shown: #then show heatmaps to
                 move = player_in_turn.get_action(self.board, show_fig=True)
+
+            elif savefig:
+                move, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True)
+                image = PIL.Image.open(heatmap_buf)
+
+                started = '(1 started)' if start_player == 1 else '(2 started)'
+                path = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{player1.name} vs {player2.name} {started}/'
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+                plt.savefig(path + f"{counter}.png")
+                plt.close('all')
+
             else:
                 move = player_in_turn.get_action(self.board)
 
@@ -974,6 +1035,7 @@ class Game(object):
         self.board.init_board()
         p1, p2 = self.board.players
         states, mcts_probs, current_players = [], [], []
+
         while True:
             move, move_probs = player.get_action(self.board,
                                                  temp=temp,

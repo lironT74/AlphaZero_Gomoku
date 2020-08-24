@@ -25,8 +25,12 @@ from tensorboardX import SummaryWriter
 import PIL.Image
 from torchvision.transforms import ToTensor
 
-WRITER_DIR = './runs/pt_6_6_4_p4_v5_training'
-MODEL_DIR = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v5'
+MODEL_NAME="pt_6_6_4_p4_v10"
+INPUT_PLANES_NUM = 4
+
+
+WRITER_DIR = f'./runs/{MODEL_NAME}_training'
+MODEL_DIR = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{MODEL_NAME}'
 
 class TrainPipeline():
     def __init__(self, init_model=None):
@@ -62,14 +66,14 @@ class TrainPipeline():
         self.check_freq = 50
         self.game_batch_num = 5000
 
-        self.improvement_counter = 100
+        self.improvement_counter = 1000
         self.best_win_ratio = 0.0
 
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
         self.pure_mcts_playout_num = 1000
 
-        self.input_plains_num = 4
+        self.input_plains_num = INPUT_PLANES_NUM
 
         if init_model:
             # start training from an initial policy-value net
@@ -238,6 +242,8 @@ class TrainPipeline():
 
             for i in range(self.game_batch_num):
 
+                self.writer.add_scalar('MCTS playouts num', self.pure_mcts_playout_num, i + 1)
+
                 self.collect_selfplay_data(self.play_batch_size)
 
                 print("batch i:{}, episode_len:{}".format(
@@ -257,9 +263,6 @@ class TrainPipeline():
 
                     self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i+1}.model')
 
-                    # Should better do this after training
-                    # self.save_heatmap(iteration=i)
-
                     if win_ratio > self.best_win_ratio:
 
                         self.writer.add_text('best model savings', 'better model found', i + 1)
@@ -272,8 +275,10 @@ class TrainPipeline():
                         # update the best_policy
                         # self.policy_value_net.save_model(f'{MODEL_DIR}/best_policy.model')
 
-                        if (self.best_win_ratio == 1.0 and
-                                self.pure_mcts_playout_num < 5000):
+                        # if (self.best_win_ratio == 1.0 and
+                        #         self.pure_mcts_playout_num < 5000):
+
+                        if self.best_win_ratio == 1.0:
                             self.pure_mcts_playout_num += 1000
                             self.best_win_ratio = 0.0
 
@@ -293,36 +298,6 @@ class TrainPipeline():
         except KeyboardInterrupt:
             print('\n\rquit')
 
-    def save_heatmap(self, iteration):
-
-        policy_copy = copy.deepcopy(self.policy_value_net)
-        player = MCTSPlayer(policy_copy.policy_value_fn, c_puct=self.c_puct, n_playout=self.n_playout)
-
-        board = self.initialize_paper_board()
-        _,heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
-
-        image = PIL.Image.open(heatmap_buf)
-        image = ToTensor()(image)
-
-        self.writer.add_image(tag='Heatmap on paper board',
-                              img_tensor=image,
-                              global_step=iteration + 1)
-
-    def initialize_paper_board(self):
-        board_paper = np.array([
-            [0, 1, 0, 2, 0, 0],
-            [0, 2, 1, 1, 0, 0],
-            [1, 2, 2, 2, 1, 0],
-            [2, 0, 1, 1, 2, 0],
-            [1, 0, 2, 2, 0, 0],
-            [0, 0, 0, 0, 0, 0]])
-        board_paper = np.flipud(board_paper)
-        i_board = np.zeros((2, self.board_height, self.board_width))
-        i_board[0] = board_paper == 1
-        i_board[1] = board_paper == 2
-        board = Board(width=self.board_width, height=self.board_height, n_in_row=self.n_in_row)
-        board.init_board(start_player=1, initial_state=i_board)
-        return board
 
 
 if __name__ == '__main__':
