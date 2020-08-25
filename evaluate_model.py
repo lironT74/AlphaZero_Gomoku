@@ -128,6 +128,7 @@ def initialize_board(board_height, board_width, input_board, n_in_row = 4, start
     i_board = np.zeros((2, board_height, board_width))
     i_board[0] = board == 1
     i_board[1] = board == 2
+
     board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
     board.init_board(start_player=start_player, initial_state=i_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
     return board
@@ -370,7 +371,7 @@ def generate_matrix_dist_metric(dim, norm=True):
 if __name__ == "__main__":
 
 
-    # for board in PAPER_TRUNCATED_BOARDS:
+    # for board in PAPER_TRUNCATED_BOARDS[1:]:
         # EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
         #                      model1_check_freq=50, tell_last_move1=True,
         #                      model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
@@ -422,9 +423,23 @@ if __name__ == "__main__":
         #                      BOARD=board, n=4, width=6, height=6,
         #                      n_playout=400, c_puct=5)
 
-        EMD_model_comparison(model1_name="pt_6_6_4_p3_v7", input_plains_num_1=3, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=False,
+        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+                             model1_check_freq=50, tell_last_move1=True,
+                             model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
+                             model2_check_freq=50, tell_last_move2=False,
+                             BOARD=board, n=4, width=6, height=6,
+                             n_playout=400, c_puct=5)
+
+        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
+                             model1_check_freq=50, tell_last_move1=True,
                              model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
                              model2_check_freq=50, tell_last_move2=False,
                              BOARD=board, n=4, width=6, height=6,
                              n_playout=400, c_puct=5)
+
+        # EMD_model_comparison(model1_name="pt_6_6_4_p3_v7", input_plains_num_1=3, max_model1_iter=5000,
+        #                      model1_check_freq=50, tell_last_move1=False,
+        #                      model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
+        #                      model2_check_freq=50, tell_last_move2=False,
+        #                      BOARD=board, n=4, width=6, height=6,
+        #                      n_playout=400, c_puct=5)

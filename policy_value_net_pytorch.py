@@ -161,6 +161,7 @@ class PolicyValueNet():
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
                 -1, self.input_plains_num , self.board_width, self.board_height))
 
+
         if self.use_gpu:
             log_act_probs, value = self.policy_value_net(
                     Variable(torch.from_numpy(current_state)).cuda(device=self.cuda_to_use).float())

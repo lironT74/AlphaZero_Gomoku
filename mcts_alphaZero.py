@@ -186,11 +186,13 @@ class MCTSPlayer(object):
     """AI player based on MCTS"""
 
     def __init__(self, policy_value_function,
-                 c_puct=5, n_playout=2000, is_selfplay=0, name="MCTS"):
+                 c_puct=5, n_playout=2000, is_selfplay=0, name="MCTS", **kwargs):
 
         self.mcts = MCTS(policy_value_function, c_puct, n_playout, name)
         self._is_selfplay = is_selfplay
         self.name = name
+
+        self.input_planes_num = kwargs.get("input_planes_num", 4) #default does receive last turn
 
     def set_player_ind(self, p):
         self.player = p

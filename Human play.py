@@ -50,6 +50,13 @@ class Human(object):
     def __str__(self):
         return "Human {}".format(self.player)
 
+EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]]), "empty board", None, None)
+
 BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
                 [1, 2, 2, 2, 1, 0],
@@ -78,19 +85,19 @@ BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 1, 0, 0, 0, 0],
                     [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0])
 
+PAPER_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+PAPER_FULL_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 
-def initialize_paper_board(board_width, board_height, n_in_row, input_board = BOARD_1_FULL[0]):
-    board_paper = input_board
-    board_paper = np.flipud(board_paper)
+
+def initialize_board(board_height, board_width, n_in_row, input_board):
+
+    board = input_board
+    board = np.flipud(board)
     i_board = np.zeros((2, board_height, board_width))
-    i_board[0] = board_paper == 1
-    i_board[1] = board_paper == 2
-
+    i_board[0] = board == 1
+    i_board[1] = board == 2
     board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
-
-    # board.init_board(start_player=1, initial_state=i_board)
     return i_board, board
-
 
 
 def run():
@@ -108,7 +115,9 @@ def run():
 
     try:
 
-        i_board, board = initialize_paper_board(width, height, n, input_board=np.zeros((width, height)))
+        initial_board = np.zeros((width, height))
+
+        i_board, board = initialize_board(width, height, n, input_board=initial_board)
 
         game = Game(board)
 
