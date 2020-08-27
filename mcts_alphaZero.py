@@ -192,7 +192,7 @@ class MCTSPlayer(object):
         self._is_selfplay = is_selfplay
         self.name = name
 
-        self.input_planes_num = kwargs.get("input_planes_num", 4) #default does receive last turn
+        self.input_plains_num = kwargs.get("input_plains_num", 4) #default does receive last turn
 
     def set_player_ind(self, p):
         self.player = p
@@ -212,6 +212,14 @@ class MCTSPlayer(object):
         if len(sensible_moves) > 0:
 
             acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
+
+
+            if self.input_plains_num==4:
+                y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
+                x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+                last_move = f"last move: {x_last_move}{y_last_move}"
+            else:
+                last_move = "No last move"
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
@@ -244,6 +252,7 @@ class MCTSPlayer(object):
                                                width=board.width,
                                                height=board.height,
                                                board=board,
+                                               last_move=last_move,
                                                return_fig=True,
                                                show_fig=False)
 
@@ -262,6 +271,7 @@ class MCTSPlayer(object):
                                                width=board.width,
                                                height=board.height,
                                                board=board,
+                                               last_move=last_move,
                                                return_fig=False,
                                                show_fig=True)
 
@@ -277,7 +287,7 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
 
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, board, return_fig=False, show_fig=False):
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, board, last_move, return_fig=False, show_fig=False):
 
         if return_fig:
             mpl.use('Agg')
@@ -295,7 +305,6 @@ class MCTSPlayer(object):
             o_positions = board.current_state()[0]
 
 
-
         x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
         y_axis = range(height, 0, -1)
 
@@ -303,7 +312,7 @@ class MCTSPlayer(object):
         fig, axes = plt.subplots(1, 3, figsize=(25,10))
 
 
-        fig.suptitle(f"Model: {self.name}, MCTS playouts: {self.mcts._n_playout}", fontsize=fontsize+5)
+        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move})\nMCTS playouts: {self.mcts._n_playout}", fontsize=fontsize+5)
 
         (ax1, ax2, ax3) = axes
 
@@ -380,7 +389,7 @@ class MCTSPlayer(object):
                 text = ax3.text(j, i, "X" if x_positions[i, j] == 1 else (
                     "O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
-        ax3.set_title(f"Probas of the MCTS which plays {my_marker} ", fontsize=fontsize + 4)
+        ax3.set_title(f"Probas of the MCTS", fontsize=fontsize + 4)
 
         fig.tight_layout()
 

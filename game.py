@@ -977,7 +977,6 @@ class Game(object):
         savefig = kwargs.get('savefig', False)
         board_name = kwargs.get('board_name', 'empty board')
 
-
         main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
         if not os.path.exists(main_path1):
             main_path2 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player2.name} vs {player1.name}/'
@@ -988,12 +987,8 @@ class Game(object):
         else:
             main_path = main_path1
 
-        last_move_str_1 = " with last move " if last_move_p1 is not None and player1.input_planes_num==4 else " "
-        last_move_str_2 = " with last move " if last_move_p2 is not None and player1.input_planes_num==4 else " "
-
-        started = '(1 started)' if start_player == 1 else '(2 started)'
-        path = f'{main_path}{player1.name}{last_move_str_1}vs {player2.name}{last_move_str_2}{started}/'
-
+        last_move_str_1 = " with last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
+        last_move_str_2 = " with last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
 
         """start a game between two players"""
         if start_player not in (1, 2):
@@ -1001,6 +996,16 @@ class Game(object):
                             'or 2 (player2 first)')
 
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+
+        current_player = self.board.get_current_player()
+
+        if board_name == 'empty board':
+            first = '(1 started)' if start_player == 1 else '(2 started)'
+        else:
+            first = '(1 continued)' if current_player == 1 else '(2 continued)'
+
+        path = f'{main_path}{player1.name}{last_move_str_1}vs {player2.name}{last_move_str_2}{first}/'
+
 
         p1, p2 = self.board.players
         player1.set_player_ind(p1)
@@ -1014,6 +1019,7 @@ class Game(object):
         while True:
             counter+=1
             current_player = self.board.get_current_player()
+
             player_in_turn = players[current_player]
 
             if is_shown: #then show heatmaps to
@@ -1046,7 +1052,8 @@ class Game(object):
                 #     else:
                 #         print("Game end. Tie")
 
-                os.rename(path[:-1], path[:-1] + f" ({winner} won)")
+                if savefig:
+                    os.rename(path[:-1], path[:-1] + f" ({winner} won)")
 
                 return winner
 

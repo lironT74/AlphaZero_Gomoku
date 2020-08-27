@@ -97,6 +97,7 @@ def initialize_board(board_height, board_width, n_in_row, input_board):
     i_board[0] = board == 1
     i_board[1] = board == 2
     board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
+    board.init_board(start_player=2, initial_state=i_board)
     return i_board, board
 
 
@@ -110,22 +111,21 @@ def run():
 
     model_1_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_2100.model'
 
-    # model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model'
-    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_3500.model'
+    model_2_file = '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model'
 
     try:
 
-        initial_board = np.zeros((width, height))
+        initial_board = BOARD_1_TRUNCATED[0]
 
         i_board, board = initialize_board(width, height, n, input_board=initial_board)
 
         game = Game(board)
 
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100")
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
 
-        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=3)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v9_3500")
+        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
+        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000", input_plains_num=4)
 
         # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
         # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
@@ -136,14 +136,14 @@ def run():
         start_player = 2
 
 
-        for i in range(2):
-            winner = game.start_play(mcts_player_1, mcts_player_2,
+        for i in range(1):
+            winner = game.start_play(player2=mcts_player_1, player1=mcts_player_2,
                                      start_player=start_player,
-                                     is_shown=0,
+                                     is_shown=1,
                                      start_board=i_board,
                                      last_move_p1=None,
                                      last_move_p2=None,
-                                     savefig=1)
+                                     savefig=0)
 
             results[winner] += 1
             start_player = 3 - start_player
