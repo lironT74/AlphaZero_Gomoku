@@ -27,6 +27,13 @@ BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 1, 0, 0, 0, 0],
                     [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0])
 
+EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]]), "empty board", None, None)
+
 PAPER_FULL_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 
 PAPER_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]

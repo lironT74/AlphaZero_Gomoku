@@ -12,146 +12,8 @@ import matplotlib.pyplot as plt
 import os
 
 WIN_SCORE = 20
-FORCING_BONUS = 10
+FORCING_BONUS = 5
 OPPONENT_THREAT_SCORE = 15
-
-class BoardSlim(object):
-    """board for the game"""
-
-    def __init__(self, **kwargs):
-        self.width = int(kwargs.get('width', 8))
-        self.height = int(kwargs.get('height', 8))
-        # board states stored as a dict,
-        # key: move as location on the board,
-        # value: player as pieces type
-        self.states = {}
-        # need how many pieces in a row to win
-        self.n_in_row = int(kwargs.get('n_in_row', 5))
-        self.players = [1, 2]  # player1 and player2
-
-    def init_board(self, start_player=1, initial_state=None):
-        if self.width < self.n_in_row or self.height < self.n_in_row:
-            raise Exception('board width and height can not be '
-                            'less than {}'.format(self.n_in_row))
-        self.current_player = self.players[start_player - 1]  # start player
-        # keep available moves in a list
-        self.availables = list(range(self.width * self.height))
-        self.states = {}
-        self.last_move = -1
-
-        if initial_state is not None:
-            p1_moves = np.transpose(np.nonzero(initial_state[0])).tolist()
-            p2_moves = np.transpose(np.nonzero(initial_state[1])).tolist()
-            player_to_moves = {
-                1: p1_moves,
-                2: p2_moves
-            }
-
-            if len(p1_moves) == len(p2_moves):
-                self.current_player = start_player
-            else:
-                self.current_player = (start_player % 2) + 1
-            for i in range(len(p1_moves) + len(p2_moves)):
-                loc = player_to_moves[self.current_player].pop(0)
-                print(loc)
-                move = self.location_to_move(loc)
-                print(move)
-                self.do_move(move)
-
-    def move_to_location(self, move):
-        """
-        3*3 board's moves like:
-        6 7 8
-        3 4 5
-        0 1 2
-        and move 5's location is (1,2)
-        """
-        h = move // self.width
-        w = move % self.width
-        return [h, w]
-
-    def location_to_move(self, location):
-        if len(location) != 2:
-            return -1
-        h = location[0]
-        w = location[1]
-        move = h * self.width + w
-        if move not in range(self.width * self.height):
-            return -1
-        return move
-
-    def current_state(self):
-        """return the board state from the perspective of the current player.
-        state shape: 4*width*height
-        """
-
-        square_state = np.zeros((2, self.width, self.height))
-        if self.states:
-            moves, players = np.array(list(zip(*self.states.items())))
-            move_curr = moves[players == self.current_player]
-            move_oppo = moves[players != self.current_player]
-            square_state[0][move_curr // self.width,
-                            move_curr % self.height] = 1.0
-            square_state[1][move_oppo // self.width,
-                            move_oppo % self.height] = 1.0
-
-        return square_state[:, ::-1, :]
-
-    def do_move(self, move):
-        self.states[move] = self.current_player
-        self.availables.remove(move)
-
-        self.current_player = (
-            self.players[0] if self.current_player == self.players[1]
-            else self.players[1]
-        )
-
-        self.last_move = move
-
-    def has_a_winner(self):
-        width = self.width
-        height = self.height
-        states = self.states
-        n = self.n_in_row
-
-        moved = list(set(range(width * height)) - set(self.availables))
-        if len(moved) < self.n_in_row * 2 - 1:
-            return False, -1
-
-        for m in moved:
-            h = m // width
-            w = m % width
-            player = states[m]
-
-            if (w in range(width - n + 1) and
-                    len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
-                return True, player
-
-            if (h in range(height - n + 1) and
-                    len(set(states.get(i, -1) for i in range(m, m + n * width, width))) == 1):
-                return True, player
-
-            if (w in range(width - n + 1) and h in range(height - n + 1) and
-                    len(set(states.get(i, -1) for i in range(m, m + n * (width + 1), width + 1))) == 1):
-                return True, player
-
-            if (w in range(n - 1, width) and h in range(height - n + 1) and
-                    len(set(states.get(i, -1) for i in range(m, m + n * (width - 1), width - 1))) == 1):
-                return True, player
-
-        return False, -1
-
-    def game_end(self):
-        """Check whether the game is ended or not"""
-        win, winner = self.has_a_winner()
-        if win:
-            return True, winner
-        elif not len(self.availables):
-            return True, -1
-        return False, -1
-
-    def get_current_player(self):
-        return self.current_player
 
 
 class Board(object):
@@ -168,7 +30,6 @@ class Board(object):
         # need how many pieces in a row to win
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
-
 
     def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
 
@@ -246,7 +107,6 @@ class Board(object):
                 move = self.location_to_move(loc)
                 # print(move)
                 self.do_move(move)
-
 
     def move_to_location(self, move):
         """
@@ -399,18 +259,17 @@ class Board(object):
         return self.current_player
 
     def calc_all_heuristics(self,
-                            exp,
-                            o_weight,
+                            exp = 1,
                             last_move=True,
                             normalized_density_scores=False,
-                            density='reg',
-                            sig=3,
+                            normalize_all_heuristics=False,
+                            density= 'reg',
+                            sig = 3,
                             max_radius_density=-1):
 
         board_state = self.current_state(last_move=last_move)
         cur_positions = np.flipud(board_state[0])
         opponent_positions = np.flipud(board_state[1])
-
 
         width = self.width
         height = self.height
@@ -448,8 +307,17 @@ class Board(object):
                     else:
                         scores[:, row, col] = 0
 
-            if normalized_density_scores:
-                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
+            if normalize_all_heuristics:
+                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
+                                                        opponent_positions)
+                scores[1, :, :] = scores[0, :, :]
+                scores[2, :, :] = scores[0, :, :]
+                scores[3, :, :] = scores[0, :, :]
+                scores[4, :, :] = scores[0, :, :]
+
+            elif normalized_density_scores:
+                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
+                                                        opponent_positions)
 
             return scores
 
@@ -464,8 +332,7 @@ class Board(object):
             for col in range(height):
                 row_hat, col_hat = row + radius, col + radius
 
-                if cur_positions[row, col] or opponent_positions[row, col]:  # taken squares get -1
-                    scores[:, row, col] = -1
+                if cur_positions[row, col] or opponent_positions[row, col]:
                     continue
 
                 if (row, col) in immediate_threats or (row, col) in unavoidable_traps:
@@ -494,6 +361,7 @@ class Board(object):
                 scores[1, row, col] = all_features_but_blocking["linear"]
                 scores[2, row, col] = all_features_but_blocking["nonlinear"]
                 scores[3, row, col] = all_features_but_blocking["interaction"]
+                scores[4, row, col] = all_features_but_blocking["interaction"]
 
                 if max_path == self.n_in_row-2:
                     scores[4, row, col] += FORCING_BONUS
@@ -505,9 +373,15 @@ class Board(object):
                 #                                                opponent_positions,
                 #                                                o_weight)
 
+        if normalize_all_heuristics:
+            scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
+            scores[1, :, :] = self.normalize_matrix(scores[1, :, :], width, height, cur_positions, opponent_positions)
+            scores[2, :, :] = self.normalize_matrix(scores[2, :, :], width, height, cur_positions, opponent_positions)
+            scores[3, :, :] = self.normalize_matrix(scores[3, :, :], width, height, cur_positions, opponent_positions)
+            scores[4, :, :] = self.normalize_matrix(scores[4, :, :], width, height, cur_positions, opponent_positions)
 
-        if normalized_density_scores:
-            scores[0,:,:] = self.normalize_matrix(scores[0,:,:], width, height, cur_positions, opponent_positions)
+        elif normalized_density_scores:
+            scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
 
         return scores
 
@@ -904,31 +778,39 @@ class Board(object):
 
     @staticmethod
     def normalize_matrix(scores, width, height, cur_positions, opponent_positions):
-        sum_scores = 0.0
-        counter = 0.0
-        for r in range(width):
-            for j in range(height):
-                if cur_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'X':"
-                    scores[r][j] = -0.00001
-                elif opponent_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'O':"
-                    scores[r][j] = -0.00002
-                else:
-                    counter += 1.0
-                    if scores[r][j] > 0:
-                        sum_scores += scores[r][j]
+        # sum_scores = 0.0
+        # counter = 0.0
+        # for r in range(width):
+        #     for j in range(height):
+        #         if cur_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'X':"
+        #             scores[r][j] = -0.00001
+        #         elif opponent_positions[r][j]:  # Originially: "if score_matrix[r][j] == 'O':"
+        #             scores[r][j] = -0.00002
+        #         else:
+        #             counter += 1.0
+        #             if scores[r][j] > 0:
+        #                 sum_scores += scores[r][j]
+        #
+        # for r in range(len(scores)):
+        #     for c in range(len(scores[r])):
+        #         if (scores[r][c] != -0.00001) & (scores[r][c] != -0.00002):
+        #             if sum_scores == 0:
+        #                 scores[r][c] = 1.0 / counter
+        #             else:
+        #                 # TODO: change if we don't want to eliminate negative scores
+        #                 if scores[r][c] >= 0:
+        #                     scores[r][c] = scores[r][c] / sum_scores
+        #                 else:
+        #                     scores[r][c] = 0
 
-        for r in range(len(scores)):
-            for c in range(len(scores[r])):
-                if (scores[r][c] != -0.00001) & (scores[r][c] != -0.00002):
-                    if sum_scores == 0:
-                        scores[r][c] = 1.0 / counter
-                    else:
-                        # TODO: change if we don't want to eliminate negative scores
-                        if scores[r][c] >= 0:
-                            scores[r][c] = scores[r][c] / sum_scores
-                        else:
-                            scores[r][c] = 0
 
+        sum = np.sum(scores)
+        # counter_positive_values = len(np.where(scores > 0)[0])
+
+        if sum != 0:
+            return scores/sum
+
+        #all zeros:
         return scores
 
     @staticmethod
@@ -987,8 +869,8 @@ class Game(object):
         else:
             main_path = main_path1
 
-        last_move_str_1 = " with last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
-        last_move_str_2 = " with last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
+        last_move_str_1 = " with correct last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
+        last_move_str_2 = " with correct last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
 
         """start a game between two players"""
         if start_player not in (1, 2):
@@ -1024,8 +906,6 @@ class Game(object):
 
             if is_shown: #then show heatmaps to
                 move = player_in_turn.get_action(self.board, show_fig=True)
-
-                # print(self.board.current_state()[2])
 
             elif savefig:
                 move, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True)
@@ -1125,3 +1005,142 @@ class Game(object):
                 elif winner == p2:
                     reward = -1
                 return reward, zip(states, moves)
+
+
+# class BoardSlim(object):
+#     """board for the game"""
+#
+#     def __init__(self, **kwargs):
+#         self.width = int(kwargs.get('width', 8))
+#         self.height = int(kwargs.get('height', 8))
+#         # board states stored as a dict,
+#         # key: move as location on the board,
+#         # value: player as pieces type
+#         self.states = {}
+#         # need how many pieces in a row to win
+#         self.n_in_row = int(kwargs.get('n_in_row', 5))
+#         self.players = [1, 2]  # player1 and player2
+#
+#     def init_board(self, start_player=1, initial_state=None):
+#         if self.width < self.n_in_row or self.height < self.n_in_row:
+#             raise Exception('board width and height can not be '
+#                             'less than {}'.format(self.n_in_row))
+#         self.current_player = self.players[start_player - 1]  # start player
+#         # keep available moves in a list
+#         self.availables = list(range(self.width * self.height))
+#         self.states = {}
+#         self.last_move = -1
+#
+#         if initial_state is not None:
+#             p1_moves = np.transpose(np.nonzero(initial_state[0])).tolist()
+#             p2_moves = np.transpose(np.nonzero(initial_state[1])).tolist()
+#             player_to_moves = {
+#                 1: p1_moves,
+#                 2: p2_moves
+#             }
+#
+#             if len(p1_moves) == len(p2_moves):
+#                 self.current_player = start_player
+#             else:
+#                 self.current_player = (start_player % 2) + 1
+#             for i in range(len(p1_moves) + len(p2_moves)):
+#                 loc = player_to_moves[self.current_player].pop(0)
+#                 print(loc)
+#                 move = self.location_to_move(loc)
+#                 print(move)
+#                 self.do_move(move)
+#
+#     def move_to_location(self, move):
+#         """
+#         3*3 board's moves like:
+#         6 7 8
+#         3 4 5
+#         0 1 2
+#         and move 5's location is (1,2)
+#         """
+#         h = move // self.width
+#         w = move % self.width
+#         return [h, w]
+#
+#     def location_to_move(self, location):
+#         if len(location) != 2:
+#             return -1
+#         h = location[0]
+#         w = location[1]
+#         move = h * self.width + w
+#         if move not in range(self.width * self.height):
+#             return -1
+#         return move
+#
+#     def current_state(self):
+#         """return the board state from the perspective of the current player.
+#         state shape: 4*width*height
+#         """
+#
+#         square_state = np.zeros((2, self.width, self.height))
+#         if self.states:
+#             moves, players = np.array(list(zip(*self.states.items())))
+#             move_curr = moves[players == self.current_player]
+#             move_oppo = moves[players != self.current_player]
+#             square_state[0][move_curr // self.width,
+#                             move_curr % self.height] = 1.0
+#             square_state[1][move_oppo // self.width,
+#                             move_oppo % self.height] = 1.0
+#
+#         return square_state[:, ::-1, :]
+#
+#     def do_move(self, move):
+#         self.states[move] = self.current_player
+#         self.availables.remove(move)
+#
+#         self.current_player = (
+#             self.players[0] if self.current_player == self.players[1]
+#             else self.players[1]
+#         )
+#
+#         self.last_move = move
+#
+#     def has_a_winner(self):
+#         width = self.width
+#         height = self.height
+#         states = self.states
+#         n = self.n_in_row
+#
+#         moved = list(set(range(width * height)) - set(self.availables))
+#         if len(moved) < self.n_in_row * 2 - 1:
+#             return False, -1
+#
+#         for m in moved:
+#             h = m // width
+#             w = m % width
+#             player = states[m]
+#
+#             if (w in range(width - n + 1) and
+#                     len(set(states.get(i, -1) for i in range(m, m + n))) == 1):
+#                 return True, player
+#
+#             if (h in range(height - n + 1) and
+#                     len(set(states.get(i, -1) for i in range(m, m + n * width, width))) == 1):
+#                 return True, player
+#
+#             if (w in range(width - n + 1) and h in range(height - n + 1) and
+#                     len(set(states.get(i, -1) for i in range(m, m + n * (width + 1), width + 1))) == 1):
+#                 return True, player
+#
+#             if (w in range(n - 1, width) and h in range(height - n + 1) and
+#                     len(set(states.get(i, -1) for i in range(m, m + n * (width - 1), width - 1))) == 1):
+#                 return True, player
+#
+#         return False, -1
+#
+#     def game_end(self):
+#         """Check whether the game is ended or not"""
+#         win, winner = self.has_a_winner()
+#         if win:
+#             return True, winner
+#         elif not len(self.availables):
+#             return True, -1
+#         return False, -1
+#
+#     def get_current_player(self):
+#         return self.current_player

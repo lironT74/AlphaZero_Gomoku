@@ -41,7 +41,7 @@ v10_5000 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_
 MODELS_TO_MATCH = [v10_5000, v9_3500, v7_2100]
 
 
-def compare_all_models(models_list=MODELS_TO_MATCH, width=6, height=6, n=4):
+def compare_all_models(models_list, width=6, height=6, n=4):
     for i in range(len(models_list)):
         for j in range(i+1, len(models_list)):
             compare_two_models(models_list[i], models_list[j], width, height, n)
@@ -49,14 +49,14 @@ def compare_all_models(models_list=MODELS_TO_MATCH, width=6, height=6, n=4):
 
 def compare_two_models(model1, model2, width, height, n):
 
-    path1, name1, planes1 = model1
-    path2, name2, planes2 = model2
+    path1, name1, plains1 = model1
+    path2, name2, plains2 = model2
 
-    best_policy_1 = PolicyValueNet(width, height, model_file=path1, input_plains_num=planes1)
-    mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name=name1, input_plains_num=planes1)
+    best_policy_1 = PolicyValueNet(width, height, model_file=path1, input_plains_num=plains1)
+    mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name=name1, input_plains_num=plains1)
 
-    best_policy_2 = PolicyValueNet(width, height, model_file=path2, input_plains_num=planes2)
-    mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name=name2, input_plains_num=planes2)
+    best_policy_2 = PolicyValueNet(width, height, model_file=path2, input_plains_num=plains2)
+    mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name=name2, input_plains_num=plains2)
 
 
     for board_state, board_name, p1, p2 in PAPER_TRUNCATED_BOARDS:
@@ -73,7 +73,7 @@ def compare_two_models(model1, model2, width, height, n):
                       start_player=2)
 
 
-        if planes1+planes2 >= 7:
+        if plains1+plains2 >= 7:
                 save_game_res(width=width,
                               height=height,
                               n=n,
@@ -85,7 +85,7 @@ def compare_two_models(model1, model2, width, height, n):
                               last_move_p2=None,
                               start_player=2)
 
-        if planes1+planes2 == 8:
+        if plains1+plains2 == 8:
 
             save_game_res(width=width,
                           height=height,
@@ -161,4 +161,4 @@ def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts
 
 
 if __name__ == '__main__':
-    compare_all_models()
+    compare_all_models(models_list=MODELS_TO_MATCH)

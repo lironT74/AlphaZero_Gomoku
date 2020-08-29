@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io
 
+
 def softmax(x):
     probs = np.exp(x - np.max(x))
     probs /= np.sum(probs)
@@ -192,7 +193,7 @@ class MCTSPlayer(object):
         self._is_selfplay = is_selfplay
         self.name = name
 
-        self.input_plains_num = kwargs.get("input_plains_num", 4) #default does receive last turn
+        self.input_plains_num = kwargs.get("input_plains_num", 4)  # default does receive last turn
 
     def set_player_ind(self, p):
         self.player = p
@@ -213,8 +214,11 @@ class MCTSPlayer(object):
 
             acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
 
+            # Check if model receives last move
+            # and if there is a last move indicated - in the start of empty board
+            # game there is no last move.
 
-            if self.input_plains_num==4:
+            if self.input_plains_num == 4 and np.sum(board.current_state(last_move=True)[2]) == 1:
                 y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
                 x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
                 last_move = f"last move: {x_last_move}{y_last_move}"
@@ -244,17 +248,17 @@ class MCTSPlayer(object):
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
             if return_fig:
-                buf =self.create_probas_heatmap(acts_policy=acts_policy,
-                                               probas_policy=probas_policy,
-                                               acts_mcts=acts_mcts,
-                                               probas_mcts=probas_mcts,
-                                               visits_mcts=visits_mcts,
-                                               width=board.width,
-                                               height=board.height,
-                                               board=board,
-                                               last_move=last_move,
-                                               return_fig=True,
-                                               show_fig=False)
+                buf = self.create_probas_heatmap(acts_policy=acts_policy,
+                                                 probas_policy=probas_policy,
+                                                 acts_mcts=acts_mcts,
+                                                 probas_mcts=probas_mcts,
+                                                 visits_mcts=visits_mcts,
+                                                 width=board.width,
+                                                 height=board.height,
+                                                 board=board,
+                                                 last_move=last_move,
+                                                 return_fig=True,
+                                                 show_fig=False)
 
                 if return_prob:
                     return move, move_probs, buf
@@ -286,36 +290,44 @@ class MCTSPlayer(object):
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
 
-
-    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height, board, last_move, return_fig=False, show_fig=False):
+    def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
+                              board, last_move, return_fig=False, show_fig=False):
 
         if return_fig:
             mpl.use('Agg')
 
         fontsize = 15
 
+        if hasattr(self, 'player'):
 
-        my_marker = "X" if self.player == 1 else "O"
+            my_marker = "X" if self.player == 1 else "O"
 
-        if self.player == 1:
+            if self.player == 1:
+                x_positions = board.current_state()[0]
+                o_positions = board.current_state()[1]
+            else:
+                x_positions = board.current_state()[1]
+                o_positions = board.current_state()[0]
+
+        else:
+            # This is not a game, maybe just heatmaps savings. Make sure that in the board you've sent, its X's turn
+            # to play (or as you wish)
+            my_marker = "X"
+
             x_positions = board.current_state()[0]
             o_positions = board.current_state()[1]
-        else:
-            x_positions = board.current_state()[1]
-            o_positions = board.current_state()[0]
 
 
         x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
         y_axis = range(height, 0, -1)
 
         # fig, axes = plt.subplots(2, figsize=(10,15))
-        fig, axes = plt.subplots(1, 3, figsize=(25,10))
+        fig, axes = plt.subplots(1, 3, figsize=(25, 10))
 
-
-        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move})\nMCTS playouts: {self.mcts._n_playout}", fontsize=fontsize+5)
+        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move})\nMCTS playouts: {self.mcts._n_playout}",
+                     fontsize=fontsize + 5)
 
         (ax1, ax2, ax3) = axes
-
 
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
@@ -338,8 +350,7 @@ class MCTSPlayer(object):
                 text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else (
                     "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
-        ax1.set_title("Probas of the policy value fn", fontsize=fontsize+4)
-
+        ax1.set_title("Probas of the policy value fn", fontsize=fontsize + 4)
 
         normalized_visits = np.zeros(width * height)
         visits_mcts = visits_mcts / np.sum(visits_mcts)
@@ -364,8 +375,6 @@ class MCTSPlayer(object):
                     "O" if o_positions[i, j] == 1 else normalized_visits[i, j]),
                                 ha="center", va="center", color="w", fontsize=fontsize)
         ax2.set_title("Normalized visit counts of MCTS", fontsize=fontsize + 4)
-
-
 
         move_probs_mcts = np.zeros(width * height)
         move_probs_mcts[list(acts_mcts)] = probas_mcts
@@ -403,6 +412,3 @@ class MCTSPlayer(object):
 
         elif show_fig:
             plt.show()
-
-
-
