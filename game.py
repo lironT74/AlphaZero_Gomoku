@@ -859,19 +859,6 @@ class Game(object):
         savefig = kwargs.get('savefig', False)
         board_name = kwargs.get('board_name', 'empty board')
 
-        main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
-        if not os.path.exists(main_path1):
-            main_path2 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player2.name} vs {player1.name}/'
-            if not os.path.exists(main_path2):
-                main_path = main_path1
-            else:
-                main_path = main_path2
-        else:
-            main_path = main_path1
-
-        last_move_str_1 = " with correct last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
-        last_move_str_2 = " with correct last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
-
         """start a game between two players"""
         if start_player not in (1, 2):
             raise Exception('start_player should be either 1 (player1 first) '
@@ -879,14 +866,28 @@ class Game(object):
 
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
 
-        current_player = self.board.get_current_player()
+        if savefig:
+            main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
+            if not os.path.exists(main_path1):
+                main_path2 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player2.name} vs {player1.name}/'
+                if not os.path.exists(main_path2):
+                    main_path = main_path1
+                else:
+                    main_path = main_path2
+            else:
+                main_path = main_path1
 
-        if board_name == 'empty board':
-            first = '(1 started)' if start_player == 1 else '(2 started)'
-        else:
-            first = '(1 continued)' if current_player == 1 else '(2 continued)'
+            last_move_str_1 = " with correct last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
+            last_move_str_2 = " with correct last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
 
-        path = f'{main_path}{player1.name}{last_move_str_1}vs {player2.name}{last_move_str_2}{first}/'
+            current_player = self.board.get_current_player()
+
+            if board_name == 'empty board':
+                first = '(1 started)' if start_player == 1 else '(2 started)'
+            else:
+                first = '(1 continued)' if current_player == 1 else '(2 continued)'
+
+            path = f'{main_path}{player1.name}{last_move_str_1}vs {player2.name}{last_move_str_2}{first}/'
 
 
         p1, p2 = self.board.players
@@ -898,6 +899,7 @@ class Game(object):
 
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
+
         while True:
             counter+=1
             current_player = self.board.get_current_player()
