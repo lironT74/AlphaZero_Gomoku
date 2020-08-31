@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from policy_value_net_pytorch import PolicyValueNet
 import io
 import PIL
+import string
 
 def initialize_board(board_height, board_width, input_board, n_in_row = 4, start_player=2, **kwargs):
 
@@ -26,48 +27,38 @@ def initialize_board(board_height, board_width, input_board, n_in_row = 4, start
     return board
 
 
-def create_collages_boards(boards_list):
+def create_collages_boards(listofimages, fig_name, path):
+    im_check = PIL.Image.open(listofimages[0])
+    width1, height1 = im_check.size
+    width = width1
+    height = len(listofimages) * height1
 
-    for _, board_name, _, _ in boards_list:
-        path = '/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/'
-
-        # listofimages = [f'{x[0]}/{board_name}.png' for x in os.walk(path)]
-        # listofimages = listofimages[1:]
-
-        models = ["pt_6_6_4_p3_v7", "pt_6_6_4_p3_v9", "pt_6_6_4_p4_v10"]
-        listofimages = [f"{path}{model_name}/{board_name}.png" for model_name in models]
-
-        im_check = PIL.Image.open(listofimages[0])
-        width1, height1 = im_check.size
-        width = width1
-        height = len(listofimages) * height1
-
-        cols = 1
-        rows = len(listofimages)
+    cols = 1
+    rows = len(listofimages)
 
 
-        thumbnail_width = width // cols
-        thumbnail_height = height // rows
-        size = thumbnail_width, thumbnail_height
-        new_im = PIL.Image.new('RGB', (width, height))
-        ims = []
-        for p in listofimages:
-            im = PIL.Image.open(p)
-            im.thumbnail(size)
-            ims.append(im)
-        i = 0
-        x = 0
+    thumbnail_width = width // cols
+    thumbnail_height = height // rows
+    size = thumbnail_width, thumbnail_height
+    new_im = PIL.Image.new('RGB', (width, height))
+    ims = []
+    for p in listofimages:
+        im = PIL.Image.open(p)
+        im.thumbnail(size)
+        ims.append(im)
+    i = 0
+    x = 0
+    y = 0
+    for col in range(cols):
+        for row in range(rows):
+            # print(i, x, y)
+            new_im.paste(ims[i], (x, y))
+            i += 1
+            y += thumbnail_height
+        x += thumbnail_width
         y = 0
-        for col in range(cols):
-            for row in range(rows):
-                # print(i, x, y)
-                new_im.paste(ims[i], (x, y))
-                i += 1
-                y += thumbnail_height
-            x += thumbnail_width
-            y = 0
 
-        new_im.save(path + f"{board_name} all models.png")
+    new_im.save(path + f"{fig_name}.png")
 
 
 def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, **kwargs):
@@ -79,14 +70,15 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
 
 
     dist_matrix = generate_matrix_dist_metric(6)
-    board_state, board_name, last_move_p1, last_move_p2 = game_board
+    board_state, board_name, last_move_p1, last_move_p2, alternative_p1, alternative_p2 = game_board
 
     if tell_last_move:
         board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
                                   last_move_p2=last_move_p2)
     else:
-        board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=None,
-                                  last_move_p2=None)
+        board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=alternative_p1,
+                                  last_move_p2=alternative_p2)
+
 
     heuristics_scores = board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=True)
 
@@ -152,7 +144,16 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sun model no.", fontsize=fontsize)
-    ax.set_title(f"{model_name} EMD distances from heuristics on {board_name}", fontdict={'fontsize': fontsize+15})
+
+    if input_plains_num == 4 and np.sum(board.current_state(last_move=True)[2]) == 1:
+        y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
+        x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+        last_move = f" (last move - {x_last_move}{y_last_move})"
+    else:
+        last_move = ""
+
+
+    ax.set_title(f"{model_name}{last_move} EMD distances from heuristics on {board_name}", fontdict={'fontsize': fontsize+15})
 
     h, l = ax.get_legend_handles_labels()
 
@@ -163,16 +164,21 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
 
     fig.tight_layout()
 
-
     buf = io.BytesIO()
     plt.savefig(buf, format='jpeg')
     buf.seek(0)
     image = PIL.Image.open(buf)
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/{model_name}/"
+
     if not os.path.exists(path):
         os.makedirs(path)
-    plt.savefig(f"{path}{board_name}.png")
+
+    if last_move != "":
+        plt.savefig(f"{path}{board_name}{last_move}.png")
+    else:
+        plt.savefig(f"{path}{board_name}.png")
+
     plt.close('all')
 
 
@@ -334,35 +340,143 @@ def generate_models_emd_comparison():
 
 
 
+def heuristics_heatmaps(game_board, height=6, width=6, n=4):
+
+    board_state, board_name, last_move_p1, last_move_p2, alternative_p1, alternative_p2 = game_board
+    board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
+                             last_move_p2=last_move_p2)
+    heuristics_scores = np.round(board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=True), 3)
+
+    heuristics_names = ["density", "linear", "nonlinear", "interaction", "interaction with forcing"]
+
+    x_positions = board.current_state()[0]
+    o_positions = board.current_state()[1]
+
+    fontsize = 15
+    fig, axes = plt.subplots(1, 5, figsize=(35, 8))
+    fig.suptitle(f"Heuristics heatmaps on {board_name}", fontsize=fontsize + 10)
+    x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
+    y_axis = range(height, 0, -1)
+
+    for k in range(5):
+        ax = axes[k]
+
+        move_probs_policy = heuristics_scores[k]
+
+        im1 = ax.imshow(move_probs_policy, cmap='jet')
+        divider1 = make_axes_locatable(ax)
+        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
+        fig.colorbar(im1, ax=ax, cax=cax1).ax.tick_params(labelsize=fontsize)
+
+        ax.set_xticks(np.arange(len(x_axis)))
+        ax.set_yticks(np.arange(len(y_axis)))
+
+        ax.set_xticklabels(x_axis, fontsize=fontsize)
+        ax.set_yticklabels(y_axis, fontsize=fontsize)
+        plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                ha="center", va="center", color="w", fontsize=fontsize)
+
+        ax.set_title(f"{heuristics_names[k]}", fontsize=fontsize + 4)
+
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/heuristics_heatmaps/"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    plt.savefig(f"{path}{board_name}.png")
+
+    plt.close('all')
+
+def call_collage():
+    listofimages_empty = [
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v7/empty board.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v9/empty board.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/empty board.png",
+    ]
+
+    listofimages_full_1 = [
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v7/board 1 full.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v9/board 1 full.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 1 full (last move - b6).png",
+        ]
+
+    listofimages_full_2 = [
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v7/board 2 full.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v9/board 2 full.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 2 full (last move - e6).png",
+    ]
+
+    listofimages_truncated_1 = [
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v7/board 1 truncated.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v9/board 1 truncated.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 1 truncated (last move - a2).png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 1 truncated (last move - f3).png"]
+
+    listofimages_truncated_2 = [
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v7/board 2 truncated.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p3_v9/board 2 truncated.png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 2 truncated (last move - b2).png",
+        "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/pt_6_6_4_p4_v10/board 2 truncated (last move - d6).png"]
+
+    path = "/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/"
+
+    create_collages_boards(listofimages=listofimages_empty, fig_name="empty board all models", path=path)
+    create_collages_boards(listofimages=listofimages_full_1, fig_name="board 1 full all models", path=path)
+    create_collages_boards(listofimages=listofimages_full_2, fig_name="board 2 full all models", path=path)
+    create_collages_boards(listofimages=listofimages_truncated_1, fig_name="board 1 truncated all models", path=path)
+    create_collages_boards(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
+
 
 if __name__ == "__main__":
     # generate_models_emd_comparison()
 
     BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
 
-    # for game_board in BOARDS:
-        # compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
-        #                             input_plains_num=4,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             tell_last_move=True,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6)
-        #
-        # compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
-        #                             input_plains_num=3,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             tell_last_move=True,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6)
-        #
-        # compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
-        #                             input_plains_num=3,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             tell_last_move=True,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6)
+    for game_board in BOARDS:
+        compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
+                                    input_plains_num=4,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    tell_last_move=True,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6)
 
-    create_collages_boards(BOARDS)
+        compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
+                                    input_plains_num=4,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    tell_last_move=False,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6)
+    #
+        compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
+                                    input_plains_num=3,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    tell_last_move=True,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6)
+
+        compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
+                                    input_plains_num=3,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    tell_last_move=True,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6)
+
+    call_collage()
+
+    for BOARD in BOARDS:
+        heuristics_heatmaps(BOARD)

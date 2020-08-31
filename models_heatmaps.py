@@ -7,6 +7,7 @@ from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
 import os
 from Game_boards import *
+import multiprocessing
 
 def initialize_board(board_height, board_width, input_board, n_in_row = 4, start_player=2, **kwargs):
 
@@ -29,7 +30,6 @@ def save_heatmaps(model_name,
                   input_plains_num,
                   save_to_tensorboard=False,
                   save_to_local=True,
-                  tell_last_move=True,
                   max_model_iter = 5000,
                   model_check_freq=50,
                   width=6,
@@ -48,8 +48,8 @@ def save_heatmaps(model_name,
         if not os.path.exists(heatmap_save_path):
             os.makedirs(heatmap_save_path)
 
-        board_state, board_name, p1, p2 = EMPTY_BOARD
-        board = initialize_board(height, width, input_board=board_state, n_in_row=n)
+        board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
+        board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
         save_heatmap_for_board_and_model(
                                     model_name,
                                     width, height,
@@ -60,8 +60,10 @@ def save_heatmaps(model_name,
                                     save_to_local, save_to_tensorboard, writer,
                                     i, heatmap_save_path)
 
-        for board_state, board_name, p1, p2 in PAPER_FULL_BOARDS:
-            board = initialize_board(height, width, input_board=board_state, n_in_row=n)
+        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
+
+            board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
+
             save_heatmap_for_board_and_model(
                                     model_name,
                                     width, height,
@@ -72,11 +74,16 @@ def save_heatmaps(model_name,
                                     save_to_local, save_to_tensorboard, writer,
                                     i, heatmap_save_path)
 
-        for board_state, board_name, p1, p2 in PAPER_TRUNCATED_BOARDS:
+        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
 
             board = initialize_board(height, width,
                                      input_board=board_state,
-                                     n_in_row=n)
+                                     n_in_row=n, last_move_p1=p1, last_move_p2=p2)
+
+            if input_plains_num == 4:
+                board_name_1 = board_name + " with correct last move"
+            else:
+                board_name_1 = board_name
 
             save_heatmap_for_board_and_model(
                                     model_name,
@@ -84,20 +91,17 @@ def save_heatmaps(model_name,
                                     input_plains_num,
                                     c_puct,
                                     n_playout,
-                                    board, board_name,
+                                    board, board_name_1,
                                     save_to_local, save_to_tensorboard, writer,
                                     i, heatmap_save_path)
 
-            if tell_last_move and input_plains_num == 4: #save truncated with last move too
-
-                p1_last_move, p2_last_move = p1, p2
-                board_name_correct_last_move = board_name + " with correct last move"
+            if input_plains_num == 4: #save truncated with alternative last moves too
 
                 board = initialize_board(height, width,
                                          input_board=board_state,
                                          n_in_row=n,
-                                         last_move_p1=p1_last_move,
-                                         last_move_p2=p2_last_move)
+                                         last_move_p1=alternative_p1,
+                                         last_move_p2=alternative_p2)
 
                 save_heatmap_for_board_and_model(
                                         model_name,
@@ -105,7 +109,7 @@ def save_heatmaps(model_name,
                                         input_plains_num,
                                         c_puct,
                                         n_playout,
-                                        board, board_name_correct_last_move,
+                                        board, board_name,
                                         save_to_local, save_to_tensorboard, writer,
                                         i, heatmap_save_path)
 
@@ -187,7 +191,23 @@ def save_heatmap_for_board_and_model(
     plt.close('all')
 
 
+
 if __name__ == "__main__":
+    # args_v7 = ('pt_6_6_4_p3_v7', 3)
+    # args_v9 = ('pt_6_6_4_p3_v9', 3)
+    # args_v10 =('pt_6_6_4_p4_v10',4)
+    #
+    # models_args = [args_v7, args_v9, args_v10]
+    # processes = []
+    #
+    # for args_model in models_args:
+    #     p = multiprocessing.Process(target=save_heatmaps, args=args_model)
+    #     processes.append(p)
+    #     p.start()
+    #
+    # for process in processes:
+    #     process.join()
+
     save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
     save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
     save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)

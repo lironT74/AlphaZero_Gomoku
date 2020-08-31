@@ -1,38 +1,44 @@
 import numpy as np
+
+
+
 BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
                 [1, 2, 2, 2, 1, 0],
                 [2, 0, 1, 1, 2, 0],
                 [1, 0, 2, 2, 0, 0],
-                [0, 0, 0, 0, 0, 0]]), "board 1 full", None, None)
+                [0, 0, 0, 0, 0, 0]]), "board 1 full", None, None, None, None)
 
 BOARD_1_TRUNCATED = (np.array([[0, 1, 2, 2, 0, 0],
                     [0, 2, 1, 1, 0, 0],
                     [1, 2, 2, 2, 1, 0],
                     [2, 0, 1, 1, 2, 1],
                     [1, 0, 2, 2, 0, 0],
-                    [0, 0, 0, 0, 0, 0]]), "board 1 truncated", [2, 5], [5, 2])
+                    [0, 0, 0, 0, 0, 0]]), "board 1 truncated", [2, 5], [5, 2], [1, 0], [2, 0])
 
 BOARD_2_FULL =  (np.array([[0, 2, 0, 0, 1, 0],
                     [0, 2, 1, 2, 0, 0],
                     [0, 1, 0, 0, 0, 0],
                     [0, 1, 0, 2, 0, 0],
                     [0, 1, 0, 0, 0, 0],
-                    [0, 2, 0, 0, 2, 0]]), "board 2 full", None, None)
+                    [0, 2, 0, 0, 2, 0]]), "board 2 full", None, None, None, None)
 
 BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 2, 1, 2, 0, 0],
                     [0, 1, 0, 0, 0, 0],
                     [2, 1, 0, 2, 0, 0],
                     [0, 1, 0, 0, 0, 0],
-                    [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0])
+                    [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0], [1, 1], [4, 3])
+
+
+
 
 EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0]]), "empty board", None, None)
+                [0, 0, 0, 0, 0, 0]]), "empty board", None, None, None, None)
 
 PAPER_FULL_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 

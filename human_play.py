@@ -143,6 +143,8 @@ def run():
                                      start_board=i_board,
                                      last_move_p1=None,
                                      last_move_p2=None,
+                                     correct_move_p1=None,
+                                     correct_move_p2=None,
                                      savefig=0)
 
             results[winner] += 1

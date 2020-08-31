@@ -363,9 +363,11 @@ class Board(object):
 
                 scores[1, row, col] = all_features_but_blocking["linear"]
                 scores[2, row, col] = all_features_but_blocking["nonlinear"]
-                scores[3, row, col] = all_features_but_blocking["interaction"]
-                scores[4, row, col] = scores[3, row, col]
 
+                scores[3, row, col] = scores[2, row, col]
+                scores[3, row, col] += all_features_but_blocking["interaction"]
+
+                scores[4, row, col] = scores[3, row, col]
 
                 if max_path == self.n_in_row-2:
                     scores[4, row, col] = scores[4, row, col] + FORCING_BONUS
@@ -875,6 +877,11 @@ class Game(object):
 
         last_move_p1 = kwargs.get('last_move_p1', None)
         last_move_p2 = kwargs.get('last_move_p2', None)
+
+        correct_move_p1 = kwargs.get('correct_move_p1', None)
+        correct_move_p2 = kwargs.get('correct_move_p2', None)
+
+
         savefig = kwargs.get('savefig', False)
         board_name = kwargs.get('board_name', 'empty board')
 
@@ -883,7 +890,9 @@ class Game(object):
             raise Exception('start_player should be either 1 (player1 first) '
                             'or 2 (player2 first)')
 
+
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+
 
         if savefig:
             main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
@@ -896,8 +905,10 @@ class Game(object):
             else:
                 main_path = main_path1
 
-            last_move_str_1 = " with correct last move " if last_move_p1 is not None and player1.input_plains_num == 4 else " "
-            last_move_str_2 = " with correct last move " if last_move_p2 is not None and player2.input_plains_num == 4 else " "
+
+            last_move_str_1 = " with correct last move " if last_move_p1==correct_move_p1 and player1.input_plains_num == 4 and correct_move_p1 is not None else " "
+            last_move_str_2 = " with correct last move " if last_move_p2==correct_move_p2 and player2.input_plains_num == 4 and correct_move_p2 is not None else " "
+
 
             current_player = self.board.get_current_player()
 
