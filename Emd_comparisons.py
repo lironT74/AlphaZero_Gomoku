@@ -31,9 +31,11 @@ def create_collages_boards(boards_list):
     for _, board_name, _, _ in boards_list:
         path = '/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/'
 
-        listofimages = [f'{x[0]}/{board_name}.png' for x in os.walk(path)]
+        # listofimages = [f'{x[0]}/{board_name}.png' for x in os.walk(path)]
+        # listofimages = listofimages[1:]
 
-        listofimages = listofimages[1:]
+        models = ["pt_6_6_4_p3_v7", "pt_6_6_4_p3_v9", "pt_6_6_4_p4_v10"]
+        listofimages = [f"{path}{model_name}/{board_name}.png" for model_name in models]
 
         im_check = PIL.Image.open(listofimages[0])
         width1, height1 = im_check.size
@@ -86,12 +88,15 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
         board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=None,
                                   last_move_p2=None)
 
-    heuristics_scores = board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=False)
+    heuristics_scores = board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=True)
+
 
     models_num = max_model_iter//model_check_freq
     model_list = range(model_check_freq, max_model_iter+model_check_freq, model_check_freq)
 
     distances_lists = np.zeros((heuristics_scores.shape[0], models_num))
+
+    distances_base_models = np.zeros(heuristics_scores.shape[0])
 
     for index_i, i in enumerate(model_list):
         model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
@@ -111,6 +116,20 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
 
             distances_lists[j, index_i] = distance
 
+    for j in range(heuristics_scores.shape[0]):
+
+        policy = PolicyValueNet(width, height, model_file=f'/home/lirontyomkin/AlphaZero_Gomoku/models/best_policy_6_6_4.model', input_plains_num=4)
+        acts_policy, probas_policy = zip(*policy.policy_value_fn(board)[0])
+
+        move_probs_policy = np.zeros(width * height)
+        move_probs_policy[list(acts_policy)] = probas_policy
+        move_probs_policy = move_probs_policy.reshape(width, height)
+        move_probs_policy = np.flipud(move_probs_policy)
+
+        distances_base_models[j] = emd(np.asarray(np.reshape(move_probs_policy, width*height), dtype='float64'),
+                                       np.asarray(np.reshape(heuristics_scores[j], width*height), dtype='float64'),
+                                       dist_matrix)
+
 
     fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30,10))
 
@@ -123,6 +142,12 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     ax.plot(range(models_num), distances_lists[3], label=f"interaction", color="orange", linewidth=linewidth)
     ax.plot(range(models_num), distances_lists[4], label=f"forcing", color="black", linewidth=linewidth)
 
+    ax.scatter(models_num + 1, distances_base_models[0], marker='o', label=f"base model - density", color="blue", linewidth=2*linewidth)
+    ax.scatter(models_num + 2, distances_base_models[1], marker='o', label=f"base model - linear", color="red", linewidth=2*linewidth)
+    ax.scatter(models_num + 3, distances_base_models[2], marker='o', label=f"base model - non-linear", color="green", linewidth=2*linewidth)
+    ax.scatter(models_num + 4, distances_base_models[3], marker='o', label=f"base model - interaction", color="orange", linewidth=2*linewidth)
+    ax.scatter(models_num + 5, distances_base_models[4], marker='o', label=f"base model - forcing", color="black", linewidth=2*linewidth)
+
     ax.set_xticks(range(models_num))
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
@@ -130,10 +155,14 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     ax.set_title(f"{model_name} EMD distances from heuristics on {board_name}", fontdict={'fontsize': fontsize+15})
 
     h, l = ax.get_legend_handles_labels()
-    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=5, fontsize=fontsize+5)
+
+    ord = [0,5,1,6,2,7,3,8,4,9]
+
+    lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=5, fontsize=fontsize+5)
     lax.axis("off")
 
     fig.tight_layout()
+
 
     buf = io.BytesIO()
     plt.savefig(buf, format='jpeg')
@@ -144,7 +173,7 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     if not os.path.exists(path):
         os.makedirs(path)
     plt.savefig(f"{path}{board_name}.png")
-
+    plt.close('all')
 
 
 def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model1_check_freq,
@@ -224,7 +253,7 @@ def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model
     image = PIL.Image.open(buf)
 
     plt.savefig(f"{save_path}on {board_name}.png")
-
+    plt.close('all')
 
 def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
                                    model2_name, input_plains_num_2, i2,
@@ -269,8 +298,10 @@ def generate_matrix_dist_metric(dim, norm=True):
     return distances
 
 
-def Generate_models_emd_comparison():
-    for board in PAPER_TRUNCATED_BOARDS[1:]:
+def generate_models_emd_comparison():
+    BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
+
+    for board in BOARDS:
         EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
                              model1_check_freq=50, tell_last_move1=True,
                              model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
@@ -301,69 +332,37 @@ def Generate_models_emd_comparison():
                              model2_check_freq=50, tell_last_move2=False,
                              game_board=board, n=4, width=6, height=6)
 
-    for board in PAPER_FULL_BOARDS:
-        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=False,
-                             model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
-                             model2_check_freq=50, tell_last_move2=False,
-                             game_board=board, n=4, width=6, height=6)
 
-        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=False,
-                             model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
-                             model2_check_freq=50, tell_last_move2=False,
-                             game_board=board, n=4, width=6, height=6)
-
-        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=True,
-                             model2_name="pt_6_6_4_p3_v7", input_plains_num_2=3, max_model2_iter=5000,
-                             model2_check_freq=50, tell_last_move2=False,
-                             game_board=board, n=4, width=6, height=6)
-
-        EMD_model_comparison(model1_name="pt_6_6_4_p4_v10", input_plains_num_1=4, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=True,
-                             model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
-                             model2_check_freq=50, tell_last_move2=False,
-                             game_board=board, n=4, width=6, height=6)
-
-        EMD_model_comparison(model1_name="pt_6_6_4_p3_v7", input_plains_num_1=3, max_model1_iter=5000,
-                             model1_check_freq=50, tell_last_move1=False,
-                             model2_name="pt_6_6_4_p3_v9", input_plains_num_2=3, max_model2_iter=5000,
-                             model2_check_freq=50, tell_last_move2=False,
-                             game_board=board, n=4, width=6, height=6)
 
 
 if __name__ == "__main__":
-    # Generate_models_emd_comparison()
+    # generate_models_emd_comparison()
 
     BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
 
     # for game_board in BOARDS:
-    #     compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
-    #                                 input_plains_num=4,
-    #                                 model_check_freq=50,
-    #                                 max_model_iter=5000,
-    #                                 tell_last_move=True,
-    #                                 game_board=game_board,
-    #                                 n=4, width=6, height=6
-    #                                 )
-    #
-    #     compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
-    #                                 input_plains_num=3,
-    #                                 model_check_freq=50,
-    #                                 max_model_iter=5000,
-    #                                 tell_last_move=True,
-    #                                 game_board=game_board,
-    #                                 n=4, width=6, height=6
-    #                                 )
-    #
-    #     compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
-    #                                 input_plains_num=3,
-    #                                 model_check_freq=50,
-    #                                 max_model_iter=5000,
-    #                                 tell_last_move=True,
-    #                                 game_board=game_board,
-    #                                 n=4, width=6, height=6
-    #                                 )
+        # compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
+        #                             input_plains_num=4,
+        #                             model_check_freq=50,
+        #                             max_model_iter=5000,
+        #                             tell_last_move=True,
+        #                             game_board=game_board,
+        #                             n=4, width=6, height=6)
+        #
+        # compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
+        #                             input_plains_num=3,
+        #                             model_check_freq=50,
+        #                             max_model_iter=5000,
+        #                             tell_last_move=True,
+        #                             game_board=game_board,
+        #                             n=4, width=6, height=6)
+        #
+        # compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
+        #                             input_plains_num=3,
+        #                             model_check_freq=50,
+        #                             max_model_iter=5000,
+        #                             tell_last_move=True,
+        #                             game_board=game_board,
+        #                             n=4, width=6, height=6)
 
     create_collages_boards(BOARDS)

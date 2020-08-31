@@ -1,5 +1,5 @@
 from mcts_alphaZero import MCTSPlayer
-from game import Board, Game, BoardSlim
+from game import Board, Game
 from tensorboardX import SummaryWriter
 from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 import PIL.Image
@@ -48,6 +48,17 @@ def save_heatmaps(model_name,
         if not os.path.exists(heatmap_save_path):
             os.makedirs(heatmap_save_path)
 
+        board_state, board_name, p1, p2 = EMPTY_BOARD
+        board = initialize_board(height, width, input_board=board_state, n_in_row=n)
+        save_heatmap_for_board_and_model(
+                                    model_name,
+                                    width, height,
+                                    input_plains_num,
+                                    c_puct,
+                                    n_playout,
+                                    board, board_name,
+                                    save_to_local, save_to_tensorboard, writer,
+                                    i, heatmap_save_path)
 
         for board_state, board_name, p1, p2 in PAPER_FULL_BOARDS:
             board = initialize_board(height, width, input_board=board_state, n_in_row=n)
@@ -177,8 +188,7 @@ def save_heatmap_for_board_and_model(
 
 
 if __name__ == "__main__":
-    # save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
-    # save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
-    # save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)
-    pass
+    save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
+    save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
+    save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)
 

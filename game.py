@@ -319,6 +319,9 @@ class Board(object):
                 scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
                                                         opponent_positions)
 
+            for i in range(scores.shape[0]):
+                scores[i] = np.flipud(scores[i])
+
             return scores
 
         # TODO: Ask Ofra/Yuval what should we do with all the other cases -
@@ -361,10 +364,12 @@ class Board(object):
                 scores[1, row, col] = all_features_but_blocking["linear"]
                 scores[2, row, col] = all_features_but_blocking["nonlinear"]
                 scores[3, row, col] = all_features_but_blocking["interaction"]
-                scores[4, row, col] = all_features_but_blocking["interaction"]
+                scores[4, row, col] = scores[3, row, col]
+
 
                 if max_path == self.n_in_row-2:
-                    scores[4, row, col] += FORCING_BONUS
+                    scores[4, row, col] = scores[4, row, col] + FORCING_BONUS
+
 
                 # scores[4, row, col] = self.calc_blocking_bonus(max_path,
                 #                                                row,
@@ -382,6 +387,10 @@ class Board(object):
 
         elif normalized_density_scores:
             scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
+
+
+        for i in range(scores.shape[0]):
+            scores[i] = np.flipud(scores[i])
 
         return scores
 
@@ -805,13 +814,23 @@ class Board(object):
 
 
         sum = np.sum(scores)
-        # counter_positive_values = len(np.where(scores > 0)[0])
+        counter_positive_values = len(np.where(scores > 0)[0])
 
         if sum != 0:
             return scores/sum
 
         #all zeros:
+        counter_not_X_O = width*height - len(np.where(cur_positions == 1)[0]) - len(np.where(opponent_positions == 1)[0])
+
+        for col in range(width):
+            for row in range(height):
+                if cur_positions[row, col] or opponent_positions[row, col]:
+                    continue
+                else:
+                    scores[row,col] = 1/counter_not_X_O
+
         return scores
+
 
     @staticmethod
     def check_path_overlap(empty1, empty2, square_to_ignore=None):

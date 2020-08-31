@@ -166,37 +166,72 @@ def model_againts_mcts(model_name, max_model_iter, model_check_freq, input_plain
 
     _, board_name, _, _ = game_board
 
-    second_arg = model_name, input_plains_num, width, height, n, game_board, n_games, mcts_playout_num
+    all_arguments = model_name, input_plains_num, width, height, n, game_board, n_games, mcts_playout_num
 
-    pool = multiprocessing.Pool()
-    results = pool.starmap(policy_evaluate_againts_mcts, zip(model_list, repeat(second_arg)))
-    pool.close()
+    # pool = multiprocessing.Pool()
+    # results = pool.starmap(policy_evaluate_againts_mcts, zip(model_list, repeat(all_arguments)))
+    # pool.close()
+
+    results = []
+    for i in model_list:
+        results.append(policy_evaluate_againts_mcts(i, all_arguments))
 
     results = sorted(results, key = lambda x: x[0])
 
+    np_results = np.zeros((4, len(model_list)))
+
+    for j in range(1,5,1):
+        np_results[j-1] = [x[j] for x in results]
+
+    to_display = ["win ratio"]
+    save_fig_againts_mcts(np_results, models_num, model_list, model_name, mcts_playout_num, board_name, n_games, to_display)
+
+    to_display = ["wins", "losses", "ties"]
+    save_fig_againts_mcts(np_results, models_num, model_list, model_name, mcts_playout_num, board_name, n_games, to_display)
+
+    save_csv_results_againts_mcts(model_name, model_list, np_results, mcts_playout_num, board_name, n_games)
+
+
+def save_csv_results_againts_mcts(model_name, model_list, np_results, mcts_playout_num, board_name, n_games):
+    columns = [f"{model_name}__{i}" for i in model_list]
+    index = ["wins", "losses", "ties", "wins ratio"]
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs mcts/{model_name}/"
+
+    df = pd.DataFrame(np_results, index=index, columns=columns)
+    df.to_csv(f"{path}vs {mcts_playout_num} playouts MCTS on {board_name} ({n_games} games).csv", index=True, header=True)
+
+
+def save_fig_againts_mcts(np_results, models_num, model_list, model_name, mcts_playout_num, board_name, n_games, to_display):
     fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
 
     fontsize = 17
     linewidth = 3
 
-    # ax.plot(range(models_num), [x[1] for x in results], label=f"wins", color="green", linewidth=linewidth)
-    # ax.plot(range(models_num), [x[2] for x in results], label=f"losses", color="red", linewidth=linewidth)
-    # ax.plot(range(models_num), [x[3] for x in results], label=f"ties", color="yellow", linewidth=linewidth)
-    ax.plot(range(models_num), [x[4] for x in results], label=f"win ratio", color="blue", linewidth=linewidth)
 
+    if "wins" in to_display:
+        ax.plot(range(models_num), np_results[0], label=f"wins", color="green", linewidth=linewidth)
+
+    if "losses" in to_display:
+        ax.plot(range(models_num), np_results[1], label=f"losses", color="red", linewidth=linewidth)
+
+    if "ties" in to_display:
+        ax.plot(range(models_num), np_results[2], label=f"ties", color="yellow", linewidth=linewidth)
+
+    if "win ratio" in to_display:
+        ax.plot(range(models_num), np_results[3], label=f"win ratio", color="blue", linewidth=linewidth)
 
     ax.set_xticks(range(models_num))
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sun model no.", fontsize=fontsize)
-    ax.set_title(f"{model_name} againt MCTS with {mcts_playout_num} playouts on {board_name}, {n_games} games", fontdict={'fontsize': fontsize + 15})
+    ax.set_title(f"{model_name} againt MCTS with {mcts_playout_num} playouts on {board_name}, {n_games} games",
+                 fontdict={'fontsize': fontsize + 15})
 
     h, l = ax.get_legend_handles_labels()
-    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=5, fontsize=fontsize + 5)
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(to_display), fontsize=fontsize + 5)
     lax.axis("off")
 
     fig.tight_layout()
-
 
     buf = io.BytesIO()
     plt.savefig(buf, format='jpeg')
@@ -207,14 +242,9 @@ def model_againts_mcts(model_name, max_model_iter, model_check_freq, input_plain
     if not os.path.exists(path):
         os.makedirs(path)
 
-    plt.savefig(f"{path}vs {mcts_playout_num} playouts MCTS on {board_name} ({n_games} games).png")
-
-    columns = [f"{model_name}__{i}" for i in model_list]
-    index = ["wins", "losses", "ties", "wins ratio"]
-    df = pd.DataFrame(results, index=index, columns=columns)
-    df.to_csv(f"{path}vs {mcts_playout_num} playouts MCTS on {board_name} ({n_games} games).csv", index=True, header=True)
-
+    plt.savefig(f"{path}{model_name} vs {mcts_playout_num} playouts MCTS on {board_name} ({n_games} games, {to_display}).png")
     plt.close('all')
+
 
 def policy_evaluate_againts_mcts(iteration, all_arguments):
 
@@ -264,29 +294,35 @@ def policy_evaluate_againts_mcts(iteration, all_arguments):
 
 
 if __name__ == '__main__':
-    start = time.time()
+    pass
+    # start = time.time()
+    # # model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height, n_games, mcts_playout_num):
+    #
+    # processes = []
+    #
+    # args_v7 = ('pt_6_6_4_p3_v7', 1000, 50, 3, EMPTY_BOARD, 4, 6, 6, 100, 5000)
+    # args_v9 = ('pt_6_6_4_p3_v9', 1000, 50, 3, EMPTY_BOARD, 4, 6, 6, 100, 5000)
+    # args_v10 =('pt_6_6_4_p4_v10', 1000, 50, 4, EMPTY_BOARD, 4, 6, 6, 100, 5000)
+    #
+    # models_args = [args_v7, args_v9, args_v10]
+    #
+    # for args_model in models_args:
+    #     p = multiprocessing.Process(target=model_againts_mcts, args=args_model)
+    #     processes.append(p)
+    #     p.start()
+    #
+    # for process in processes:
+    #     process.join()
+    #
+    # fmt = '{0.days} days {0.hours} hours {0.minutes} minutes {0.seconds} seconds'
+    # end = time.time()
+    #
+    # print("all of it took", fmt.format(rd(seconds = end - start)))
 
-    # model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height, n_games, mcts_playout_num):
+    #
 
-    processes = []
-
-    args_v7 = ('pt_6_6_4_p3_v7', 100, 50, 3, EMPTY_BOARD, 4, 6, 6, 10, 10)
-    args_v9 = ('pt_6_6_4_p3_v9', 100, 50, 3, EMPTY_BOARD, 4, 6, 6, 10, 10)
-    args_v9 = ('pt_6_6_4_p4_v10', 100, 50, 3, EMPTY_BOARD, 4, 6, 6, 10, 10)
-
-    models_args = [args_v7, args_v9]
-
-    for args_model in models_args:
-        p = multiprocessing.Process(target=model_againts_mcts, args=args_model)
-        processes.append(p)
-        p.start()
-
-    for process in processes:
-        process.join()
-
-
-    fmt = '{0.days} days {0.hours} hours {0.minutes} minutes {0.seconds} seconds'
-    end = time.time()
-
-
-    print("all of it took", fmt.format(rd(seconds = end - start)))
+    # args_given_model = ('best_policy_6_6_4.model', 4, 6, 6, 4, EMPTY_BOARD, 100, 5000)
+    # policy_evaluate_againts_mcts(-1, args_given_model)
+    #
+    # args_given_model = ('best_policy_6_6_4.model2', 4, 6, 6, 4, EMPTY_BOARD, 100, 5000)
+    # policy_evaluate_againts_mcts(-1, args_given_model)
