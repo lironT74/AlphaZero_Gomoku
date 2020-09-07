@@ -323,6 +323,7 @@ class MCTSPlayer(object):
 
         # fig, axes = plt.subplots(2, figsize=(10,15))
         fig, axes = plt.subplots(1, 3, figsize=(25, 10))
+        sm = plt.cm.ScalarMappable(cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
 
         fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move})\nMCTS playouts: {self.mcts._n_playout}",
                      fontsize=fontsize + 5)
@@ -335,10 +336,10 @@ class MCTSPlayer(object):
         move_probs_policy = np.flipud(move_probs_policy)
         move_probs_policy = np.round_(move_probs_policy, decimals=3)
 
-        im1 = ax1.imshow(move_probs_policy, cmap='jet')
+        im1 = ax1.imshow(move_probs_policy, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im1, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
+        fig.colorbar(sm, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
 
         ax1.set_xticks(np.arange(len(x_axis)))
         ax1.set_yticks(np.arange(len(y_axis)))
@@ -359,10 +360,10 @@ class MCTSPlayer(object):
         normalized_visits = np.flipud(normalized_visits)
         normalized_visits = np.round_(normalized_visits, decimals=3)
 
-        im2 = ax2.imshow(normalized_visits, cmap='jet')
+        im2 = ax2.imshow(normalized_visits, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
         divider2 = make_axes_locatable(ax2)
         cax2 = divider2.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im2, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
+        fig.colorbar(sm, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
 
         ax2.set_xticks(np.arange(len(x_axis)))
         ax2.set_yticks(np.arange(len(y_axis)))
@@ -382,10 +383,10 @@ class MCTSPlayer(object):
         move_probs_mcts = np.flipud(move_probs_mcts)
         move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
 
-        im3 = ax3.imshow(move_probs_mcts, cmap='jet')
+        im3 = ax3.imshow(move_probs_mcts, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
         divider3 = make_axes_locatable(ax3)
         cax3 = divider3.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im3, ax=ax3, cax=cax3).ax.tick_params(labelsize=fontsize)
+        fig.colorbar(sm, ax=ax3, cax=cax3).ax.tick_params(labelsize=fontsize)
 
         ax3.set_xticks(np.arange(len(x_axis)))
         ax3.set_yticks(np.arange(len(y_axis)))

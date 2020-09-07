@@ -25,9 +25,11 @@ from tensorboardX import SummaryWriter
 import PIL.Image
 from torchvision.transforms import ToTensor
 
-MODEL_NAME="pt_6_6_4_p4_v10"
-INPUT_PLANES_NUM = 4
+# MODEL_NAME="pt_6_6_4_p4_v10"
+# INPUT_PLANES_NUM = 4
 
+MODEL_NAME="pt_10_10_5_p3_v0_1"
+INPUT_PLANES_NUM = 3
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
 MODEL_DIR = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{MODEL_NAME}'
@@ -38,9 +40,9 @@ class TrainPipeline():
         self.writer = SummaryWriter(WRITER_DIR)
 
         # params of the board and the game
-        self.board_width = 6
-        self.board_height = 6
-        self.n_in_row = 4
+        self.board_width = 10
+        self.board_height = 10
+        self.n_in_row = 5
 
         self.board = Board(width=self.board_width,
                            height=self.board_height,

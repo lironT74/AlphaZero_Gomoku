@@ -94,6 +94,7 @@ class PolicyValueNet():
         if self.use_gpu:
             self.cuda_to_use = torch.device('cuda:1')
 
+
         self.board_width = board_width
         self.board_height = board_height
         self.l2_const = 1e-4  # coef of l2 penalty
@@ -106,6 +107,7 @@ class PolicyValueNet():
             self.policy_value_net = Net(self.board_width, self.board_height, self.input_plains_num)
 
         self.optimizer = optim.Adam(self.policy_value_net.parameters(), weight_decay=self.l2_const)
+
 
         if model_file:
 

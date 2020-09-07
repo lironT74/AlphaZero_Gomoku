@@ -1,3 +1,4 @@
+from datetime import datetime
 from mcts_alphaZero import MCTSPlayer
 from game import Board, Game
 from tensorboardX import SummaryWriter
@@ -8,6 +9,7 @@ import matplotlib.pyplot as plt
 import os
 from Game_boards import *
 import multiprocessing
+from multiprocessing import Pool, get_context, Manager
 
 def initialize_board(board_height, board_width, input_board, n_in_row = 4, start_player=2, **kwargs):
 
@@ -190,25 +192,29 @@ def save_heatmap_for_board_and_model(
                          global_step=i)
     plt.close('all')
 
+    now_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    print(f"Done saving: {model_name}_{i} on board {board_name}, {now_time}")
+
+
+
+
 
 
 if __name__ == "__main__":
-    # args_v7 = ('pt_6_6_4_p3_v7', 3)
-    # args_v9 = ('pt_6_6_4_p3_v9', 3)
-    # args_v10 =('pt_6_6_4_p4_v10',4)
-    #
-    # models_args = [args_v7, args_v9, args_v10]
-    # processes = []
-    #
-    # for args_model in models_args:
-    #     p = multiprocessing.Process(target=save_heatmaps, args=args_model)
-    #     processes.append(p)
-    #     p.start()
-    #
-    # for process in processes:
-    #     process.join()
 
-    save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
-    save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
-    save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)
+    args_v7 = ('pt_6_6_4_p3_v7', 3)
+    args_v9 = ('pt_6_6_4_p3_v9', 3)
+    args_v10 =('pt_6_6_4_p4_v10',4)
+
+    models_args = [args_v7, args_v9, args_v10]
+
+    with Pool(20) as pool:
+
+        print(f"Using {pool._processes} workers. There are {len(models_args)} jobs: \n")
+        pool.starmap(save_heatmaps, models_args)
+        pool.close()
+
+    # save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
+    # save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
+    # save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)
 

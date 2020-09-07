@@ -8,7 +8,7 @@ Input your move in the format: 2,3
 
 from __future__ import print_function
 import pickle
-from game import Board, Game, BoardSlim
+from game import Board, Game
 from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
 from policy_value_net_numpy import PolicyValueNetNumpy
