@@ -284,9 +284,6 @@ class Board(object):
         if max_radius_density != -1:
             radius = min(radius, max_radius_density)
 
-        cur_positions_padded = np.zeros((width + 2 * radius, height + 2 * radius))
-        cur_positions_padded[radius:radius + width, radius:radius + height] = cur_positions
-
         gaussian_kernel = []
         if density == 'guassian':
             # create guassians for each X square
@@ -337,6 +334,11 @@ class Board(object):
         #     (the ones that guarantee opponent's win if we play them)?
         #  2. If sure_loss==True, which means that there is a trap which the current player can't avoid,
         #     (in another words, sure loss moves == all available moves) what should we do?
+
+
+
+        cur_positions_padded = np.zeros((width + 2 * radius, height + 2 * radius))
+        cur_positions_padded[radius:radius + width, radius:radius + height] = cur_positions
 
 
         for row in range(width):
