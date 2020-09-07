@@ -4,7 +4,6 @@
 
 import numpy as np
 from game import Board
-from FeatureExtractor import FeatureExtractor
 
 
 

@@ -10,6 +10,7 @@ import math
 import PIL.Image
 import matplotlib.pyplot as plt
 import os
+from collections import Counter
 
 WIN_SCORE = 20
 FORCING_BONUS = 5
@@ -268,11 +269,10 @@ class Board(object):
                             max_radius_density=-1,
                             opponent_weight = 0):
 
-
         board_state = self.current_state(last_move=last_move)
 
-        cur_positions = np.flipud(board_state[0])
-        opponent_positions = np.flipud(board_state[1])
+        cur_positions = board_state[0]
+        opponent_positions = board_state[1]
 
         width = self.width
         height = self.height
@@ -319,8 +319,8 @@ class Board(object):
                 scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
                                                         opponent_positions)
 
-            for i in range(scores.shape[0]):
-                scores[i] = np.flipud(scores[i])
+            # for i in range(scores.shape[0]):
+            #     scores[i] = np.flipud(scores[i])
 
             if opponent_weight <=0:
                 return scores
@@ -382,7 +382,6 @@ class Board(object):
                 if max_path == self.n_in_row-2:
                     scores[4, row, col] = scores[4, row, col] + FORCING_BONUS
 
-
         if normalize_all_heuristics:
             scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
             scores[1, :, :] = self.normalize_matrix(scores[1, :, :], width, height, cur_positions, opponent_positions)
@@ -393,8 +392,8 @@ class Board(object):
         elif normalized_density_scores:
             scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
 
-        for i in range(scores.shape[0]):
-            scores[i] = np.flipud(scores[i])
+        # for i in range(scores.shape[0]):
+        #     scores[i] = np.flipud(scores[i])
 
         if opponent_weight <= 0:
             return scores
@@ -405,14 +404,15 @@ class Board(object):
 
     def calc_scores_with_o_weight(self, cur_scores, o_weight, exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density):
 
-        opp_scores = self.calc_opp_scores(exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density)
+        opp_scores = self.calc_opponnent_scores(exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density)
         scores = np.zeros(cur_scores.shape)
         for i in range(cur_scores.shape[0]):
             scores[i] = (1-o_weight)*cur_scores[i] + o_weight*opp_scores[i]
 
         return scores
 
-    def calc_opp_scores(self, exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density):
+
+    def calc_opponnent_scores(self, exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density):
         board_copy_opponent = copy.deepcopy(self)
         board_copy_opponent.flip_current_player()
         opponnent_scores = board_copy_opponent.calc_all_heuristics(exp=exp,
@@ -423,6 +423,7 @@ class Board(object):
                                                                    max_radius_density=max_radius_density,
                                                                    opponent_weight=0)
         return opponnent_scores
+
 
     def calc_blocking_bonus(self, max_path, row, col, cur_positions, opponent_positions, o_weight):
         pass
@@ -842,7 +843,7 @@ class Board(object):
 
 
         sum = np.sum(scores)
-        counter_positive_values = len(np.where(scores > 0)[0])
+        # counter_positive_values = len(np.where(scores > 0)[0])
 
         if sum != 0:
             return scores/sum
@@ -952,31 +953,48 @@ class Game(object):
         players = {p1: player1, p2: player2}
 
         counter = 0
+        last_moves_data = {p1: [], p2: []}
+
 
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
 
         while True:
             counter+=1
+
             current_player = self.board.get_current_player()
 
             player_in_turn = players[current_player]
 
-            if is_shown: #then show heatmaps to
-                move = player_in_turn.get_action(self.board, show_fig=True)
+            # if is_shown: #then show heatmaps to
+            #     move = player_in_turn.get_action(self.board, show_fig=True)
+            #
+            # elif savefig:
+            #     move, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True)
+            #     image = PIL.Image.open(heatmap_buf)
+            #
+            #     if not os.path.exists(path):
+            #         os.makedirs(path)
+            #
+            #     plt.savefig(path + f"{counter}.png")
+            #     plt.close('all')
+            #
+            # else:
+            #     move = player_in_turn.get_action(self.board)
 
-            elif savefig:
-                move, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True)
-                image = PIL.Image.open(heatmap_buf)
+            move = player_in_turn.get_action(self.board)
 
-                if not os.path.exists(path):
-                    os.makedirs(path)
+            row = self.board.width - 1 - move // self.board.width
+            col = move % self.board.width
+            board_state = self.board.current_state(last_move=(players[current_player].input_plains_num == 4))
 
-                plt.savefig(path + f"{counter}.png")
-                plt.close('all')
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
 
-            else:
-                move = player_in_turn.get_action(self.board)
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
+
+            print([row, col], open_paths)
+            last_moves_data[current_player].append(([row, col], open_paths))
 
 
             self.board.do_move(move)
@@ -994,6 +1012,9 @@ class Game(object):
                     os.rename(path[:-1], path[:-1] + f" ({winner} won)")
 
                 return winner
+
+
+
 
     def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True):
         """ start a self-play game using a MCTS player, reuse the search tree,

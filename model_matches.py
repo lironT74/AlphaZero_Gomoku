@@ -49,6 +49,7 @@ def compare_all_models(models_list, width=6, height=6, n=4):
     for process in processes:
         process.join()
 
+
 def compare_two_models(model1, model2, width, height, n):
 
     path1, name1, plains1 = model1
@@ -148,6 +149,7 @@ def compare_two_models(model1, model2, width, height, n):
                   correct_move_p1=p1,
                   correct_move_p2=p2,
                   start_player=1)
+
 
 def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts_player_2, last_move_p1, last_move_p2, correct_move_p1, correct_move_p2, start_player):
     i_board1, board1 = initialize_board(width, height, n, input_board=board_state)
@@ -318,7 +320,7 @@ def save_fig_againts_mcts(np_results, models_num, model_list, model_name, mcts_p
     ax.set_xticks(range(models_num))
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax.set_xlabel("sun model no.", fontsize=fontsize)
+    ax.set_xlabel("sub model no.", fontsize=fontsize)
     ax.set_title(f"{model_name} with {n_playout} playout MCTS againt MCTS with {mcts_playout_num} playouts on {board_name}, {n_games} games",
                  fontdict={'fontsize': fontsize + 15})
 

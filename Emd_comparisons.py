@@ -1,4 +1,4 @@
-from multiprocessing import get_context, Pool
+from multiprocessing import Pool
 import math
 from pyemd import emd
 import pandas as pd
@@ -61,6 +61,7 @@ def create_collages_boards(listofimages, fig_name, path):
         y = 0
 
     new_im.save(path + f"{fig_name}.png")
+
 
 def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model1_check_freq, tell_last_move1,
                          model2_name, input_plains_num_2, max_model2_iter, model2_check_freq, tell_last_move2,
@@ -151,14 +152,15 @@ def EMD_model_comparison(model1_name, input_plains_num_1, max_model1_iter, model
 
 def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
                                    model2_name, input_plains_num_2, i2,
-                                   board1, board2, width=6,height=6):
+                                   board1, board2, width=6,height=6, use_gpu=True):
 
 
             model_file_1 = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model1_name}/current_policy_{i1}.model'
-            policy_1 = PolicyValueNet(width, height, model_file=model_file_1, input_plains_num=input_plains_num_1)
+            policy_1 = PolicyValueNet(width, height, model_file=model_file_1, input_plains_num=input_plains_num_1, use_gpu=use_gpu)
 
             model_file_2 = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model2_name}/current_policy_{i2}.model'
-            policy_2 = PolicyValueNet(width, height, model_file=model_file_2, input_plains_num=input_plains_num_2)
+            policy_2 = PolicyValueNet(width, height, model_file=model_file_2, input_plains_num=input_plains_num_2, use_gpu=use_gpu)
+
 
             acts_policy1, probas_policy1 = zip(*policy_1.policy_value_fn(board1)[0])
             acts_policy2, probas_policy2 = zip(*policy_2.policy_value_fn(board2)[0])
@@ -246,8 +248,7 @@ def generate_models_emd_comparison():
         pool.close()
 
 
-
-def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, opponent_weight=0.5, **kwargs):
+def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, opponent_weight=0.5, threshold=0.05, max_radius_density = 2, **kwargs):
 
     input_plains_num = kwargs.get("input_plains_num", 4)
     max_model_iter = kwargs.get("max_model_iter", 5000)
@@ -258,6 +259,7 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     dist_matrix = generate_matrix_dist_metric(6)
     board_state, board_name, last_move_p1, last_move_p2, alternative_p1, alternative_p2 = copy.deepcopy(game_board)
 
+
     if tell_last_move:
         board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
                                   last_move_p2=last_move_p2)
@@ -266,7 +268,7 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
                                   last_move_p2=alternative_p2)
 
 
-    heuristics_scores = board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=True, opponent_weight=opponent_weight)
+    heuristics_scores = threshold_normalization_heuristics(board, opponent_weight, max_radius_density, rounding=-1, threshold=threshold)
 
 
     models_num = max_model_iter//model_check_freq
@@ -277,14 +279,8 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     distances_base_models = np.zeros(heuristics_scores.shape[0])
 
     for index_i, i in enumerate(model_list):
-        model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
-        policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num)
-        acts_policy, probas_policy = zip(*policy.policy_value_fn(board)[0])
 
-        move_probs_policy = np.zeros(width * height)
-        move_probs_policy[list(acts_policy)] = probas_policy
-        move_probs_policy = move_probs_policy.reshape(width, height)
-        move_probs_policy = np.flipud(move_probs_policy)
+        move_probs_policy = threshold_normalization_policy(board, model_name, input_plains_num, i, rounding=-1, threshold=threshold)
 
         for j in range(heuristics_scores.shape[0]):
 
@@ -336,11 +332,13 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
         y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
         x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
         last_move = f" (last move - {x_last_move}{y_last_move})"
+
+
     else:
         last_move = ""
 
 
-    ax.set_title(f"{model_name}{last_move} EMD distances from heuristics with o_weight={opponent_weight} on {board_name}", fontdict={'fontsize': fontsize+15})
+    ax.set_title(f"{model_name}{last_move} EMD distances from heuristics \no_weight={opponent_weight}, threshold={threshold} on {board_name}", fontdict={'fontsize': fontsize+15})
 
     h, l = ax.get_legend_handles_labels()
 
@@ -356,7 +354,7 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/{model_name}/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/threshold_{threshold}/{model_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -369,13 +367,13 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     plt.close('all')
 
 
-def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5):
+def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5, threshold=0.05, max_radius_density=2):
 
     board_state, board_name, last_move_p1, last_move_p2, alternative_p1, alternative_p2 = game_board
     board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
                              last_move_p2=last_move_p2)
 
-    heuristics_scores = np.round(board.calc_all_heuristics(max_radius_density=2, normalize_all_heuristics=True, opponent_weight=opponent_weight), 3)
+    heuristics_scores = threshold_normalization_heuristics(board, opponent_weight, max_radius_density, rounding=3, threshold=threshold)
 
     heuristics_names = ["density", "linear", "nonlinear", "interaction", "interaction with forcing"]
 
@@ -384,7 +382,7 @@ def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5)
 
     fontsize = 15
     fig, axes = plt.subplots(1, 5, figsize=(35, 8))
-    fig.suptitle(f"Heuristics heatmaps on {board_name}", fontsize=fontsize + 10)
+    fig.suptitle(f"Heuristics heatmaps on {board_name}, o_weight = {opponent_weight}, threshold = {threshold}", fontsize=fontsize + 10)
     x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
     y_axis = range(height, 0, -1)
     sm = plt.cm.ScalarMappable(cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
@@ -420,7 +418,7 @@ def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5)
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/heuristics_heatmaps/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/threshold_{threshold}/heuristics_heatmaps/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -430,38 +428,40 @@ def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5)
     plt.close('all')
 
 
-def call_collage_compare_to_heuristics(opponent_weight):
+def call_collage_compare_to_heuristics(opponent_weight, threshold):
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/threshold_{threshold}/"
+
     listofimages_empty = [
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v7/empty board.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v9/empty board.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/empty board.png",
+        f"{path}/pt_6_6_4_p3_v7/empty board.png",
+        f"{path}/pt_6_6_4_p3_v9/empty board.png",
+        f"{path}/pt_6_6_4_p4_v10/empty board.png",
     ]
 
     listofimages_full_1 = [
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v7/board 1 full.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v9/board 1 full.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 1 full (last move - b6).png",
+        f"{path}/pt_6_6_4_p3_v7/board 1 full.png",
+        f"{path}/pt_6_6_4_p3_v9/board 1 full.png",
+        f"{path}/pt_6_6_4_p4_v10/board 1 full (last move - b6).png",
         ]
 
     listofimages_full_2 = [
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v7/board 2 full.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v9/board 2 full.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 2 full (last move - e6).png",
+        f"{path}/pt_6_6_4_p3_v7/board 2 full.png",
+        f"{path}/pt_6_6_4_p3_v9/board 2 full.png",
+        f"{path}/pt_6_6_4_p4_v10/board 2 full (last move - e6).png",
     ]
 
     listofimages_truncated_1 = [
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v7/board 1 truncated.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v9/board 1 truncated.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 1 truncated (last move - a2).png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 1 truncated (last move - f3).png"]
+        f"{path}/pt_6_6_4_p3_v7/board 1 truncated.png",
+        f"{path}/pt_6_6_4_p3_v9/board 1 truncated.png",
+        f"{path}/pt_6_6_4_p4_v10/board 1 truncated (last move - a2).png",
+        f"{path}/pt_6_6_4_p4_v10/board 1 truncated (last move - f3).png"]
 
     listofimages_truncated_2 = [
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v7/board 2 truncated.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p3_v9/board 2 truncated.png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 2 truncated (last move - b2).png",
-        f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/pt_6_6_4_p4_v10/board 2 truncated (last move - d6).png"]
+        f"{path}/pt_6_6_4_p3_v7/board 2 truncated.png",
+        f"{path}/pt_6_6_4_p3_v9/board 2 truncated.png",
+        f"{path}/pt_6_6_4_p4_v10/board 2 truncated (last move - b2).png",
+        f"{path}/pt_6_6_4_p4_v10/board 2 truncated (last move - d6).png"]
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/o_weight_{opponent_weight}/"
 
     create_collages_boards(listofimages=listofimages_empty, fig_name="empty board all models", path=path)
     create_collages_boards(listofimages=listofimages_full_1, fig_name="board 1 full all models", path=path)
@@ -470,46 +470,174 @@ def call_collage_compare_to_heuristics(opponent_weight):
     create_collages_boards(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
 
 
+def threshold_normalization_heuristics(board, opponent_weight, max_radius_density,rounding=-1, threshold = 0.05):
 
-# def model_corr_emd_board(model_name,
-#                          input_plains_num,
-#                          game_board,
-#                          curr_player=1,
-#                          max_model_iter = 5000,
-#                          model_check_freq=50,
-#                          width=6,height=6,n=4,
-#                          c_puct=5,n_playout=400):
-#
-#
-#     board_state, board_name, p1, p2, _, _ = game_board
-#     correct_last_board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
-#
-#     for i in range(model_check_freq, max_model_iter + model_check_freq, model_check_freq):
-#         for row_hat, col_hat in np.where(board_state == curr_player):
-#             row = height - 1 - row_hat
-#             col = col_hat
-#
-#             if curr_player == 1:
-#                 alt_p1 = [row, col]
-#                 alt_p2 = p2
-#
-#             else:
-#                 alt_p1 = p1
-#                 alt_p2 = [row, col]
-#
-#             EMD_between_two_models_on_board(
-#                 model1_name=model_name, input_plains_num_1=input_plains_num, i1=i,
-#                 model2_name=model_name, input_plains_num_2=input_plains_num, i2=j,
-#                 board1=board1, board2=board2, width=width, height=height)
+    heuristics_scores = board.calc_all_heuristics(max_radius_density=max_radius_density, normalize_all_heuristics=True, opponent_weight=opponent_weight)
+
+    if threshold < 1:
+        for i in range(heuristics_scores.shape[0]):
+            heuristics_scores[i][heuristics_scores[i] < threshold] = 0
+            heuristics_scores[i] = normalize_matrix(heuristics_scores[i], board)
+
+    if rounding != -1:
+
+        if not isinstance(rounding, int):
+            raise Exception("rounding parameter sent is not integer")
+
+        return np.round(heuristics_scores, rounding)
+
+    return heuristics_scores
 
 
-if __name__ == "__main__":
+def threshold_normalization_policy(board, model_name, input_plains_num, i, rounding=-1, threshold = 0.05):
 
-    # generate_models_emd_comparison()
-    #
+    width, height = board.width, board.height
+
+    model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
+    policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num)
+    acts_policy, probas_policy = zip(*policy.policy_value_fn(board)[0])
+
+    move_probs_policy = np.zeros(width * height)
+    move_probs_policy[list(acts_policy)] = probas_policy
+    move_probs_policy = move_probs_policy.reshape(width, height)
+    move_probs_policy = np.flipud(move_probs_policy)
+
+    if threshold < 1:
+        move_probs_policy[move_probs_policy < threshold] = 0
+        move_probs_policy = normalize_matrix(move_probs_policy, board)
+
+    if rounding != -1:
+
+        if not isinstance(rounding, int):
+            raise Exception("rounding parameter sent is not integer")
+
+        return np.round(move_probs_policy, rounding)
+
+    return move_probs_policy
+
+
+def normalize_matrix(scores, board):
+
+    width, height = board.width, board.height
+    board_state = board.current_state()
+
+    cur_positions = np.flipud(board_state[0])
+    opponent_positions = np.flipud(board_state[1])
+
+
+    sum = np.sum(scores)
+    counter_positive_values = len(np.where(scores > 0)[0])
+
+    if sum != 0:
+        return scores/sum
+
+    #all zeros:
+    counter_not_X_O = width*height - len(np.where(cur_positions == 1)[0]) - len(np.where(opponent_positions == 1)[0])
+
+    for col in range(width):
+        for row in range(height):
+            if cur_positions[row, col] or opponent_positions[row, col]:
+                continue
+            else:
+                scores[row,col] = 1/counter_not_X_O
+
+    return scores
+
+
+def model_var_emd_board(model_name,
+                        input_plains_num,
+                        game_board,
+                        curr_player=1,
+                        max_model_iter = 5000,
+                        model_check_freq=50,
+                        width=6, height=6, n=4):
+
+    models_num = max_model_iter // model_check_freq
+    model_list = range(model_check_freq, max_model_iter + model_check_freq, model_check_freq)
+
+    board_state, board_name, p1, p2, _, _ = game_board
+    correct_last_board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
+
+    rows, cols = np.where(board_state == curr_player)
+    rows = list(height - 1 - rows)
+    cols = list(cols)
+
+    corr_list = []
+    for i in range(model_check_freq, max_model_iter + model_check_freq, model_check_freq):
+
+        print(i)
+        emd_list = []
+        for row, col in zip(rows, cols):
+
+            if curr_player == 1 and [row, col] == p1 or curr_player==2 and [row, col] == p2:
+                continue
+
+            if curr_player == 1:
+                alt_p1 = [row, col]
+                alt_p2 = p2
+                print(f"changed p1 last move: {alt_p1}")
+
+
+            else:
+                print("changed p2 last move")
+                alt_p1 = p1
+                alt_p2 = [row, col]
+
+            alt_board = initialize_board(height, width, input_board=board_state, n_in_row=n, last_move_p1=alt_p1, last_move_p2=alt_p2)
+
+            emd_list.append(EMD_between_two_models_on_board(
+                model1_name=model_name, input_plains_num_1=input_plains_num, i1=i,
+                model2_name=model_name, input_plains_num_2=input_plains_num, i2=i,
+                board1=correct_last_board, board2=alt_board, width=width, height=height))
+
+        print(emd_list, np.var(emd_list))
+        corr_list.append(np.var(emd_list))
+
+    save_fig_var(corr_list, models_num, model_list, model_name, board_name)
+
+
+def save_fig_var(var_list, models_num, model_list, model_name, board_name):
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
+
+    fontsize = 17
+    linewidth = 3
+
+
+    ax.plot(range(models_num), var_list, color="blue", linewidth=linewidth)
+
+    # ax.set_ylim([0, max(var_list) + 1e-10])
+
+    ax.set_xticks(range(models_num))
+    ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax.set_xlabel("sub model no.", fontsize=fontsize)
+    ax.set_title(f"variance of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
+                 fontdict={'fontsize': fontsize + 15})
+
+    h, l = ax.get_legend_handles_labels()
+    # lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=1, fontsize=fontsize + 5)
+    lax.axis("off")
+
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}{model_name}_{board_name}.png")
+
+    plt.close('all')
+
+
+def run_heuristics_for_threshold_and_weight(opponent_weight, threshold):
     BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
-    opponent_weight = 1
-
 
     for game_board in BOARDS:
         compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
@@ -519,7 +647,8 @@ if __name__ == "__main__":
                                     tell_last_move=True,
                                     game_board=game_board,
                                     n=4, width=6, height=6,
-                                    opponent_weigh=opponent_weight)
+                                    opponent_weight=opponent_weight,
+                                    threshold=threshold)
 
         compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
                                     input_plains_num=4,
@@ -528,7 +657,8 @@ if __name__ == "__main__":
                                     tell_last_move=False,
                                     game_board=game_board,
                                     n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight)
+                                    opponent_weight=opponent_weight,
+                                    threshold=threshold)
 
         compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
                                     input_plains_num=3,
@@ -537,7 +667,8 @@ if __name__ == "__main__":
                                     tell_last_move=True,
                                     game_board=game_board,
                                     n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight)
+                                    opponent_weight=opponent_weight,
+                                    threshold=threshold)
 
         compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
                                     input_plains_num=3,
@@ -546,28 +677,42 @@ if __name__ == "__main__":
                                     tell_last_move=True,
                                     game_board=game_board,
                                     n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight)
+                                    opponent_weight=opponent_weight,
+                                    threshold=threshold)
 
-    for BOARD in BOARDS:
-        heuristics_heatmaps(BOARD, opponent_weight=opponent_weight)
+    for board in BOARDS:
+        heuristics_heatmaps(board, height=6, width=6, n=4, opponent_weight=opponent_weight, threshold=threshold)
+
+    call_collage_compare_to_heuristics(opponent_weight=opponent_weight, threshold=threshold)
 
 
-    compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
-                                input_plains_num=4,
-                                model_check_freq=50,
-                                max_model_iter=5000,
-                                tell_last_move=True,
-                                game_board=BOARD_1_TRUNCATED,
-                                n=4, width=6, height=6,
-                                opponent_weight=opponent_weight)
+def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights):
 
-    compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
-                                input_plains_num=4,
-                                model_check_freq=50,
-                                max_model_iter=5000,
-                                tell_last_move=True,
-                                game_board=BOARD_2_TRUNCATED,
-                                n=4, width=6, height=6,
-                                opponent_weight=opponent_weight)
+    with Pool() as pool:
+        jobs = []
+        for threshold in thresholds:
+            for o_weight in o_weights:
+                jobs.append((o_weight, threshold))
 
-    call_collage_compare_to_heuristics(opponent_weight)
+        pool.starmap(run_heuristics_for_threshold_and_weight, jobs)
+        pool.close()
+        pool.join()
+
+
+if __name__ == "__main__":
+    generate_models_emd_comparison()
+
+    # for board in PAPER_TRUNCATED_BOARDS:
+    #     model_var_emd_board('pt_6_6_4_p4_v10',
+    #                         4,
+    #                         board,
+    #                         curr_player=1,
+    #                         max_model_iter=5000,
+    #                         model_check_freq=50,
+    #                         width=6, height=6, n=4)
+
+
+    # thresholds = [1, 0.05, 0.01]
+    # o_weights = [0, 0.2, 0.5, 0.7, 1]
+    #
+    # run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights)

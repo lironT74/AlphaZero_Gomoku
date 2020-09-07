@@ -38,7 +38,8 @@ def save_heatmaps(model_name,
                   height=6,
                   n=4,
                   c_puct=5,
-                  n_playout=400):
+                  n_playout=400,
+                  use_gpu=False):
 
     WRITER_DIR = f'./runs/{model_name}_paper_heatmaps'
     writer = SummaryWriter(WRITER_DIR)
@@ -60,7 +61,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path)
+                                    i, heatmap_save_path, use_gpu)
 
         for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
 
@@ -74,7 +75,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path)
+                                    i, heatmap_save_path, use_gpu)
 
         for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
 
@@ -95,7 +96,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name_1,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path)
+                                    i, heatmap_save_path, use_gpu)
 
             if input_plains_num == 4: #save truncated with alternative last moves too
 
@@ -113,7 +114,7 @@ def save_heatmaps(model_name,
                                         n_playout,
                                         board, board_name,
                                         save_to_local, save_to_tensorboard, writer,
-                                        i, heatmap_save_path)
+                                        i, heatmap_save_path, use_gpu)
 
                 make_collage_for_truncated(heatmap_save_path, board_name)
 
@@ -166,7 +167,7 @@ def save_heatmap_for_board_and_model(
                             n_playout,
                             board, board_name,
                             save_to_local, save_to_tensorboard, writer,
-                            i, heatmap_save_path):
+                            i, heatmap_save_path,use_gpu):
 
     model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
 
@@ -176,7 +177,7 @@ def save_heatmap_for_board_and_model(
     # else:
     #     print(heatmap_image_path)
 
-    policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num)
+    policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num, use_gpu=use_gpu)
     player = MCTSPlayer(policy.policy_value_fn, c_puct=c_puct, n_playout=n_playout, name=f"{model_name}_{i}")
 
     _, heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
@@ -197,9 +198,6 @@ def save_heatmap_for_board_and_model(
 
 
 
-
-
-
 if __name__ == "__main__":
 
     args_v7 = ('pt_6_6_4_p3_v7', 3)
@@ -208,13 +206,9 @@ if __name__ == "__main__":
 
     models_args = [args_v7, args_v9, args_v10]
 
-    with Pool(20) as pool:
+    with Pool(3) as pool:
 
         print(f"Using {pool._processes} workers. There are {len(models_args)} jobs: \n")
         pool.starmap(save_heatmaps, models_args)
         pool.close()
-
-    # save_heatmaps(model_name="pt_6_6_4_p4_v10", input_plains_num=4)
-    # save_heatmaps(model_name="pt_6_6_4_p3_v9", input_plains_num=3)
-    # save_heatmaps(model_name="pt_6_6_4_p3_v7", input_plains_num=3)
 

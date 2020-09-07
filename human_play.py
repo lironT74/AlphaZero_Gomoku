@@ -21,6 +21,7 @@ from policy_player import PolicyPlayer
 import numpy as np
 # from policy_value_net_keras import PolicyValueNet # Keras
 import PIL.Image
+from Game_boards import *
 
 
 class Human(object):
@@ -50,43 +51,6 @@ class Human(object):
     def __str__(self):
         return "Human {}".format(self.player)
 
-EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0]]), "empty board", None, None)
-
-BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
-                [0, 2, 1, 1, 0, 0],
-                [1, 2, 2, 2, 1, 0],
-                [2, 0, 1, 1, 2, 0],
-                [1, 0, 2, 2, 0, 0],
-                [0, 0, 0, 0, 0, 0]]), "board 1 full", None, None)
-
-BOARD_1_TRUNCATED = (np.array([[0, 1, 2, 2, 0, 0],
-                    [0, 2, 1, 1, 0, 0],
-                    [1, 2, 2, 2, 1, 0],
-                    [2, 0, 1, 1, 2, 1],
-                    [1, 0, 2, 2, 0, 0],
-                    [0, 0, 0, 0, 0, 0]]), "board 1 truncated", [2, 5], [5, 2])
-
-BOARD_2_FULL =  (np.array([[0, 2, 0, 0, 1, 0],
-                    [0, 2, 1, 2, 0, 0],
-                    [0, 1, 0, 0, 0, 0],
-                    [0, 1, 0, 2, 0, 0],
-                    [0, 1, 0, 0, 0, 0],
-                    [0, 2, 0, 0, 2, 0]]), "board 2 full", None, None)
-
-BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
-                    [0, 2, 1, 2, 0, 0],
-                    [0, 1, 0, 0, 0, 0],
-                    [2, 1, 0, 2, 0, 0],
-                    [0, 1, 0, 0, 0, 0],
-                    [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0])
-
-PAPER_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-PAPER_FULL_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 
 
 def initialize_board(board_height, board_width, n_in_row, input_board):
@@ -119,42 +83,46 @@ def run():
 
         i_board, board = initialize_board(width, height, n, input_board=initial_board)
 
-        game = Game(board)
+        print(initial_board)
+        board.calc_all_heuristics()
 
-        best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
-
-        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000", input_plains_num=4)
-
-        # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
-        # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
-        # human = Human()
-
-
-        results = {-1:0, 1:0, 2:0}
-        start_player = 2
-
-
-        for i in range(1):
-            winner = game.start_play(player2=mcts_player_1, player1=mcts_player_2,
-                                     start_player=start_player,
-                                     is_shown=1,
-                                     start_board=i_board,
-                                     last_move_p1=None,
-                                     last_move_p2=None,
-                                     correct_move_p1=None,
-                                     correct_move_p2=None,
-                                     savefig=0)
-
-            results[winner] += 1
-            start_player = 3 - start_player
-
-            print(f"Game {i+1}: player {start_player} has started, player {winner} has won")
-
-        print("\n\nWins of player 1: ", results[1])
-        print("Wins of player 1: ", results[2])
-        print("Ties: ", results[-1])
+        # game = Game(board)
+        #
+        #
+        # best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3, use_gpu=False)
+        # mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
+        #
+        # best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4, use_gpu=False)
+        # mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000", input_plains_num=4)
+        #
+        # # uncomment the following line to play with pure MCTS (it's much weaker even with a larger n_playout)
+        # # mcts_player = MCTS_Pure(c_puct=5, n_playout=1000)
+        # # human = Human()
+        #
+        #
+        # results = {-1:0, 1:0, 2:0}
+        # start_player = 2
+        #
+        #
+        # for i in range(1):
+        #     winner = game.start_play(player2=mcts_player_1, player1=mcts_player_2,
+        #                              start_player=start_player,
+        #                              is_shown=1,
+        #                              start_board=i_board,
+        #                              last_move_p1=None,
+        #                              last_move_p2=None,
+        #                              correct_move_p1=None,
+        #                              correct_move_p2=None,
+        #                              savefig=0)
+        #
+        #     results[winner] += 1
+        #     start_player = 3 - start_player
+        #
+        #     print(f"Game {i+1}: player {start_player} has started, player {winner} has won")
+        #
+        # print("\n\nWins of player 1: ", results[1])
+        # print("Wins of player 1: ", results[2])
+        # print("Ties: ", results[-1])
 
 
     except KeyboardInterrupt:
