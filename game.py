@@ -10,10 +10,11 @@ import math
 import PIL.Image
 import matplotlib.pyplot as plt
 import os
-from collections import Counter
+import io
 
-WIN_SCORE = 20
-FORCING_BONUS = 5
+
+WIN_SCORE = 25
+FORCING_BONUS = 20
 OPPONENT_THREAT_SCORE = 15
 
 
@@ -264,6 +265,7 @@ class Board(object):
                             last_move=True,
                             normalized_density_scores=False,
                             normalize_all_heuristics=False,
+
                             density= 'reg',
                             sig = 3,
                             max_radius_density=-1,
@@ -274,11 +276,13 @@ class Board(object):
         cur_positions = board_state[0]
         opponent_positions = board_state[1]
 
+
         width = self.width
         height = self.height
 
-        scores = np.zeros((5, width, height))
 
+        # scores = np.zeros((5, width, height))
+        scores = {"density": np.zeros((width, height)), "linear": np.zeros((width, height)), "nonlinear": np.zeros((width, height)), "interaction": np.zeros((width, height)), "interaction with forcing": np.zeros((width, height))}
         radius = width - 1
 
         if max_radius_density != -1:
@@ -302,25 +306,24 @@ class Board(object):
         if len(immediate_oponnent_threats) > 0 and len(immediate_threats) == 0:
             for row in range(width):
                 for col in range(height):
-                    if (row, col) in immediate_oponnent_threats:
-                        scores[:, row, col] = OPPONENT_THREAT_SCORE
-                    else:
-                        scores[:, row, col] = 0
+
+                    for key in scores.keys():
+                        if (row, col) in immediate_oponnent_threats:
+                            scores[key][row, col] = OPPONENT_THREAT_SCORE
+                        else:
+                            scores[key][row, col] = 0
+
 
             if normalize_all_heuristics:
-                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
-                                                        opponent_positions)
-                scores[1, :, :] = scores[0, :, :]
-                scores[2, :, :] = scores[0, :, :]
-                scores[3, :, :] = scores[0, :, :]
-                scores[4, :, :] = scores[0, :, :]
+                scores["density"][:, :] = self.normalize_matrix(scores["density"][:, :], width, height, cur_positions, opponent_positions)
+                scores["linear"][:, :] = scores["density"][:, :]
+                scores["nonlinear"][:, :] = scores["density"][:, :]
+                scores["interaction"][:, :] = scores["density"][:, :]
+                scores["interaction with forcing"][:, :] = scores["density"][:, :]
 
             elif normalized_density_scores:
-                scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
+                scores[["density"]][:, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions,
                                                         opponent_positions)
-
-            # for i in range(scores.shape[0]):
-            #     scores[i] = np.flipud(scores[i])
 
             if opponent_weight <=0:
                 return scores
@@ -349,15 +352,17 @@ class Board(object):
                     continue
 
                 if (row, col) in immediate_threats or (row, col) in unavoidable_traps:
-                    scores[:, row, col] = WIN_SCORE
+                    for key in scores.keys():
+                        scores[key][row, col] = WIN_SCORE
                     continue
+
 
                 # DENSITY:
                 if density == 'guassian':
-                    scores[0, row, col] = self.compute_density_guassian(row, col, gaussian_kernel)
+                    scores["density"][row, col] = self.compute_density_guassian(row, col, gaussian_kernel)
                 else:
                     for r in range(radius):
-                        scores[0, row, col] += (1 / (8 * (r + 1))) \
+                        scores["density"][row, col] += (1 / (8 * (r + 1))) \
                                             * (np.sum(cur_positions_padded[row_hat - r - 1, col_hat - r - 1: col_hat + r + 2]) +
                                                np.sum(cur_positions_padded[row_hat + r + 1, col_hat - r - 1: col_hat + r + 2]) +
                                                np.sum(cur_positions_padded[row_hat - r: row_hat + r + 1, col_hat + r + 1]) +
@@ -371,26 +376,27 @@ class Board(object):
                                                               cur_positions,
                                                               opponent_positions)
 
-                scores[1, row, col] = all_features_but_blocking["linear"]
-                scores[2, row, col] = all_features_but_blocking["nonlinear"]
 
-                scores[3, row, col] = scores[2, row, col]
-                scores[3, row, col] += all_features_but_blocking["interaction"]
+                scores["linear"][row, col] = all_features_but_blocking["linear"]
+                scores["nonlinear"][row, col] = all_features_but_blocking["nonlinear"]
 
-                scores[4, row, col] = scores[3, row, col]
+                scores["interaction"][row, col] = scores["nonlinear"][row, col] + all_features_but_blocking["interaction"]
+
+                scores["interaction with forcing"][row, col] = scores["interaction"][row, col]
 
                 if max_path == self.n_in_row-2:
-                    scores[4, row, col] = scores[4, row, col] + FORCING_BONUS
+                    scores["interaction with forcing"][row, col] += FORCING_BONUS
 
         if normalize_all_heuristics:
-            scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
-            scores[1, :, :] = self.normalize_matrix(scores[1, :, :], width, height, cur_positions, opponent_positions)
-            scores[2, :, :] = self.normalize_matrix(scores[2, :, :], width, height, cur_positions, opponent_positions)
-            scores[3, :, :] = self.normalize_matrix(scores[3, :, :], width, height, cur_positions, opponent_positions)
-            scores[4, :, :] = self.normalize_matrix(scores[4, :, :], width, height, cur_positions, opponent_positions)
+            scores["density"][:, :] = self.normalize_matrix(scores["density"][:, :], width, height, cur_positions, opponent_positions)
+            scores["linear"][:, :] = self.normalize_matrix(scores["linear"][:, :], width, height, cur_positions, opponent_positions)
+            scores["nonlinear"][:, :] = self.normalize_matrix(scores["nonlinear"][:, :], width, height, cur_positions, opponent_positions)
+            scores["interaction"][:, :] = self.normalize_matrix(scores["interaction"][:, :], width, height, cur_positions, opponent_positions)
+            scores["interaction with forcing"][:, :] = self.normalize_matrix(scores["interaction with forcing"][:, :], width, height, cur_positions, opponent_positions)
+
 
         elif normalized_density_scores:
-            scores[0, :, :] = self.normalize_matrix(scores[0, :, :], width, height, cur_positions, opponent_positions)
+            scores["density"][:, :] = self.normalize_matrix(scores["density"][:, :], width, height, cur_positions, opponent_positions)
 
         # for i in range(scores.shape[0]):
         #     scores[i] = np.flipud(scores[i])
@@ -405,14 +411,16 @@ class Board(object):
     def calc_scores_with_o_weight(self, cur_scores, o_weight, exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density):
 
         opp_scores = self.calc_opponnent_scores(exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density)
-        scores = np.zeros(cur_scores.shape)
-        for i in range(cur_scores.shape[0]):
-            scores[i] = (1-o_weight)*cur_scores[i] + o_weight*opp_scores[i]
+        scores = {"density": np.zeros((self.width, self.height)), "linear": np.zeros((self.width, self.height)), "nonlinear": np.zeros((self.width, self.height)), "interaction": np.zeros((self.width, self.height)), "interaction with forcing": np.zeros((self.width, self.height))}
+
+        for key in scores.keys():
+            scores[key] = (1-o_weight)*cur_scores[key] + o_weight*opp_scores[key]
 
         return scores
 
 
     def calc_opponnent_scores(self, exp, normalized_density_scores, normalize_all_heuristics, density, sig, max_radius_density):
+
         board_copy_opponent = copy.deepcopy(self)
         board_copy_opponent.flip_current_player()
         opponnent_scores = board_copy_opponent.calc_all_heuristics(exp=exp,
@@ -517,12 +525,13 @@ class Board(object):
                         col: int,
                         cur_positions,
                         opponent_positions,
-                        threshold=0
+                        threshold = 0
                         ):
 
-        open_paths_data = []  # this list will hold information on all the potential paths, each path will be represented by a pair (length and empty squares, which will be used to check overlap)
 
+        open_paths_data = []  # this list will hold information on all the potential paths, each path will be represented by a pair (length and empty squares, which will be used to check overlap)
         max_length_path = 0
+
 
         # check right-down diagonal
         for i in range(self.n_in_row):
@@ -642,6 +651,7 @@ class Board(object):
 
             if (path_length == self.n_in_row) & (not blocked) & (path_cur_pawns_count > threshold):
                 open_paths_data.append((path_cur_pawns_count, empty_squares, path))
+
 
         max_length_path = max(open_paths_data)[0] if len(open_paths_data) > 0 else 0
 
@@ -908,7 +918,6 @@ class Game(object):
         correct_move_p1 = kwargs.get('correct_move_p1', None)
         correct_move_p2 = kwargs.get('correct_move_p2', None)
 
-
         savefig = kwargs.get('savefig', False)
         board_name = kwargs.get('board_name', 'empty board')
 
@@ -917,12 +926,14 @@ class Game(object):
             raise Exception('start_player should be either 1 (player1 first) '
                             'or 2 (player2 first)')
 
+        started_player = start_player
 
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
-
+        started_player = self.board.get_current_player()
 
         if savefig:
             main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
+
             if not os.path.exists(main_path1):
                 main_path2 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player2.name} vs {player1.name}/'
                 if not os.path.exists(main_path2):
@@ -932,19 +943,20 @@ class Game(object):
             else:
                 main_path = main_path1
 
-
             last_move_str_1 = " with correct last move " if last_move_p1==correct_move_p1 and player1.input_plains_num == 4 and correct_move_p1 is not None else " "
             last_move_str_2 = " with correct last move " if last_move_p2==correct_move_p2 and player2.input_plains_num == 4 and correct_move_p2 is not None else " "
 
 
-            current_player = self.board.get_current_player()
-
             if board_name == 'empty board':
                 first = '(1 started)' if start_player == 1 else '(2 started)'
             else:
-                first = '(1 continued)' if current_player == 1 else '(2 continued)'
+                first = '(1 continued)' if started_player == 1 else '(2 continued)'
 
             path = f'{main_path}{player1.name}{last_move_str_1}vs {player2.name}{last_move_str_2}{first}/'
+            # path = f'/home/lirontyomkin/AlphaZero_Gomoku/test_shutter/'
+
+            if not os.path.exists(path):
+                os.makedirs(path)
 
 
         p1, p2 = self.board.players
@@ -954,6 +966,29 @@ class Game(object):
 
         counter = 0
         last_moves_data = {p1: [], p2: []}
+        shutter_sizes = {p1: [], p2: []}
+
+
+        if last_move_p1 != None:
+            row = self.board.width - 1 - last_move_p1[0]
+            col = last_move_p1[1] % self.board.width
+
+            board_state = self.board.current_state(last_move=(players[1].input_plains_num == 4))
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
+            last_moves_data[1].append(([row, col], open_paths))
+
+        if last_move_p2 != None:
+            row = self.board.width - 1 - last_move_p2[0]
+            col = last_move_p2[1] % self.board.width
+
+            board_state = self.board.current_state(last_move=(players[2].input_plains_num == 4))
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
+                                                    opponent_positions=opponent_positions)
+            last_moves_data[2].append(([row, col], open_paths))
 
 
         if is_shown:
@@ -966,41 +1001,42 @@ class Game(object):
 
             player_in_turn = players[current_player]
 
-            # if is_shown: #then show heatmaps to
-            #     move = player_in_turn.get_action(self.board, show_fig=True)
-            #
-            # elif savefig:
-            #     move, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True)
-            #     image = PIL.Image.open(heatmap_buf)
-            #
-            #     if not os.path.exists(path):
-            #         os.makedirs(path)
-            #
-            #     plt.savefig(path + f"{counter}.png")
-            #     plt.close('all')
-            #
-            # else:
-            #     move = player_in_turn.get_action(self.board)
-
             move = player_in_turn.get_action(self.board)
-
             row = self.board.width - 1 - move // self.board.width
             col = move % self.board.width
-            board_state = self.board.current_state(last_move=(players[current_player].input_plains_num == 4))
 
+            shutter_size = -1
+            if len(last_moves_data[current_player]) > 0:
+                shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1], current_move=(row, col))
+
+            shutter_sizes[current_player].append(shutter_size)
+
+            # if not savefig:
+            #     if is_shown:
+            #         player_in_turn.get_action(self.board, return_prob=0, return_fig=False, display=True, shutter_size=shutter_size)
+
+            if savefig:
+                _, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True, display=False, shutter_size=shutter_size)
+                image = PIL.Image.open(heatmap_buf)
+                plt.savefig(path + f"{counter}.png")
+                plt.close('all')
+
+
+            board_state = self.board.current_state(last_move=(players[current_player].input_plains_num == 4))
             cur_positions = board_state[0]
             opponent_positions = board_state[1]
-
             open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
-
-            print([row, col], open_paths)
             last_moves_data[current_player].append(([row, col], open_paths))
 
 
             self.board.do_move(move)
+
+
             if is_shown:
                 self.graphic(self.board, player1.player, player2.player)
+
             end, winner = self.board.game_end()
+
             if end:
                 # if is_shown:
                 #     if winner != -1:
@@ -1009,11 +1045,76 @@ class Game(object):
                 #         print("Game end. Tie")
 
                 if savefig:
+                    self.save_shutter_size_fig(path, shutter_sizes, started_player, counter, players)
                     os.rename(path[:-1], path[:-1] + f" ({winner} won)")
-
                 return winner
 
 
+    @staticmethod
+    def save_shutter_size_fig(path, shutter_sizes, start_player, counter, players):
+
+        fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
+
+        fontsize = 17
+
+        linewidth = 3
+
+        plays = range(1, counter + 1, 1)
+
+
+        start_player_range = [(index, shutter) for index,shutter in zip(plays[0::2], shutter_sizes[start_player]) if shutter != -1]
+        second_player_range = [(index, shutter) for index,shutter in zip(plays[1::2], shutter_sizes[3-start_player]) if shutter != -1]
+
+        ax.plot([x[0] for x in start_player_range], [x[1] for x in start_player_range], zorder=2, label=f"start player ({players[start_player].name}) shutter size", color="blue", linewidth=linewidth)
+        ax.plot([x[0] for x in second_player_range], [x[1] for x in second_player_range], zorder=2,  label=f"second player ({players[3-start_player].name}) shutter size", color="red", linewidth=linewidth)
+
+        ax.scatter(plays[0::2], shutter_sizes[start_player], zorder=1,  color="blue", marker='o', linewidth=linewidth+2)
+        ax.scatter(plays[1::2], shutter_sizes[3-start_player], zorder=1, color="red", marker='o', linewidth=linewidth+2)
+
+        ax.set_xticks(plays)
+        ax.set_xticklabels(plays, fontsize=fontsize)
+
+        ax.tick_params(axis='both', which='major', labelsize=fontsize)
+        ax.set_xlabel("turns (-1 means no open paths that turn)", fontsize=fontsize+4)
+        ax.set_title(f"Shutter sizes of the game", fontsize=fontsize + 8)
+
+        h, l = ax.get_legend_handles_labels()
+        lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=2, fontsize=fontsize + 5)
+        lax.axis("off")
+
+        fig.tight_layout()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='jpeg')
+        buf.seek(0)
+        image = PIL.Image.open(buf)
+
+        plt.savefig(f"{path}Shutter sizes of the game.png")
+        plt.close('all')
+
+
+
+    @staticmethod
+    def get_shutter_size(last_move_data, current_move):
+
+        # print(last_move_data)
+
+        last_move, (open_paths, max_length_path) = last_move_data
+        row, col = current_move
+
+        # print(open_paths)
+
+        #No open paths in last turn
+        if len(open_paths) == 0:
+            return -1
+
+        manhatten_distances = []
+        for (path_cur_pawns_count, empty_squares, path) in open_paths:
+            for move in path:
+                row_hat, col_hat = move[0], move[1]
+                manhatten_distances.append(abs(row-row_hat) + abs(col-col_hat))
+
+        return min(manhatten_distances)
 
 
     def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True):
@@ -1051,6 +1152,7 @@ class Game(object):
                     else:
                         print("Game end. Tie")
                 return winner, zip(states, mcts_probs, winners_z)
+
 
     def start_play_training(self, player, opponent, is_shown=0, temp=1e-3):
         """ start a self-play game using a MCTS player, reuse the search tree,

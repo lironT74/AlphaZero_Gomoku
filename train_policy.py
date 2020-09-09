@@ -10,7 +10,7 @@ import pandas as pd
 import random
 import numpy as np
 from collections import defaultdict, deque
-from game import BoardSlim, Game
+from game import Game, Board
 from mcts_pure import MCTSPlayer as MCTS_Pure
 # from mcts_alphaZero import MCTSPlayer
 from policy_player import PolicyPlayer
@@ -35,7 +35,7 @@ class TrainPipeline():
         self.board_width = board_width
         self.board_height = board_height
         self.n_in_row = n_in_row
-        self.board = BoardSlim(width=self.board_width,
+        self.board = Board(width=self.board_width,
                            height=self.board_height,
                            n_in_row=self.n_in_row)
         self.game = Game(self.board)

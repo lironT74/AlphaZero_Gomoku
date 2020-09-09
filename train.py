@@ -12,18 +12,9 @@ from collections import defaultdict, deque
 from game import Board, Game
 from mcts_pure import MCTSPlayer as MCTS_Pure
 from mcts_alphaZero import MCTSPlayer
-# from policy_value_net import PolicyValueNet  # Theano and Lasagne
 from policy_value_net_pytorch import PolicyValueNet  # Pytorch
-# from policy_value_net_tensorflow import PolicyValueNet # Tensorflow
-# from policy_value_net_keras import PolicyValueNet # Keras
-import copy
-
 import os
 from tensorboardX import SummaryWriter
-# from torch.utils.tensorboard import SummaryWriter
-
-import PIL.Image
-from torchvision.transforms import ToTensor
 
 # MODEL_NAME="pt_6_6_4_p4_v10"
 # INPUT_PLANES_NUM = 4

@@ -4,7 +4,7 @@
 
 import numpy as np
 from game import Board
-
+from Game_boards_and_aux import *
 
 
 def graphic(board, player1, player2):
@@ -35,12 +35,6 @@ def graphic(board, player1, player2):
 n = 4
 width, height = 6,6
 
-# initial_board = np.array([[0,0,0,0,0,0],
-#                           [0,2,0,0,0,0],
-#                           [0,0,0,0,0,0],
-#                           [0,0,0,0,0,0],
-#                           [2,1,0,0,2,0],
-#                           [0,0,1,1,1,2]])
 
 initial_board = np.array([
     [0, 1, 0, 2, 0, 0],
@@ -51,24 +45,18 @@ initial_board = np.array([
     [0, 0, 0, 0, 1, 0]])
 
 
-# initial_board = np.array([[0,0,0],
-#                           [0,1,0],
-#                           [0,0,2]])
-#
-
 
 i_board = np.zeros((2, height, width))
 i_board[0] = initial_board == 1
 i_board[1] = initial_board == 2
 
 board = Board(width=width, height=height, n_in_row=n)
-
-board.init_board(start_player=1, initial_state=i_board)
+board.init_board(start_player=2, initial_state=i_board)
 
 # graphic(board, 1, 2)
 
 print(initial_board)
 
-print("Current player is {}".format(board.current_player))
+# print("Current player is {}".format(board.current_player))
 
-print(board.calc_all_heuristics(exp=1, o_weight=1))
+print(board.calc_all_heuristics(exp=1, opponent_weight=0.05))

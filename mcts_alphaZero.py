@@ -206,7 +206,8 @@ class MCTSPlayer(object):
         sensible_moves = board.availables
 
         return_fig = kwargs.get('return_fig', False)
-        show_fig = kwargs.get('show_fig', False)
+        shutter_size = kwargs.get('shutter_size', -1)
+        display = kwargs.get('display', False)
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width * board.height)
@@ -214,16 +215,17 @@ class MCTSPlayer(object):
 
             acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
 
-            # Check if model receives last move
-            # and if there is a last move indicated - in the start of empty board
+
+            # Check if there is a last move indicated - in the start of empty board
             # game there is no last move.
 
-            if self.input_plains_num == 4 and np.sum(board.current_state(last_move=True)[2]) == 1:
+            if np.sum(board.current_state(last_move=True)[2]) == 1:
                 y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
                 x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
                 last_move = f"last move: {x_last_move}{y_last_move}"
             else:
                 last_move = "No last move"
+
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
@@ -247,6 +249,20 @@ class MCTSPlayer(object):
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
+
+            if display:
+                self.create_probas_heatmap(acts_policy=acts_policy,
+                                           probas_policy=probas_policy,
+                                           acts_mcts=acts_mcts,
+                                           probas_mcts=probas_mcts,
+                                           visits_mcts=visits_mcts,
+                                           width=board.width,
+                                           height=board.height,
+                                           board=board,
+                                           last_move=last_move,
+                                           shutter_size=shutter_size,
+                                           display=True)
+
             if return_fig:
                 buf = self.create_probas_heatmap(acts_policy=acts_policy,
                                                  probas_policy=probas_policy,
@@ -257,8 +273,7 @@ class MCTSPlayer(object):
                                                  height=board.height,
                                                  board=board,
                                                  last_move=last_move,
-                                                 return_fig=True,
-                                                 show_fig=False)
+                                                 shutter_size=shutter_size)
 
                 if return_prob:
                     return move, move_probs, buf
@@ -266,19 +281,6 @@ class MCTSPlayer(object):
                     return move, buf
 
             else:
-                if show_fig:
-                    self.create_probas_heatmap(acts_policy=acts_policy,
-                                               probas_policy=probas_policy,
-                                               acts_mcts=acts_mcts,
-                                               probas_mcts=probas_mcts,
-                                               visits_mcts=visits_mcts,
-                                               width=board.width,
-                                               height=board.height,
-                                               board=board,
-                                               last_move=last_move,
-                                               return_fig=False,
-                                               show_fig=True)
-
                 if return_prob:
                     return move, move_probs
                 else:
@@ -291,10 +293,11 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
     def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
-                              board, last_move, return_fig=False, show_fig=False):
+                              board, last_move, shutter_size=-1, display=False):
 
-        if return_fig:
+        if not display:
             mpl.use('Agg')
+
 
         fontsize = 15
 
@@ -325,7 +328,13 @@ class MCTSPlayer(object):
         fig, axes = plt.subplots(1, 3, figsize=(25, 10))
         sm = plt.cm.ScalarMappable(cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
 
-        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move})\nMCTS playouts: {self.mcts._n_playout}",
+        if shutter_size != -1:
+            shutter_str = f", shutter size = {shutter_size}"
+        else:
+            shutter_str = ""
+
+
+        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}",
                      fontsize=fontsize + 5)
 
         (ax1, ax2, ax3) = axes
@@ -403,13 +412,15 @@ class MCTSPlayer(object):
 
         fig.tight_layout()
 
-        fig.subplots_adjust(top=0.88)
+        if display:
+            plt.show()
+            return
 
-        if return_fig:
+        else:
+            fig.subplots_adjust(top=0.88)
             buf = io.BytesIO()
             plt.savefig(buf, format='jpeg')
             buf.seek(0)
             return buf
 
-        elif show_fig:
-            plt.show()
+
