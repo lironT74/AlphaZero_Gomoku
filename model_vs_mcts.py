@@ -87,7 +87,7 @@ def policy_evaluate_againts_mcts(all_arguments, results, iteration):
 
     win_cnt = defaultdict(int)
     for i in range(n_games):
-        i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state)
+        i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
         game = Game(board1)
 
         winner = game.start_play(model_mcts_player,
@@ -261,12 +261,67 @@ def save_mcts_pics_and_collage(models_args, results_base_model):
     make_collage_models_vs_mcts(others, to_display)
 
 
-if __name__ == '__main__':
 
+def check_mcts_goodness(model, width, height, n, game_board, n_games, mcts_playout_num, c_puct, n_playout):
+    path, model_name, input_plains_num = model
+
+    policy_evaluate_againts_mcts_checking_mcts(model_name, path, input_plains_num, width, height, n, game_board,
+                                               n_games, mcts_playout_num, c_puct, n_playout)
+
+
+def policy_evaluate_againts_mcts_checking_mcts(model_name, path, input_plains_num, width, height, n, game_board, n_games, mcts_playout_num, c_puct, n_playout):
+
+
+    print(f"Started games of model: {model_name}")
+
+    board_state, board_name, p1, p2, _, _ = game_board
+
+    best_policy = PolicyValueNet(width, height, model_file=path, input_plains_num=input_plains_num)
+
+    model_mcts_player = MCTSPlayer(best_policy.policy_value_fn, c_puct=c_puct, n_playout=n_playout, name=model_name,
+                               input_plains_num=input_plains_num)
+
+    pure_mcts_player = MCTS_Pure(c_puct=5, n_playout=mcts_playout_num, name="Pure MCTS")
+
+
+    win_cnt = defaultdict(int)
+    for i in range(n_games):
+        i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
+        game = Game(board1)
+
+        path = f'/home/lirontyomkin/AlphaZero_Gomoku/check_mcts/{model_mcts_player.name}/game_{i+1}/'
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+
+        winner = game.start_play_just_game_capture(path,
+                                                   model_mcts_player,
+                                                   pure_mcts_player,
+                                                   start_player=i % 2 + 1,
+                                                   is_shown=1,
+                                                   game_num=i+1)
+
+        win_cnt[winner] += 1
+
+    win = win_cnt[1]
+    lose = win_cnt[2]
+    tie = win_cnt[-1]
+    win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
+    result = (win, lose, tie, win_ratio)
+
+    print(f"model: {model_name}, win: {win}, lose: {lose}, tie:{tie}, win ratio: {win_ratio}")
+
+    print(f"Done games of model: {model_name}")
+
+    return result
+
+
+def models_vs_mcts_flow():
     start = time.time()
 
-    n=4
-    width= 6
+    n = 4
+    width = 6
     height = 6
 
     max_model_iter = 5000
@@ -276,28 +331,66 @@ if __name__ == '__main__':
     c_puct = 5
     n_playout = 400
 
-
     # # model_name, max_model_iter, model_check_freq, input_plains_num, game_board = EMPTY_BOARD, n = 4, width = 6, height = 6, n_games = 1000, mcts_playout_num = 5000, c_puct = 5, n_playout = 400)
-    args_v7 = ('pt_6_6_4_p3_v7', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)
-    args_v9 = ('pt_6_6_4_p3_v9', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)
-    args_v10 =('pt_6_6_4_p4_v10', max_model_iter, model_check_freq, 4, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)
+    args_v7 = (
+    'pt_6_6_4_p3_v7', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num,
+    c_puct, n_playout)
+    args_v9 = (
+    'pt_6_6_4_p3_v9', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num,
+    c_puct, n_playout)
+    args_v10 = (
+    'pt_6_6_4_p4_v10', max_model_iter, model_check_freq, 4, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num,
+    c_puct, n_playout)
 
     models_args = [args_v7, args_v9, args_v10]
-    #
-    # for model_args in models_args:
-    #     model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height, n_games, mcts_playout_num, c_puct, n_playout = model_args
-    #     model_againts_mcts(model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)
-    #
+
+    for model_args in models_args:
+        model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height, n_games, mcts_playout_num, c_puct, n_playout = model_args
+        model_againts_mcts(model_name, max_model_iter, model_check_freq, input_plains_num, game_board, n, width, height,
+                           n_games, mcts_playout_num, c_puct, n_playout)
 
     # args_given_model = ('best_policy_6_6_4.model2', 4, width, height, n, EMPTY_BOARD, n_games, mcts_playout_num, c_puct, n_playout)
     # results_base_model = policy_evaluate_againts_mcts(-1, args_given_model)
 
-    results_base_model = (-1,-1,-1,-1,-1)
+    results_base_model = (-1, -1, -1, -1, -1)
     save_mcts_pics_and_collage(models_args, results_base_model)
-
 
     fmt = '{0.days} days {0.hours} hours {0.minutes} minutes {0.seconds} seconds'
     end = time.time()
 
-    print("all of it took", fmt.format(rd(seconds = end - start)))
+    print("all of it took", fmt.format(rd(seconds=end - start)))
+
+
+
+def check_mcts_flow():
+    height = 6
+    width = 6
+    n = 4
+    game_board = EMPTY_BOARD
+    n_games = 100
+    mcts_playout_num = 5000
+    c_puct = 5
+    n_playout = 400
+
+    v7 = (
+    '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_2100.model', 'pt_6_6_4_p3_v7_2100', 3)
+    v9 = (
+    '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1350.model', 'pt_6_6_4_p3_v9_1350', 3)
+    v10 = (
+    '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1150.model', 'pt_6_6_4_p4_v10_1150', 4)
+    models = [v7, v9, v10]
+
+
+    jobs = []
+    for model in models:
+        jobs.append((model, width, height, n, game_board, n_games, mcts_playout_num, c_puct, n_playout))
+
+    with Pool(3) as pool:
+        pool.starmap(check_mcts_goodness, jobs)
+        pool.close()
+        pool.join()
+
+
+if __name__ == '__main__':
+    check_mcts_flow()
 

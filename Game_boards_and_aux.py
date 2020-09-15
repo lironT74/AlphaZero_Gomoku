@@ -142,17 +142,21 @@ def generate_matrix_dist_metric(dim, norm=True):
 
 
 
-def initialize_board_without_init_call(board_height, board_width, n_in_row, input_board):
+def initialize_board_without_init_call(board_height, board_width, n_in_row, input_board, *args, **kwargs):
+    open_path_threshold = kwargs.get("open_path_threshold", 0)
     board = input_board
     board = np.flipud(board)
     i_board = np.zeros((2, board_height, board_width))
     i_board[0] = board == 1
     i_board[1] = board == 2
-    board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
+    board = Board(width=board_width, height=board_height, n_in_row=n_in_row, open_path_threshold=open_path_threshold)
     return i_board, board
 
 
 def initialize_board_with_init_and_last_moves(board_height, board_width, input_board, n_in_row = 4, start_player=2, **kwargs):
+
+    open_path_threshold = kwargs.get("open_path_threshold", 0)
+
 
     last_move_p1 = kwargs.get('last_move_p1', None)
     last_move_p2 = kwargs.get('last_move_p2', None)
@@ -163,7 +167,7 @@ def initialize_board_with_init_and_last_moves(board_height, board_width, input_b
     i_board[0] = board == 1
     i_board[1] = board == 2
 
-    board = Board(width=board_width, height=board_height, n_in_row=n_in_row)
+    board = Board(width=board_width, height=board_height, n_in_row=n_in_row, open_path_threshold=open_path_threshold)
     board.init_board(start_player=start_player, initial_state=i_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
     return board
 

@@ -11,6 +11,7 @@ import PIL.Image
 import matplotlib.pyplot as plt
 import os
 import io
+import string
 
 
 WIN_SCORE = 25
@@ -32,6 +33,8 @@ class Board(object):
         # need how many pieces in a row to win
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
+        self.open_path_threshold = kwargs.get('open_path_threshold', 0)
+
 
     def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
 
@@ -265,7 +268,6 @@ class Board(object):
                             last_move=True,
                             normalized_density_scores=False,
                             normalize_all_heuristics=False,
-
                             density= 'reg',
                             sig = 3,
                             max_radius_density=-1,
@@ -476,8 +478,9 @@ class Board(object):
                                              row: int,
                                              col: int,
                                              cur_positions,
-                                             opponent_positions,
-                                             threshold = -1):
+                                             opponent_positions):
+
+        threshold = self.open_path_threshold
 
         tmp_score_dict = {
             "linear": 0.0,
@@ -487,7 +490,7 @@ class Board(object):
 
         exp = exp
 
-        open_paths_data, max_length_path = self.find_open_paths(row, col, cur_positions, opponent_positions, threshold=threshold)
+        open_paths_data, max_length_path = self.find_open_paths(row, col, cur_positions, opponent_positions)
 
         # compute the linear, nonlinear and interactions scores for the cell based on the potential paths
         for i in range(len(open_paths_data)):
@@ -524,10 +527,9 @@ class Board(object):
                         row: int,
                         col: int,
                         cur_positions,
-                        opponent_positions,
-                        threshold = -1
-                        ):
+                        opponent_positions):
 
+        threshold = self.open_path_threshold
 
         open_paths_data = []  # this list will hold information on all the potential paths, each path will be represented by a pair (length and empty squares, which will be used to check overlap)
         max_length_path = 0
@@ -910,6 +912,87 @@ class Game(object):
                     print('_'.center(8), end='')
             print('\r\n\r\n')
 
+
+    def save_game_graphic(self, board, path, players, shutter_size, move, time):
+
+        # mpl.use('Agg')
+
+        fontsize = 15
+
+        my_marker = "X" if board.get_current_player() == 1 else "O"
+
+        row, col = move
+
+        if board.get_current_player() == 1:
+            x_positions = board.current_state()[0]
+            x_positions[row, col] = 1
+
+            o_positions = board.current_state()[1]
+        else:
+            x_positions = board.current_state()[1]
+
+            o_positions = board.current_state()[0]
+            o_positions[row, col] = 1
+
+
+
+        x_axis = [letter for i, letter in zip(range(board.width), string.ascii_lowercase)]
+        y_axis = range(board.height, 0, -1)
+
+
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111)
+
+        if shutter_size != -1:
+            shutter_str = f", shutter size = {shutter_size}"
+        else:
+            shutter_str = ""
+
+
+        if np.sum(board.current_state(last_move=True)[2]) == 1:
+            y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
+            x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+            last_move = f"last move: {x_last_move}{y_last_move}"
+        else:
+            last_move = "No last move"
+
+
+        fig.suptitle(f"{players[board.get_current_player()].name}'s turn (plays {my_marker}), {last_move}{shutter_str}",
+                     fontsize=fontsize + 5)
+
+
+        im1 = ax.imshow(np.zeros((board.width, board.height)), cmap='Greys')
+
+        ax.set_xticks(np.arange(len(x_axis)))
+        ax.set_yticks(np.arange(len(y_axis)))
+        ax.set_xticklabels(x_axis, fontsize=fontsize)
+        ax.set_yticklabels(y_axis, fontsize=fontsize)
+
+        ax.hlines([x+0.5 for x in range(board.height)], color="black", *ax.get_xlim())
+        ax.vlines([x+0.5 for x in range(board.width)], color="black", *ax.get_ylim())
+
+        plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+
+        for i in range(len(y_axis)):
+            for j in range(len(x_axis)):
+                text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                    "O" if o_positions[i, j] == 1 else ""),
+                                ha="center", va="center", color="black", fontsize=fontsize+5)
+
+        print(f"{path}{time}.png")
+
+        fig.tight_layout()
+
+        # buf = io.BytesIO()
+        # plt.savefig(buf, format='png')
+        # buf.seek(0)
+        # image = PIL.Image.open(buf)
+
+        plt.savefig(f"{path}{time}.png")
+        plt.close('all')
+
+
+
     def start_play(self, player1, player2, start_player=1, is_shown=1, start_board=None, **kwargs):
 
         last_move_p1 = kwargs.get('last_move_p1', None)
@@ -926,7 +1009,6 @@ class Game(object):
             raise Exception('start_player should be either 1 (player1 first) '
                             'or 2 (player2 first)')
 
-        started_player = start_player
 
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
         started_player = self.board.get_current_player()
@@ -940,9 +1022,10 @@ class Game(object):
         last_moves_data = {p1: [], p2: []}
         shutter_sizes = {p1: [], p2: []}
 
-        if savefig:
-            main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
 
+        if savefig:
+
+            main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
             if not os.path.exists(main_path1):
                 main_path2 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player2.name} vs {player1.name}/'
                 if not os.path.exists(main_path2):
@@ -951,6 +1034,7 @@ class Game(object):
                     main_path = main_path2
             else:
                 main_path = main_path1
+
 
             last_move_str_1 = " with correct last move " if last_move_p1==correct_move_p1 and player1.input_plains_num == 4 and correct_move_p1 is not None else " "
             last_move_str_2 = " with correct last move " if last_move_p2==correct_move_p2 and player2.input_plains_num == 4 and correct_move_p2 is not None else " "
@@ -1005,10 +1089,6 @@ class Game(object):
             col = move % self.board.width
 
 
-            # if not savefig:
-            #     if is_shown:
-            #         player_in_turn.get_action(self.board, return_prob=0, return_fig=False, display=True, shutter_size=shutter_size)
-
             if savefig:
 
                 shutter_size = -1
@@ -1053,6 +1133,117 @@ class Game(object):
                 return winner
 
 
+
+    def start_play_just_game_capture(self, path, player1, player2, start_player=1, is_shown=1, start_board=None, **kwargs):
+
+        last_move_p1 = kwargs.get('last_move_p1', None)
+        last_move_p2 = kwargs.get('last_move_p2', None)
+
+        game_num = kwargs.get('game_num', "")
+
+        board_name = kwargs.get('board_name', 'empty board')
+
+        """start a game between two players"""
+        if start_player not in (1, 2):
+            raise Exception('start_player should be either 1 (player1 first) '
+                            'or 2 (player2 first)')
+
+
+
+        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+        started_player = self.board.get_current_player()
+
+        p1, p2 = self.board.players
+        player1.set_player_ind(p1)
+        player2.set_player_ind(p2)
+        players = {p1: player1, p2: player2}
+
+        counter = 0
+        last_moves_data = {p1: [], p2: []}
+        shutter_sizes = {p1: [], p2: []}
+
+        if board_name == 'empty board':
+            first = '(Pure MCTS started)' if players[start_player].name == "Pure MCTS" else '(The model started)'
+        else:
+            first = '(Pure MCTS continued)' if players[start_player].name == "Pure MCTS" else '(The model continued)'
+
+
+
+        if last_move_p1 != None:
+            row = self.board.width - 1 - last_move_p1[0]
+            col = last_move_p1[1] % self.board.width
+
+            board_state = self.board.current_state(last_move=(players[1].input_plains_num == 4))
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
+                                                    opponent_positions=opponent_positions)
+            last_moves_data[1].append(([row, col], open_paths))
+
+        if last_move_p2 != None:
+            row = self.board.width - 1 - last_move_p2[0]
+            col = last_move_p2[1] % self.board.width
+
+            board_state = self.board.current_state(last_move=(players[2].input_plains_num == 4))
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
+                                                    opponent_positions=opponent_positions)
+            last_moves_data[2].append(([row, col], open_paths))
+
+
+        while True:
+
+            current_player = self.board.get_current_player()
+
+            player_in_turn = players[current_player]
+
+            move = player_in_turn.get_action(self.board)
+            row = self.board.width - 1 - move // self.board.width
+            col = move % self.board.width
+
+            shutter_size = -1
+            if len(last_moves_data[current_player]) > 0:
+                shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1],
+                                                     current_move=(row, col))
+
+            shutter_sizes[current_player].append(shutter_size)
+            board_state = self.board.current_state(last_move=True)
+            cur_positions = board_state[0]
+            opponent_positions = board_state[1]
+            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
+                                                    opponent_positions=opponent_positions)
+            last_moves_data[current_player].append(([row, col], open_paths))
+
+
+            counter += 1
+
+
+            if is_shown:
+                self.save_game_graphic(self.board, path, players=players, shutter_size=shutter_size, move=(row, col), time=counter)
+
+            self.board.do_move(move)
+
+
+            end, winner = self.board.game_end()
+
+
+            if end:
+
+                # self.save_shutter_size_fig(path, shutter_sizes, started_player, counter, players)
+
+                # game_path = f"{path}game {game_num} {first}.txt"
+
+                self.save_shutter_size_fig(path, shutter_sizes, started_player, counter, players)
+
+                if winner != -1:
+                    os.rename(path[:-1], path[:-1] + f" ({players[winner].name} won)")
+                else:
+                    os.rename(path[:-1], path[:-1] + f" (tie)")
+
+                return winner
+
+
     @staticmethod
     def save_shutter_size_fig(path, shutter_sizes, start_player, counter, players):
 
@@ -1063,7 +1254,6 @@ class Game(object):
         linewidth = 3
 
         plays = range(1, counter + 1, 1)
-
 
         start_player_range = [(index, shutter) for index,shutter in zip(plays[0::2], shutter_sizes[start_player]) if shutter != -1]
         second_player_range = [(index, shutter) for index,shutter in zip(plays[1::2], shutter_sizes[3-start_player]) if shutter != -1]

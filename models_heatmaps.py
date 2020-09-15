@@ -34,7 +34,7 @@ def save_heatmaps(model_name,
             os.makedirs(heatmap_save_path)
 
         board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
-        board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
+        board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2, open_path_threshold=-1)
         save_heatmap_for_board_and_model(
                                     model_name,
                                     width, height,
@@ -47,7 +47,7 @@ def save_heatmaps(model_name,
 
         for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
 
-            board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2)
+            board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2, open_path_threshold=-1)
 
             save_heatmap_for_board_and_model(
                                     model_name,
@@ -63,8 +63,7 @@ def save_heatmaps(model_name,
 
             board = initialize_board_with_init_and_last_moves(height, width,
                                                               input_board=board_state,
-                                                              n_in_row=n, last_move_p1=p1, last_move_p2=p2)
-
+                                                              n_in_row=n, last_move_p1=p1, last_move_p2=p2, open_path_threshold=-1)
             if input_plains_num == 4:
                 board_name_1 = board_name + " with correct last move"
             else:
@@ -86,7 +85,8 @@ def save_heatmaps(model_name,
                                                                   input_board=board_state,
                                                                   n_in_row=n,
                                                                   last_move_p1=alternative_p1,
-                                                                  last_move_p2=alternative_p2)
+                                                                  last_move_p2=alternative_p2,
+                                                                  open_path_threshold=-1)
 
                 save_heatmap_for_board_and_model(
                                         model_name,

@@ -225,6 +225,7 @@ class TrainPipeline():
 
         return win_ratio
 
+
     def run(self):
         """run the training pipeline"""
 

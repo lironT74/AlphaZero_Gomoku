@@ -20,7 +20,7 @@ def compare_all_models(models_list, width=6, height=6, n=4):
         pool.join()
 
 
-def compare_two_models(model1, model2, width, height, n):
+def compare_two_models(model1, model2, width, height, n, n_playout=400):
 
     path1, name1, plains1 = model1
     path2, name2, plains2 = model2
@@ -28,10 +28,10 @@ def compare_two_models(model1, model2, width, height, n):
 
 
     best_policy_1 = PolicyValueNet(width, height, model_file=path1, input_plains_num=plains1)
-    mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name=name1, input_plains_num=plains1)
+    mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=n_playout, name=name1, input_plains_num=plains1)
 
     best_policy_2 = PolicyValueNet(width, height, model_file=path2, input_plains_num=plains2)
-    mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name=name2, input_plains_num=plains2)
+    mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=n_playout, name=name2, input_plains_num=plains2)
 
 
     for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
@@ -124,7 +124,7 @@ def compare_two_models(model1, model2, width, height, n):
 
 
 def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts_player_2, last_move_p1, last_move_p2, correct_move_p1, correct_move_p2, start_player):
-    i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state)
+    i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
     game1 = Game(board1)
     game1.start_play(player1=mcts_player_1, player2=mcts_player_2,
                      start_player=start_player,
@@ -137,7 +137,7 @@ def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts
                      savefig=1,
                      board_name=board_name)
 
-    i_board2, board2 = initialize_board_without_init_call(width, height, n, input_board=board_state)
+    i_board2, board2 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
     game2 = Game(board2)
     game2.start_play(player1=mcts_player_2, player2=mcts_player_1,
                     start_player=start_player,
