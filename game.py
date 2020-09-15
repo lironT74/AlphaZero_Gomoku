@@ -35,7 +35,6 @@ class Board(object):
         self.players = [1, 2]  # player1 and player2
         self.open_path_threshold = kwargs.get('open_path_threshold', 0)
 
-
     def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
 
         last_move_p1 = kwargs.get('last_move_p1', None)
@@ -283,7 +282,6 @@ class Board(object):
         height = self.height
 
 
-        # scores = np.zeros((5, width, height))
         scores = {"density": np.zeros((width, height)), "linear": np.zeros((width, height)), "nonlinear": np.zeros((width, height)), "interaction": np.zeros((width, height)), "interaction with forcing": np.zeros((width, height))}
         radius = width - 1
 
@@ -400,8 +398,6 @@ class Board(object):
         elif normalized_density_scores:
             scores["density"][:, :] = self.normalize_matrix(scores["density"][:, :], width, height, cur_positions, opponent_positions)
 
-        # for i in range(scores.shape[0]):
-        #     scores[i] = np.flipud(scores[i])
 
         if opponent_weight <= 0:
             return scores
@@ -479,8 +475,6 @@ class Board(object):
                                              col: int,
                                              cur_positions,
                                              opponent_positions):
-
-        threshold = self.open_path_threshold
 
         tmp_score_dict = {
             "linear": 0.0,

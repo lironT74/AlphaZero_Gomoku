@@ -5,12 +5,12 @@ from mcts_alphaZero import MCTSPlayer
 from Game_boards_and_aux import *
 from scipy.special import comb
 
-def compare_all_models(models_list, width=6, height=6, n=4):
+def compare_all_models(models_list, width=6, height=6, n=4, open_path_threshold=-1, n_playout=400):
 
     jobs = []
     for i in range(len(models_list)):
         for j in range(i+1, len(models_list)):
-            jobs.append((models_list[i], models_list[j], width, height, n))
+            jobs.append((models_list[i], models_list[j], width, height, n, open_path_threshold, n_playout))
 
 
     with Pool(int(comb(len(models_list), 2))) as pool:
@@ -20,7 +20,7 @@ def compare_all_models(models_list, width=6, height=6, n=4):
         pool.join()
 
 
-def compare_two_models(model1, model2, width, height, n, n_playout=400):
+def compare_two_models(model1, model2, width, height, n, open_path_threshold, n_playout):
 
     path1, name1, plains1 = model1
     path2, name2, plains2 = model2
@@ -47,7 +47,8 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                       last_move_p2=p2,
                       correct_move_p1=p1,
                       correct_move_p2=p2,
-                      start_player=2)
+                      start_player=2,
+                      open_path_threshold=open_path_threshold)
 
         if plains1+plains2 >= 7:
 
@@ -62,7 +63,8 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                           last_move_p2=alternative_p2,
                           correct_move_p1=p1,
                           correct_move_p2=p2,
-                          start_player=2)
+                          start_player=2,
+                          open_path_threshold=open_path_threshold)
 
 
         if plains1+plains2 == 8:
@@ -78,7 +80,8 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                           last_move_p2=alternative_p2,
                           correct_move_p1=p1,
                           correct_move_p2=p2,
-                          start_player=2)
+                          start_player=2,
+                          open_path_threshold=open_path_threshold)
 
             save_game_res(width=width,
                           height=height,
@@ -91,7 +94,8 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                           last_move_p2=p2,
                           correct_move_p1=p1,
                           correct_move_p2=p2,
-                          start_player=2)
+                          start_player=2,
+                          open_path_threshold=open_path_threshold)
 
     for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
         save_game_res(width=width,
@@ -105,7 +109,8 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                       last_move_p2=p2,
                       correct_move_p1=p1,
                       correct_move_p2=p2,
-                      start_player=2)
+                      start_player=2,
+                      open_path_threshold=open_path_threshold)
 
     board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
 
@@ -120,11 +125,12 @@ def compare_two_models(model1, model2, width, height, n, n_playout=400):
                   last_move_p2=p2,
                   correct_move_p1=p1,
                   correct_move_p2=p2,
-                  start_player=1)
+                  start_player=1,
+                  open_path_threshold=open_path_threshold)
 
 
-def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts_player_2, last_move_p1, last_move_p2, correct_move_p1, correct_move_p2, start_player):
-    i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
+def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts_player_2, last_move_p1, last_move_p2, correct_move_p1, correct_move_p2, start_player, open_path_threshold):
+    i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=open_path_threshold)
     game1 = Game(board1)
     game1.start_play(player1=mcts_player_1, player2=mcts_player_2,
                      start_player=start_player,
@@ -137,7 +143,7 @@ def save_game_res(width, height, n, board_state, board_name, mcts_player_1, mcts
                      savefig=1,
                      board_name=board_name)
 
-    i_board2, board2 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
+    i_board2, board2 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=open_path_threshold)
     game2 = Game(board2)
     game2.start_play(player1=mcts_player_2, player2=mcts_player_1,
                     start_player=start_player,
