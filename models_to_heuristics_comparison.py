@@ -10,7 +10,7 @@ import string
 import copy
 
 
-def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, opponent_weight=0.5, threshold=0.05, max_radius_density = 2, **kwargs):
+def compare_model_to_heuristics(path, model_name, game_board, n=4, width=6, height=6, opponent_weight=0.5, threshold=0.05, max_radius_density = 2, **kwargs):
 
     input_plains_num = kwargs.get("input_plains_num", 4)
     max_model_iter = kwargs.get("max_model_iter", 5000)
@@ -103,7 +103,11 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
 
     h, l = ax.get_legend_handles_labels()
 
-    ord = [0,6,1,7,2,8,3,9,4,10,5,11]
+    if len(distances_lists.keys()) == 6:
+        ord = [0,6,1,7,2,8,3,9,4,10,5,11]
+    elif len(distances_lists.keys()) == 5:
+        ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+
     lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize+5)
 
 
@@ -115,8 +119,7 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/{model_name}/"
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/ABCDEFG/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/{model_name}/"
+    path = f"{path}{model_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -129,11 +132,11 @@ def compare_model_to_heuristics(model_name, game_board, n=4, width=6, height=6, 
     plt.close('all')
 
 
-def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5, threshold=0.05, max_radius_density=2, open_path_threshold=0):
+def heuristics_heatmaps(game_board, path,  height=6, width=6, n=4, opponent_weight=0.5, threshold=0.05, max_radius_density=2, open_path_threshold=0):
 
     board_state, board_name, last_move_p1, last_move_p2, alternative_p1, alternative_p2 = game_board
     board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
-                                                      last_move_p2=last_move_p2)
+                                                      last_move_p2=last_move_p2, open_path_threshold=open_path_threshold)
 
     heuristics_scores = threshold_normalization_heuristics(board=board, opponent_weight=opponent_weight, max_radius_density=max_radius_density, rounding=3, threshold=threshold, board_name=board_name)
 
@@ -179,8 +182,7 @@ def heuristics_heatmaps(game_board, height=6, width=6, n=4, opponent_weight=0.5,
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/heuristics_heatmaps/"
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/ABCDEFG/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/heuristics_heatmaps/"
+    path = f"{path}heuristics_heatmaps/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -224,10 +226,8 @@ def create_collages_boards(listofimages, fig_name, path):
     new_im.save(path + f"{fig_name}.png")
 
 
-def call_collage_compare_to_heuristics(opponent_weight, threshold, open_path_threshold):
+def call_collage_compare_to_heuristics(path):
 
-    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/ABCDEFG/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
 
     listofimages_empty = [
         f"{path}pt_6_6_4_p3_v7/empty board.png",
@@ -352,8 +352,11 @@ def normalize_matrix(scores, board, rounding):
 def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_path_threshold=0):
     BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
 
+    path =f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
+
     for game_board in BOARDS:
-        compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p4_v10',
                                     input_plains_num=4,
                                     model_check_freq=50,
                                     max_model_iter=5000,
@@ -364,7 +367,8 @@ def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_pat
                                     threshold=threshold,
                                     open_path_threshold=open_path_threshold)
 
-        compare_model_to_heuristics(model_name='pt_6_6_4_p4_v10',
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p4_v10',
                                     input_plains_num=4,
                                     model_check_freq=50,
                                     max_model_iter=5000,
@@ -375,7 +379,8 @@ def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_pat
                                     threshold=threshold,
                                     open_path_threshold=open_path_threshold)
 
-        compare_model_to_heuristics(model_name='pt_6_6_4_p3_v7',
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p3_v7',
                                     input_plains_num=3,
                                     model_check_freq=50,
                                     max_model_iter=5000,
@@ -386,7 +391,8 @@ def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_pat
                                     threshold=threshold,
                                     open_path_threshold=open_path_threshold)
 
-        compare_model_to_heuristics(model_name='pt_6_6_4_p3_v9',
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p3_v9',
                                     input_plains_num=3,
                                     model_check_freq=50,
                                     max_model_iter=5000,
@@ -396,11 +402,12 @@ def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_pat
                                     opponent_weight=opponent_weight,
                                     threshold=threshold,
                                     open_path_threshold=open_path_threshold)
+
 
     for board in BOARDS:
-        heuristics_heatmaps(board, height=6, width=6, n=4, opponent_weight=opponent_weight, threshold=threshold, open_path_threshold=open_path_threshold)
+        heuristics_heatmaps(board, path, height=6, width=6, n=4, opponent_weight=opponent_weight, threshold=threshold, open_path_threshold=open_path_threshold)
 
-    call_collage_compare_to_heuristics(opponent_weight=opponent_weight, threshold=threshold, open_path_threshold=open_path_threshold)
+    call_collage_compare_to_heuristics(path=path)
 
 
 def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=0):
@@ -419,12 +426,10 @@ def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path
 
 
 if __name__ == "__main__":
-    # thresholds = [1, 0.05, 0.01]
-    # o_weights = [0, 0.2, 0.5, 0.7, 1]
 
-    thresholds = [0.1]
-    o_weights = [0.5]
+    thresholds = [1, 0.1, 0.05, 0.01]
+    o_weights = [0, 0.2, 0.5, 0.7, 1]
 
-    open_path_threshold = 0
-    run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold)
+    run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=0)
+    run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=-1)
 
