@@ -211,7 +211,8 @@ class TrainPipeline():
             winner = self.game.start_play(current_mcts_player,
                                           pure_mcts_player,
                                           start_player=i % 2 + 1,
-                                          is_shown=0)
+                                          is_shown=0,
+                                          savefig=False)
             win_cnt[winner] += 1
         win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
         print("num_playouts: {}, win: {}, lose: {}, tie:{}".format(

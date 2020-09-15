@@ -12,8 +12,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
-# from torch.utils.tensorboard import SummaryWriter
 
+# from torch.utils.tensorboard import SummaryWriter
 # from tensorboardX import SummaryWriter
 # WRITER_DIR = './runs/pt_6_6_4_p4_v4_training'
 # writer = SummaryWriter(WRITER_DIR)

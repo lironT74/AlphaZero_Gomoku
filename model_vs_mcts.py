@@ -276,14 +276,7 @@ if __name__ == '__main__':
     c_puct = 5
     n_playout = 400
 
-    # max_model_iter = 100
-    # model_check_freq = 50
-    # n_games = 10
-    # mcts_playout_num = 400
-    # c_puct = 5
-    # n_playout = 400
 
-    #
     # # model_name, max_model_iter, model_check_freq, input_plains_num, game_board = EMPTY_BOARD, n = 4, width = 6, height = 6, n_games = 1000, mcts_playout_num = 5000, c_puct = 5, n_playout = 400)
     args_v7 = ('pt_6_6_4_p3_v7', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)
     args_v9 = ('pt_6_6_4_p3_v9', max_model_iter, model_check_freq, 3, EMPTY_BOARD, n, width, height, n_games, mcts_playout_num, c_puct, n_playout)

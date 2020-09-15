@@ -477,7 +477,7 @@ class Board(object):
                                              col: int,
                                              cur_positions,
                                              opponent_positions,
-                                             threshold = 0):
+                                             threshold = -1):
 
         tmp_score_dict = {
             "linear": 0.0,
@@ -525,7 +525,7 @@ class Board(object):
                         col: int,
                         cur_positions,
                         opponent_positions,
-                        threshold = 0
+                        threshold = -1
                         ):
 
 
@@ -931,6 +931,15 @@ class Game(object):
         self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
         started_player = self.board.get_current_player()
 
+        p1, p2 = self.board.players
+        player1.set_player_ind(p1)
+        player2.set_player_ind(p2)
+        players = {p1: player1, p2: player2}
+
+        counter = 0
+        last_moves_data = {p1: [], p2: []}
+        shutter_sizes = {p1: [], p2: []}
+
         if savefig:
             main_path1 = f'/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_name}/{player1.name} vs {player2.name}/'
 
@@ -959,43 +968,33 @@ class Game(object):
                 os.makedirs(path)
 
 
-        p1, p2 = self.board.players
-        player1.set_player_ind(p1)
-        player2.set_player_ind(p2)
-        players = {p1: player1, p2: player2}
 
-        counter = 0
-        last_moves_data = {p1: [], p2: []}
-        shutter_sizes = {p1: [], p2: []}
+            if last_move_p1 != None:
+                row = self.board.width - 1 - last_move_p1[0]
+                col = last_move_p1[1] % self.board.width
 
+                board_state = self.board.current_state(last_move=(players[1].input_plains_num == 4))
+                cur_positions = board_state[0]
+                opponent_positions = board_state[1]
+                open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
+                last_moves_data[1].append(([row, col], open_paths))
 
-        if last_move_p1 != None:
-            row = self.board.width - 1 - last_move_p1[0]
-            col = last_move_p1[1] % self.board.width
+            if last_move_p2 != None:
+                row = self.board.width - 1 - last_move_p2[0]
+                col = last_move_p2[1] % self.board.width
 
-            board_state = self.board.current_state(last_move=(players[1].input_plains_num == 4))
-            cur_positions = board_state[0]
-            opponent_positions = board_state[1]
-            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
-            last_moves_data[1].append(([row, col], open_paths))
-
-        if last_move_p2 != None:
-            row = self.board.width - 1 - last_move_p2[0]
-            col = last_move_p2[1] % self.board.width
-
-            board_state = self.board.current_state(last_move=(players[2].input_plains_num == 4))
-            cur_positions = board_state[0]
-            opponent_positions = board_state[1]
-            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
-                                                    opponent_positions=opponent_positions)
-            last_moves_data[2].append(([row, col], open_paths))
+                board_state = self.board.current_state(last_move=(players[2].input_plains_num == 4))
+                cur_positions = board_state[0]
+                opponent_positions = board_state[1]
+                open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
+                                                        opponent_positions=opponent_positions)
+                last_moves_data[2].append(([row, col], open_paths))
 
 
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
 
         while True:
-            counter+=1
 
             current_player = self.board.get_current_player()
 
@@ -1005,28 +1004,30 @@ class Game(object):
             row = self.board.width - 1 - move // self.board.width
             col = move % self.board.width
 
-            shutter_size = -1
-            if len(last_moves_data[current_player]) > 0:
-                shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1], current_move=(row, col))
-
-            shutter_sizes[current_player].append(shutter_size)
 
             # if not savefig:
             #     if is_shown:
             #         player_in_turn.get_action(self.board, return_prob=0, return_fig=False, display=True, shutter_size=shutter_size)
 
             if savefig:
+
+                shutter_size = -1
+                if len(last_moves_data[current_player]) > 0:
+                    shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1],
+                                                         current_move=(row, col))
+                shutter_sizes[current_player].append(shutter_size)
+
+                counter += 1
                 _, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True, display=False, shutter_size=shutter_size)
                 image = PIL.Image.open(heatmap_buf)
                 plt.savefig(path + f"{counter}.png")
                 plt.close('all')
 
-
-            board_state = self.board.current_state(last_move=(players[current_player].input_plains_num == 4))
-            cur_positions = board_state[0]
-            opponent_positions = board_state[1]
-            open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
-            last_moves_data[current_player].append(([row, col], open_paths))
+                board_state = self.board.current_state(last_move=(players[current_player].input_plains_num == 4))
+                cur_positions = board_state[0]
+                opponent_positions = board_state[1]
+                open_paths = self.board.find_open_paths(row=row, col=col, cur_positions=cur_positions, opponent_positions=opponent_positions)
+                last_moves_data[current_player].append(([row, col], open_paths))
 
 
             self.board.do_move(move)
@@ -1044,9 +1045,11 @@ class Game(object):
                 #     else:
                 #         print("Game end. Tie")
 
+
                 if savefig:
                     self.save_shutter_size_fig(path, shutter_sizes, started_player, counter, players)
                     os.rename(path[:-1], path[:-1] + f" ({winner} won)")
+
                 return winner
 
 
