@@ -349,10 +349,8 @@ def normalize_matrix(scores, board, rounding):
     return scores
 
 
-def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, open_path_threshold=0):
+def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, path, open_path_threshold=0):
     BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
-
-    path =f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
 
     for game_board in BOARDS:
         compare_model_to_heuristics(path=path,
@@ -415,8 +413,10 @@ def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path
     with Pool(len(thresholds)*len(o_weights)) as pool:
         jobs = []
         for threshold in thresholds:
-            for o_weight in o_weights:
-                jobs.append((o_weight, threshold, open_path_threshold))
+            for opponent_weight in o_weights:
+
+                path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
+                jobs.append((opponent_weight, threshold, path, open_path_threshold))
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
         pool.starmap(run_heuristics_for_threshold_and_weight, jobs)
