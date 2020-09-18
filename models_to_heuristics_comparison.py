@@ -143,42 +143,98 @@ def heuristics_heatmaps(game_board, path,  height=6, width=6, n=4, opponent_weig
     x_positions = board.current_state()[0]
     o_positions = board.current_state()[1]
 
-    fontsize = 15
-    fig, axes = plt.subplots(1, len(heuristics_scores.keys()), figsize=(7*len(heuristics_scores.keys())+3, 8))
+    cmap="Reds"
 
-    fig.suptitle(f"Heuristics heatmaps on {board_name}, o_weight = {opponent_weight}, normalization threshold = {threshold}", fontsize=fontsize + 10)
-    x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
-    y_axis = range(height, 0, -1)
-    sm = plt.cm.ScalarMappable(cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
+    if len(heuristics_scores.keys()) == 6:
+        fontsize = 25
 
-    for index, key in enumerate(heuristics_scores.keys()):
-        ax = axes[index]
+        fig = plt.figure(constrained_layout=False)
+        fig.set_size_inches(46, 25)
 
-        move_probs_policy = heuristics_scores[key]
+        fig.suptitle( f"\nHeuristics heatmaps on {board_name}, o_weight = {opponent_weight}, "
+                      f"normalization threshold = {threshold}", fontsize=fontsize + 15)
 
-        im1 = ax.imshow(move_probs_policy, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
-        divider1 = make_axes_locatable(ax)
-        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(sm, ax=ax, cax=cax1).ax.tick_params(labelsize=fontsize)
+        x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
+        y_axis = range(height, 0, -1)
 
-        ax.set_xticks(np.arange(len(x_axis)))
-        ax.set_yticks(np.arange(len(y_axis)))
+        grid = fig.add_gridspec(nrows=5, ncols=5, height_ratios=[20,0.1,20,0.1,1], width_ratios=[2,10,10,10,2])
 
-        ax.set_xticklabels(x_axis, fontsize=fontsize)
-        ax.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
-                                ha="center", va="center", color="w", fontsize=fontsize)
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
 
-        ax.set_title(f"{key}", fontsize=fontsize + 4)
+        for i, key in enumerate(heuristics_scores.keys()):
 
-    fig.tight_layout()
+            ax = fig.add_subplot(grid[int(i>2)*2,1+(i%3)])
+
+            move_probs_policy = heuristics_scores[key]
+
+            im1 = ax.imshow(move_probs_policy, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+
+            ax.set_xticks(np.arange(len(x_axis)))
+            ax.set_yticks(np.arange(len(y_axis)))
+
+            ax.set_xticklabels(x_axis, fontsize=fontsize)
+            ax.set_yticklabels(y_axis, fontsize=fontsize)
+            plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+
+            for i in range(len(y_axis)):
+                for j in range(len(x_axis)):
+                    color = "black" if move_probs_policy[i, j] < 0.55 else "white"
+                    text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                        "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                   ha="center", va="center", color=color, fontsize=fontsize - 3)
+
+            ax.set_title(f"{key}", fontsize=fontsize + 7)
+
+        cbar_ax = fig.add_subplot(grid[4, 1:-1])
+        fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
+
+
+    if len(heuristics_scores.keys()) == 5:
+        fontsize = 23
+
+        fig = plt.figure(constrained_layout=False)
+        fig.set_size_inches(47, 10)
+
+        fig.suptitle(
+            f"Heuristics heatmaps on {board_name}, o_weight = {opponent_weight}, "
+            f"normalization threshold = {threshold}",
+            fontsize=fontsize + 8)
+        x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
+        y_axis = range(height, 0, -1)
+
+        grid = fig.add_gridspec(nrows=2, ncols=11, height_ratios=[20, 1],
+                                width_ratios=[0.3, 15, 0.3, 15, 0.3, 15, 0.3, 15,  0.3, 15, 0.3])
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+
+        for i, key in enumerate(heuristics_scores.keys()):
+
+            ax = fig.add_subplot(grid[0, i * 2 + 1])
+
+            move_probs_policy = heuristics_scores[key]
+
+            im1 = ax.imshow(move_probs_policy, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+
+            ax.set_xticks(np.arange(len(x_axis)))
+            ax.set_yticks(np.arange(len(y_axis)))
+
+            ax.set_xticklabels(x_axis, fontsize=fontsize)
+            ax.set_yticklabels(y_axis, fontsize=fontsize)
+            plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+
+            for i in range(len(y_axis)):
+                for j in range(len(x_axis)):
+                    text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                        "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                   ha="center", va="center", color="black", fontsize=fontsize - 3)
+
+            ax.set_title(f"{key}", fontsize=fontsize + 5)
+
+        cbar_ax = fig.add_subplot(grid[1, 1:-1])
+        fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
+
 
     buf = io.BytesIO()
-    plt.savefig(buf, format='jpeg')
+    plt.savefig(buf, format='png')
     buf.seek(0)
     image = PIL.Image.open(buf)
 
@@ -187,7 +243,11 @@ def heuristics_heatmaps(game_board, path,  height=6, width=6, n=4, opponent_weig
     if not os.path.exists(path):
         os.makedirs(path)
 
-    plt.savefig(f"{path}{board_name}.png")
+    if os.path.exists(f"{path}{board_name}.png"):
+        os.remove(f"{path}{board_name}.png")
+
+    plt.savefig(f"{path}{board_name}.png", bbox_inches='tight')
+
     plt.close('all')
 
 
@@ -204,6 +264,7 @@ def create_collages_boards(listofimages, fig_name, path):
 
     thumbnail_width = width // cols
     thumbnail_height = height // rows
+
     size = thumbnail_width, thumbnail_height
     new_im = PIL.Image.new('RGB', (width, height))
     ims = []
@@ -270,7 +331,9 @@ def call_collage_compare_to_heuristics(path):
 def threshold_normalization_heuristics(board, opponent_weight, max_radius_density ,rounding=-1, threshold = 0.05, board_name="empty board"):
 
     heuristics_scores = board.calc_all_heuristics(max_radius_density=max_radius_density, normalize_all_heuristics=True, opponent_weight=opponent_weight)
-    heuristics_scores["people"] = get_people_distribution(board, board_name)
+
+    if board_name != "empty board":
+        heuristics_scores["people"] = get_people_distribution(board, board_name)
 
     for key in heuristics_scores.keys():
         if threshold < 1:
@@ -282,7 +345,7 @@ def threshold_normalization_heuristics(board, opponent_weight, max_radius_densit
 
 
 def get_people_distribution(board, board_name):
-    return np.zeros((board.width, board.height))
+    return PEOPLE_DISTRIBUTIONS[board_name]
 
 
 def threshold_normalization_policy(board, model_name, input_plains_num, i, rounding=-1, threshold = 0.05, model_file=None):
@@ -350,73 +413,74 @@ def normalize_matrix(scores, board, rounding):
 
 
 def run_heuristics_for_threshold_and_weight(opponent_weight, threshold, path, open_path_threshold=0):
-    BOARDS = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD]
 
-    for game_board in BOARDS:
-        compare_model_to_heuristics(path=path,
-                                    model_name='pt_6_6_4_p4_v10',
-                                    input_plains_num=4,
-                                    model_check_freq=50,
-                                    max_model_iter=5000,
-                                    tell_last_move=True,
-                                    game_board=game_board,
-                                    n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight,
-                                    threshold=threshold,
-                                    open_path_threshold=open_path_threshold)
-
-        compare_model_to_heuristics(path=path,
-                                    model_name='pt_6_6_4_p4_v10',
-                                    input_plains_num=4,
-                                    model_check_freq=50,
-                                    max_model_iter=5000,
-                                    tell_last_move=False,
-                                    game_board=game_board,
-                                    n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight,
-                                    threshold=threshold,
-                                    open_path_threshold=open_path_threshold)
-
-        compare_model_to_heuristics(path=path,
-                                    model_name='pt_6_6_4_p3_v7',
-                                    input_plains_num=3,
-                                    model_check_freq=50,
-                                    max_model_iter=5000,
-                                    tell_last_move=True,
-                                    game_board=game_board,
-                                    n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight,
-                                    threshold=threshold,
-                                    open_path_threshold=open_path_threshold)
-
-        compare_model_to_heuristics(path=path,
-                                    model_name='pt_6_6_4_p3_v9',
-                                    input_plains_num=3,
-                                    model_check_freq=50,
-                                    max_model_iter=5000,
-                                    tell_last_move=True,
-                                    game_board=game_board,
-                                    n=4, width=6, height=6,
-                                    opponent_weight=opponent_weight,
-                                    threshold=threshold,
-                                    open_path_threshold=open_path_threshold)
+    # for game_board in BOARDS:
+    #     compare_model_to_heuristics(path=path,
+    #                                 model_name='pt_6_6_4_p4_v10',
+    #                                 input_plains_num=4,
+    #                                 model_check_freq=50,
+    #                                 max_model_iter=5000,
+    #                                 tell_last_move=True,
+    #                                 game_board=game_board,
+    #                                 n=4, width=6, height=6,
+    #                                 opponent_weight=opponent_weight,
+    #                                 threshold=threshold,
+    #                                 open_path_threshold=open_path_threshold)
+    #
+    #     compare_model_to_heuristics(path=path,
+    #                                 model_name='pt_6_6_4_p4_v10',
+    #                                 input_plains_num=4,
+    #                                 model_check_freq=50,
+    #                                 max_model_iter=5000,
+    #                                 tell_last_move=False,
+    #                                 game_board=game_board,
+    #                                 n=4, width=6, height=6,
+    #                                 opponent_weight=opponent_weight,
+    #                                 threshold=threshold,
+    #                                 open_path_threshold=open_path_threshold)
+    #
+    #     compare_model_to_heuristics(path=path,
+    #                                 model_name='pt_6_6_4_p3_v7',
+    #                                 input_plains_num=3,
+    #                                 model_check_freq=50,
+    #                                 max_model_iter=5000,
+    #                                 tell_last_move=True,
+    #                                 game_board=game_board,
+    #                                 n=4, width=6, height=6,
+    #                                 opponent_weight=opponent_weight,
+    #                                 threshold=threshold,
+    #                                 open_path_threshold=open_path_threshold)
+    #
+    #     compare_model_to_heuristics(path=path,
+    #                                 model_name='pt_6_6_4_p3_v9',
+    #                                 input_plains_num=3,
+    #                                 model_check_freq=50,
+    #                                 max_model_iter=5000,
+    #                                 tell_last_move=True,
+    #                                 game_board=game_board,
+    #                                 n=4, width=6, height=6,
+    #                                 opponent_weight=opponent_weight,
+    #                                 threshold=threshold,
+    #                                 open_path_threshold=open_path_threshold)
 
 
     for board in BOARDS:
         heuristics_heatmaps(board, path, height=6, width=6, n=4, opponent_weight=opponent_weight, threshold=threshold, open_path_threshold=open_path_threshold)
 
-    call_collage_compare_to_heuristics(path=path)
+    # call_collage_compare_to_heuristics(path=path)
 
 
-def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=0):
+def run_heuristics_for_thresholds_and_o_weights(normalization_thresholds, o_weights, open_path_thresolds):
 
-    with Pool(len(thresholds)*len(o_weights)) as pool:
+    with Pool(25) as pool:
         jobs = []
-        for threshold in thresholds:
-            for opponent_weight in o_weights:
 
-                path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
-                jobs.append((opponent_weight, threshold, path, open_path_threshold))
+        for open_path_threshold in open_path_thresolds:
+            for threshold in normalization_thresholds:
+                for opponent_weight in o_weights:
+
+                    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models vs heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/normalization_threshold_{threshold}/"
+                    jobs.append((opponent_weight, threshold, path, open_path_threshold))
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
         pool.starmap(run_heuristics_for_threshold_and_weight, jobs)
@@ -427,9 +491,15 @@ def run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path
 
 if __name__ == "__main__":
 
-    thresholds = [1, 0.1, 0.05, 0.01]
+    BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+    normalization_thresholds = [1, 0.1, 0.05, 0.01]
     o_weights = [0, 0.2, 0.5, 0.7, 1]
+    open_path_thresolds = [0, 1]
 
-    run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=0)
-    run_heuristics_for_thresholds_and_o_weights(thresholds, o_weights, open_path_threshold=-1)
+    # BOARDS = [EMPTY_BOARD]
+    # normalization_thresholds = [0.01]
+    # o_weights = [0.2]
+    # open_path_thresolds = [0]
+
+    run_heuristics_for_thresholds_and_o_weights(normalization_thresholds, o_weights, open_path_thresolds=open_path_thresolds)
 

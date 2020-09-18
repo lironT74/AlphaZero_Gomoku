@@ -3,6 +3,7 @@ import numpy as np
 import math
 from game import Board
 import copy
+import json
 from policy_value_net_pytorch import PolicyValueNet
 
 BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
@@ -34,6 +35,14 @@ BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0], [1, 1], [4, 3])
 
 
+PEOPLE_DISTRIBUTIONS = json.load(open('./avg_people_first_moves_all.json'))
+PEOPLE_DISTRIBUTIONS["board 1 full"] = PEOPLE_DISTRIBUTIONS.pop("6_easy_full")
+PEOPLE_DISTRIBUTIONS["board 2 full"] = PEOPLE_DISTRIBUTIONS.pop("6_hard_full")
+PEOPLE_DISTRIBUTIONS["board 1 truncated"] = PEOPLE_DISTRIBUTIONS.pop("6_easy_pruned")
+PEOPLE_DISTRIBUTIONS["board 2 truncated"] = PEOPLE_DISTRIBUTIONS.pop("6_hard_pruned")
+for key, value in PEOPLE_DISTRIBUTIONS.items():
+    PEOPLE_DISTRIBUTIONS[key] = np.array(PEOPLE_DISTRIBUTIONS[key])
+    PEOPLE_DISTRIBUTIONS[key][PEOPLE_DISTRIBUTIONS[key] < 0] = 0
 
 
 EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
@@ -194,6 +203,32 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
     return distance
 
 
+def get_shutter_size(last_move_data, current_move):
+
+    # print(last_move_data)
+
+    if len(last_move_data) == 0:
+        return -1
+
+    last_move_data = last_move_data[-1]
+    last_move, (open_paths, max_length_path) = last_move_data
+    row, col = current_move
+
+    # print(open_paths)
+
+    #No open paths in last turn
+    if len(open_paths) == 0:
+        return -1
+
+    manhatten_distances = []
+    for (path_cur_pawns_count, empty_squares, path) in open_paths:
+        for move in path:
+            row_hat, col_hat = move[0], move[1]
+            manhatten_distances.append(abs(row-row_hat) + abs(col-col_hat))
+
+    return min(manhatten_distances)
+
+
 class Human(object):
     """
     human player
@@ -223,8 +258,8 @@ class Human(object):
 
 
 
-# if __name__ == '__main__':
-#     import matplotlib as mpl
-#     print(mpl.get_backend())
+if __name__ == '__main__':
+    pass
+
 
 

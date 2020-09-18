@@ -13,6 +13,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io
+from Game_boards_and_aux import *
+
 
 
 def softmax(x):
@@ -206,7 +208,7 @@ class MCTSPlayer(object):
         sensible_moves = board.availables
 
         return_fig = kwargs.get('return_fig', False)
-        shutter_size = kwargs.get('shutter_size', -1)
+
         display = kwargs.get('display', False)
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
@@ -214,7 +216,6 @@ class MCTSPlayer(object):
         if len(sensible_moves) > 0:
 
             acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
-
 
             # Check if there is a last move indicated - in the start of empty board
             # game there is no last move.
@@ -248,6 +249,13 @@ class MCTSPlayer(object):
                 self.mcts.update_with_move(-1)
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
+
+
+            last_moves_data = kwargs.get("last_move_data", [])
+            row = board.width - 1 - move // board.width
+            col = move % board.width
+
+            shutter_size = get_shutter_size(last_move_data=last_moves_data, current_move=(row, col))
 
 
             if display:
@@ -299,7 +307,6 @@ class MCTSPlayer(object):
             mpl.use('Agg')
 
 
-        fontsize = 15
 
         if hasattr(self, 'player'):
 
@@ -324,9 +331,7 @@ class MCTSPlayer(object):
         x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
         y_axis = range(height, 0, -1)
 
-        # fig, axes = plt.subplots(2, figsize=(10,15))
-        fig, axes = plt.subplots(1, 3, figsize=(25, 10))
-        sm = plt.cm.ScalarMappable(cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
+        cmap = "Reds"
 
         if shutter_size != -1:
             shutter_str = f", shutter size = {shutter_size}"
@@ -334,33 +339,12 @@ class MCTSPlayer(object):
             shutter_str = ""
 
 
-        fig.suptitle(f"Model: {self.name} (plays: {my_marker}, {last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}",
-                     fontsize=fontsize + 5)
-
-        (ax1, ax2, ax3) = axes
-
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
         move_probs_policy = move_probs_policy.reshape(width, height)
         move_probs_policy = np.flipud(move_probs_policy)
         move_probs_policy = np.round_(move_probs_policy, decimals=3)
 
-        im1 = ax1.imshow(move_probs_policy, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
-        divider1 = make_axes_locatable(ax1)
-        cax1 = divider1.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(sm, ax=ax1, cax=cax1).ax.tick_params(labelsize=fontsize)
-
-        ax1.set_xticks(np.arange(len(x_axis)))
-        ax1.set_yticks(np.arange(len(y_axis)))
-        ax1.set_xticklabels(x_axis, fontsize=fontsize)
-        ax1.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax1.get_xticklabels(), ha="right", rotation_mode="anchor")
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax1.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
-                                ha="center", va="center", color="w", fontsize=fontsize)
-        ax1.set_title("Probas of the policy value fn", fontsize=fontsize + 4)
 
         normalized_visits = np.zeros(width * height)
         visits_mcts = visits_mcts / np.sum(visits_mcts)
@@ -369,22 +353,6 @@ class MCTSPlayer(object):
         normalized_visits = np.flipud(normalized_visits)
         normalized_visits = np.round_(normalized_visits, decimals=3)
 
-        im2 = ax2.imshow(normalized_visits, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
-        divider2 = make_axes_locatable(ax2)
-        cax2 = divider2.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(sm, ax=ax2, cax=cax2).ax.tick_params(labelsize=fontsize)
-
-        ax2.set_xticks(np.arange(len(x_axis)))
-        ax2.set_yticks(np.arange(len(y_axis)))
-        ax2.set_xticklabels(x_axis, fontsize=fontsize)
-        ax2.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax2.get_xticklabels(), ha="right", rotation_mode="anchor")
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax2.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else normalized_visits[i, j]),
-                                ha="center", va="center", color="w", fontsize=fontsize)
-        ax2.set_title("Normalized visit counts of MCTS", fontsize=fontsize + 4)
 
         move_probs_mcts = np.zeros(width * height)
         move_probs_mcts[list(acts_mcts)] = probas_mcts
@@ -392,25 +360,48 @@ class MCTSPlayer(object):
         move_probs_mcts = np.flipud(move_probs_mcts)
         move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
 
-        im3 = ax3.imshow(move_probs_mcts, cmap='jet', norm=plt.Normalize(vmin=0, vmax=1))
-        divider3 = make_axes_locatable(ax3)
-        cax3 = divider3.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(sm, ax=ax3, cax=cax3).ax.tick_params(labelsize=fontsize)
 
-        ax3.set_xticks(np.arange(len(x_axis)))
-        ax3.set_yticks(np.arange(len(y_axis)))
-        ax3.set_xticklabels(x_axis, fontsize=fontsize)
-        ax3.set_yticklabels(y_axis, fontsize=fontsize)
-        plt.setp(ax3.get_xticklabels(), ha="right", rotation_mode="anchor")
+        titles = ["Probas of the policy value fn", "Normalized visit counts of MCTS", "Probas of the MCTS"]
+        distributions = [move_probs_policy, normalized_visits, move_probs_mcts]
 
-        for i in range(len(y_axis)):
-            for j in range(len(x_axis)):
-                text = ax3.text(j, i, "X" if x_positions[i, j] == 1 else (
-                    "O" if o_positions[i, j] == 1 else move_probs_mcts[i, j]),
-                                ha="center", va="center", color="w", fontsize=fontsize)
-        ax3.set_title(f"Probas of the MCTS", fontsize=fontsize + 4)
 
-        fig.tight_layout()
+        fontsize = 19
+        fig = plt.figure(constrained_layout=False)
+        fig.set_size_inches(45, 15)
+
+        grid = fig.add_gridspec(nrows=3, ncols=7, height_ratios = [40,2,0.1], width_ratios = [2,15,1,15,1,15,2])
+
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+        fig.suptitle(f"\nModel: {self.name} (plays: {my_marker}, "
+                     f"{last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}\n", fontsize=fontsize + 10)
+
+        for i, (title, dist) in enumerate(zip(titles, distributions)):
+
+            ax = fig.add_subplot(grid[0, i*2+1])
+
+            im = ax.imshow(dist, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+
+            ax.set_xticks(np.arange(len(x_axis)))
+            ax.set_yticks(np.arange(len(y_axis)))
+            ax.set_xticklabels(x_axis, fontsize=fontsize)
+            ax.set_yticklabels(y_axis, fontsize=fontsize)
+
+
+            plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+            for i in range(len(y_axis)):
+                for j in range(len(x_axis)):
+                    color = "black" if dist[i,j] < 0.55 else "white"
+                    text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                        "O" if o_positions[i, j] == 1 else dist[i, j]),
+                                    ha="center", va="center", color=color, fontsize=fontsize+3)
+
+            ax.set_title(title, fontsize=fontsize + 5)
+
+
+        cbar_ax = fig.add_subplot(grid[1, 1:-1])
+        fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
+
+        # grid.tight_layout(fig)
 
         if display:
             plt.show()
@@ -419,7 +410,7 @@ class MCTSPlayer(object):
         else:
             fig.subplots_adjust(top=0.88)
             buf = io.BytesIO()
-            plt.savefig(buf, format='jpeg')
+            plt.savefig(buf, format='png')
             buf.seek(0)
             return buf
 

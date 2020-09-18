@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import os
 import io
 import string
-
+from Game_boards_and_aux import *
 
 WIN_SCORE = 25
 FORCING_BONUS = 20
@@ -1046,7 +1046,6 @@ class Game(object):
                 os.makedirs(path)
 
 
-
             if last_move_p1 != None:
                 row = self.board.width - 1 - last_move_p1[0]
                 col = last_move_p1[1] % self.board.width
@@ -1085,14 +1084,11 @@ class Game(object):
 
             if savefig:
 
-                shutter_size = -1
-                if len(last_moves_data[current_player]) > 0:
-                    shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1],
-                                                         current_move=(row, col))
+                shutter_size = get_shutter_size(last_move_data=last_moves_data[current_player], current_move=(row, col))
                 shutter_sizes[current_player].append(shutter_size)
 
                 counter += 1
-                _, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True, display=False, shutter_size=shutter_size)
+                _, heatmap_buf = player_in_turn.get_action(self.board, return_prob=0, return_fig=True, display=False, last_moves_data=last_moves_data[current_player])
                 image = PIL.Image.open(heatmap_buf)
                 plt.savefig(path + f"{counter}.png")
                 plt.close('all')
@@ -1196,10 +1192,9 @@ class Game(object):
             row = self.board.width - 1 - move // self.board.width
             col = move % self.board.width
 
-            shutter_size = -1
-            if len(last_moves_data[current_player]) > 0:
-                shutter_size = self.get_shutter_size(last_move_data=last_moves_data[current_player][-1],
-                                                     current_move=(row, col))
+            shutter_size = get_shutter_size(last_move_data=last_moves_data[current_player],
+                                                 current_move=(row, col))
+
 
             shutter_sizes[current_player].append(shutter_size)
             board_state = self.board.current_state(last_move=True)
@@ -1281,27 +1276,6 @@ class Game(object):
 
 
 
-    @staticmethod
-    def get_shutter_size(last_move_data, current_move):
-
-        # print(last_move_data)
-
-        last_move, (open_paths, max_length_path) = last_move_data
-        row, col = current_move
-
-        # print(open_paths)
-
-        #No open paths in last turn
-        if len(open_paths) == 0:
-            return -1
-
-        manhatten_distances = []
-        for (path_cur_pawns_count, empty_squares, path) in open_paths:
-            for move in path:
-                row_hat, col_hat = move[0], move[1]
-                manhatten_distances.append(abs(row-row_hat) + abs(col-col_hat))
-
-        return min(manhatten_distances)
 
 
     def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True):
