@@ -1,7 +1,7 @@
 from pyemd import emd
 import numpy as np
 import math
-from game import Board
+from game import Board, Game, get_shutter_size
 import copy
 import json
 from policy_value_net_pytorch import PolicyValueNet
@@ -201,32 +201,6 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
                    dist_matrix)
 
     return distance
-
-
-def get_shutter_size(last_move_data, current_move):
-
-    # print(last_move_data)
-
-    if len(last_move_data) == 0:
-        return -1
-
-    last_move_data = last_move_data[-1]
-    last_move, (open_paths, max_length_path) = last_move_data
-    row, col = current_move
-
-    # print(open_paths)
-
-    #No open paths in last turn
-    if len(open_paths) == 0:
-        return -1
-
-    manhatten_distances = []
-    for (path_cur_pawns_count, empty_squares, path) in open_paths:
-        for move in path:
-            row_hat, col_hat = move[0], move[1]
-            manhatten_distances.append(abs(row-row_hat) + abs(col-col_hat))
-
-    return min(manhatten_distances)
 
 
 class Human(object):

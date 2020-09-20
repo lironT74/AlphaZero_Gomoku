@@ -269,6 +269,7 @@ def check_mcts_goodness(model, width, height, n, game_board, n_games, mcts_playo
                                                n_games, mcts_playout_num, c_puct, n_playout)
 
 
+
 def policy_evaluate_againts_mcts_checking_mcts(model_name, path, input_plains_num, width, height, n, game_board, n_games, mcts_playout_num, c_puct, n_playout):
 
 
@@ -317,6 +318,7 @@ def policy_evaluate_againts_mcts_checking_mcts(model_name, path, input_plains_nu
     return result
 
 
+
 def models_vs_mcts_flow():
     start = time.time()
 
@@ -359,7 +361,6 @@ def models_vs_mcts_flow():
     end = time.time()
 
     print("all of it took", fmt.format(rd(seconds=end - start)))
-
 
 
 def check_mcts_flow():

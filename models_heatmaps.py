@@ -43,7 +43,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path, use_gpu, last_move_p1=p1, last_move_p2=p2)
+                                    i, heatmap_save_path, use_gpu)
 
         for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
 
@@ -57,7 +57,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path, use_gpu, last_move_p1=p1, last_move_p2=p2)
+                                    i, heatmap_save_path, use_gpu)
 
         for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
 
@@ -77,7 +77,7 @@ def save_heatmaps(model_name,
                                     n_playout,
                                     board, board_name_1,
                                     save_to_local, save_to_tensorboard, writer,
-                                    i, heatmap_save_path, use_gpu, last_move_p1=p1, last_move_p2=p2)
+                                    i, heatmap_save_path, use_gpu)
 
             if input_plains_num == 4: #save truncated with alternative last moves too
 
@@ -96,7 +96,7 @@ def save_heatmaps(model_name,
                                         n_playout,
                                         board, board_name,
                                         save_to_local, save_to_tensorboard, writer,
-                                        i, heatmap_save_path, use_gpu, last_move_p1=p1, last_move_p2=p2)
+                                        i, heatmap_save_path, use_gpu)
 
                 make_collage_for_truncated(heatmap_save_path, board_name)
 
@@ -151,48 +151,13 @@ def save_heatmap_for_board_and_model(
                             save_to_local, save_to_tensorboard, writer,
                             i, heatmap_save_path,use_gpu, **kwargs):
 
-    last_move_p1 = kwargs.get('last_move_p1', None)
-    last_move_p2 = kwargs.get('last_move_p2', None)
 
     model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
-
-    # heatmap_image_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/{model_name}/iteration_{i}/{board_name}.png'
-    # if os.path.exists(heatmap_image_path):
-    #     return
-    # else:
-    #     print(heatmap_image_path)
 
     policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num, use_gpu=use_gpu)
     player = MCTSPlayer(policy.policy_value_fn, c_puct=c_puct, n_playout=n_playout, name=f"{model_name}_{i}")
 
-
-    cur_player = board.current_player
-
-    last_moves_data = []
-    if cur_player == 1:
-        if last_move_p1 != None:
-            row = board.width - 1 - last_move_p1[0]
-            col = last_move_p1[1] % board.width
-            board_state = board.current_state(last_move=True)
-            cur_positions = board_state[0]
-            opponent_positions = board_state[1]
-            open_paths = board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
-                                                    opponent_positions=opponent_positions)
-            last_moves_data = [([row, col], open_paths)]
-
-    else:
-        if last_move_p2 != None:
-            row = board.width - 1 - last_move_p1[0]
-            col = last_move_p1[1] % board.width
-            board_state = board.current_state(last_move=True)
-            cur_positions = board_state[0]
-            opponent_positions = board_state[1]
-            open_paths = board.find_open_paths(row=row, col=col, cur_positions=cur_positions,
-                                               opponent_positions=opponent_positions)
-            last_moves_data = [([row, col], open_paths)]
-
-
-    _, heatmap_buf = player.get_action(board, return_prob=0, return_fig=True, last_moves_data=last_moves_data)
+    _, heatmap_buf = player.get_action(board, return_prob=0, return_fig=True)
     image = PIL.Image.open(heatmap_buf)
 
     if save_to_local:

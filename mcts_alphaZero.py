@@ -196,6 +196,7 @@ class MCTSPlayer(object):
         self.name = name
 
         self.input_plains_num = kwargs.get("input_plains_num", 4)  # default does receive last turn
+        self.no_playouts = kwargs.get("no_playouts", False)
 
     def set_player_ind(self, p):
         self.player = p
@@ -212,25 +213,29 @@ class MCTSPlayer(object):
         display = kwargs.get('display', False)
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
+
         move_probs = np.zeros(board.width * board.height)
+
         if len(sensible_moves) > 0:
-
-            acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
-
-            # Check if there is a last move indicated - in the start of empty board
-            # game there is no last move.
-
-            if np.sum(board.current_state(last_move=True)[2]) == 1:
-                y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
-                x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
-                last_move = f"last move: {x_last_move}{y_last_move}"
-            else:
-                last_move = "No last move"
 
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
+            # AlphaZero gives some probability to locations that are not available for some reason
+            probas_policy = probas_policy / np.sum(probas_policy)
+
+            if not self.no_playouts:
+                acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
+
+            else:
+                acts_mcts, probas_mcts = acts_policy, probas_policy
+                visits_mcts = 0
+
             move_probs[list(acts_mcts)] = probas_mcts
+
+            # Check if there is a last move indicated - in the start of empty board
+            # game there is no last move.
+
 
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for
@@ -245,18 +250,47 @@ class MCTSPlayer(object):
                 # with the default temp=1e-3, it is almost equivalent
                 # to choosing the move with the highest prob
                 move = np.random.choice(acts_mcts, p=probas_mcts)
+
+                # for act, prob in zip(acts_mcts, probas_mcts):
+                #     y_cur_act = act // board.width + 1
+                #     x_cur_act = string.ascii_lowercase[act % board.width]
+                #     cur_move = f"{x_cur_act}{y_cur_act}"
+                #     print(f"{(cur_move, prob)}")
+
+
+
                 # reset the root node
                 self.mcts.update_with_move(-1)
             #                location = board.move_to_location(move)
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
 
-            last_moves_data = kwargs.get("last_move_data", [])
-            row = board.width - 1 - move // board.width
-            col = move % board.width
+            y_cur_move = move // board.width + 1
+            x_cur_move = string.ascii_lowercase[move % board.width]
+            cur_move = f"{x_cur_move}{y_cur_move}"
 
-            shutter_size = get_shutter_size(last_move_data=last_moves_data, current_move=(row, col))
 
+            if np.sum(board.current_state(last_move=True)[2]) == 1:
+                y_last_move = board.width - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
+                x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+                last_move = f"last move: {x_last_move}{y_last_move}"
+
+                row_last = y_last_move - 1
+                col_last = np.where(board.current_state(last_move=True)[2] == 1)[1][0]
+
+                row_cur = board.height - 1 - move // board.width
+                col_cur = move % board.width
+
+                shutter_size = get_shutter_size(last_move=(row_last, col_last), board = board, cur_move=(row_cur, col_cur))
+
+            else:
+                last_move = "No last move"
+                shutter_size = -1
+
+
+
+
+            # print(cur_move)
 
             if display:
                 self.create_probas_heatmap(acts_policy=acts_policy,
@@ -269,6 +303,7 @@ class MCTSPlayer(object):
                                            board=board,
                                            last_move=last_move,
                                            shutter_size=shutter_size,
+                                           cur_move=cur_move,
                                            display=True)
 
             if return_fig:
@@ -281,6 +316,7 @@ class MCTSPlayer(object):
                                                  height=board.height,
                                                  board=board,
                                                  last_move=last_move,
+                                                 cur_move=cur_move,
                                                  shutter_size=shutter_size)
 
                 if return_prob:
@@ -301,11 +337,12 @@ class MCTSPlayer(object):
         return str(self.name) + " {}".format(self.player)
 
     def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
-                              board, last_move, shutter_size=-1, display=False):
+                              board, last_move, cur_move, shutter_size=-1, display=False):
+
+
 
         if not display:
             mpl.use('Agg')
-
 
 
         if hasattr(self, 'player'):
@@ -339,76 +376,110 @@ class MCTSPlayer(object):
             shutter_str = ""
 
 
+
         move_probs_policy = np.zeros(width * height)
         move_probs_policy[list(acts_policy)] = probas_policy
         move_probs_policy = move_probs_policy.reshape(width, height)
         move_probs_policy = np.flipud(move_probs_policy)
-        move_probs_policy = np.round_(move_probs_policy, decimals=3)
+        move_probs_policy = np.round_(move_probs_policy, decimals=4)
+
+        if visits_mcts != 0:
+
+            move_probs_mcts = np.zeros(width * height)
+            move_probs_mcts[list(acts_mcts)] = probas_mcts
+            move_probs_mcts = move_probs_mcts.reshape(width, height)
+            move_probs_mcts = np.flipud(move_probs_mcts)
+            move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
 
 
-        normalized_visits = np.zeros(width * height)
-        visits_mcts = visits_mcts / np.sum(visits_mcts)
-        normalized_visits[list(acts_mcts)] = visits_mcts
-        normalized_visits = normalized_visits.reshape(width, height)
-        normalized_visits = np.flipud(normalized_visits)
-        normalized_visits = np.round_(normalized_visits, decimals=3)
+            normalized_visits = np.zeros(width * height)
+            visits_mcts = visits_mcts / np.sum(visits_mcts)
+            normalized_visits[list(acts_mcts)] = visits_mcts
+            normalized_visits = normalized_visits.reshape(width, height)
+            normalized_visits = np.flipud(normalized_visits)
+            normalized_visits = np.round_(normalized_visits, decimals=3)
 
 
-        move_probs_mcts = np.zeros(width * height)
-        move_probs_mcts[list(acts_mcts)] = probas_mcts
-        move_probs_mcts = move_probs_mcts.reshape(width, height)
-        move_probs_mcts = np.flipud(move_probs_mcts)
-        move_probs_mcts = np.round_(move_probs_mcts, decimals=3)
+            titles = ["Probas of the policy value fn", "Normalized visit counts of MCTS",
+                      f"Probas of the MCTS. played: {cur_move}"]
+
+            distributions = [move_probs_policy, normalized_visits, move_probs_mcts]
 
 
-        titles = ["Probas of the policy value fn", "Normalized visit counts of MCTS", "Probas of the MCTS"]
-        distributions = [move_probs_policy, normalized_visits, move_probs_mcts]
+            fontsize = 19
+            fig = plt.figure(constrained_layout=False)
+            fig.set_size_inches(45, 15)
+
+            grid = fig.add_gridspec(nrows=3, ncols=7, height_ratios=[40, 2, 0.1], width_ratios=[2, 15, 1, 15, 1, 15, 2])
+
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+            fig.suptitle(f"\nModel: {self.name} (plays: {my_marker}, "
+                         f"{last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}\n", fontsize=fontsize + 10)
+
+            for i, (title, dist) in enumerate(zip(titles, distributions)):
+
+                ax = fig.add_subplot(grid[0, i * 2 + 1])
+
+                im = ax.imshow(dist, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+
+                ax.set_xticks(np.arange(len(x_axis)))
+                ax.set_yticks(np.arange(len(y_axis)))
+                ax.set_xticklabels(x_axis, fontsize=fontsize)
+                ax.set_yticklabels(y_axis, fontsize=fontsize)
+
+                plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
+                for i in range(len(y_axis)):
+                    for j in range(len(x_axis)):
+                        color = "black" if dist[i, j] < 0.55 else "white"
+                        text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
+                            "O" if o_positions[i, j] == 1 else dist[i, j]),
+                                       ha="center", va="center", color=color, fontsize=fontsize + 3)
+
+                ax.set_title(title, fontsize=fontsize + 5)
+
+            cbar_ax = fig.add_subplot(grid[1, 1:-1])
+            fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
+
+        else:
 
 
-        fontsize = 19
-        fig = plt.figure(constrained_layout=False)
-        fig.set_size_inches(45, 15)
+            fontsize = 38
+            fig, ax = plt.subplots(tight_layout=False, figsize = (25, 27))
 
-        grid = fig.add_gridspec(nrows=3, ncols=7, height_ratios = [40,2,0.1], width_ratios = [2,15,1,15,1,15,2])
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+            fig.suptitle(f"Model: {self.name}, using the policy value function.\nPlays: {my_marker}, "
+                         f"{last_move}{shutter_str}\n Chosen move: {cur_move}", fontsize=fontsize + 10)
 
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
-        fig.suptitle(f"\nModel: {self.name} (plays: {my_marker}, "
-                     f"{last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}\n", fontsize=fontsize + 10)
 
-        for i, (title, dist) in enumerate(zip(titles, distributions)):
+            im = ax.imshow(move_probs_policy, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
 
-            ax = fig.add_subplot(grid[0, i*2+1])
+            divider = make_axes_locatable(ax)
+            cax = divider.new_vertical(size="5%", pad=0.7, pack_start=True)
+            fig.add_axes(cax)
+            fig.colorbar(im, cax=cax, orientation="horizontal").ax.tick_params(labelsize=fontsize+2)
 
-            im = ax.imshow(dist, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
 
             ax.set_xticks(np.arange(len(x_axis)))
             ax.set_yticks(np.arange(len(y_axis)))
             ax.set_xticklabels(x_axis, fontsize=fontsize)
             ax.set_yticklabels(y_axis, fontsize=fontsize)
 
-
             plt.setp(ax.get_xticklabels(), ha="right", rotation_mode="anchor")
             for i in range(len(y_axis)):
                 for j in range(len(x_axis)):
-                    color = "black" if dist[i,j] < 0.55 else "white"
+                    color = "black" if move_probs_policy[i, j] < 0.55 else "white"
                     text = ax.text(j, i, "X" if x_positions[i, j] == 1 else (
-                        "O" if o_positions[i, j] == 1 else dist[i, j]),
-                                    ha="center", va="center", color=color, fontsize=fontsize+3)
-
-            ax.set_title(title, fontsize=fontsize + 5)
+                        "O" if o_positions[i, j] == 1 else move_probs_policy[i, j]),
+                                   ha="center", va="center", color=color, fontsize=fontsize + 3)
 
 
-        cbar_ax = fig.add_subplot(grid[1, 1:-1])
-        fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
-
-        # grid.tight_layout(fig)
+        fig.subplots_adjust(left = 0.083, right=1-0.083)
 
         if display:
             plt.show()
             return
 
         else:
-            fig.subplots_adjust(top=0.88)
             buf = io.BytesIO()
             plt.savefig(buf, format='png')
             buf.seek(0)

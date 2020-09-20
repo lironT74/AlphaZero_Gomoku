@@ -7,7 +7,6 @@ Input your move in the format: 2,3
 """
 
 from __future__ import print_function
-from game import Board, Game
 from mcts_alphaZero import MCTSPlayer
 from Game_boards_and_aux import *
 
@@ -34,14 +33,17 @@ def run():
 
         # game = Game(board)
 
+        # best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
+        # mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
+        #
+        # best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
+        # mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000", input_plains_num=4)
+
+
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, c=True, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
 
-        best_policy_2 = PolicyValueNet(width, height, model_file=model_2_file, input_plains_num=4)
-        mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=400, name="pt_6_6_4_p4_v10_5000", input_plains_num=4)
-
-
-        board = initialize_board_with_init_and_last_moves(board_height=height, board_width=width, n_in_row=n, input_board=initial_board)
+        board = initialize_board_with_init_and_last_moves(last_move_p1=last_move_p1, board_height=height, board_width=width, n_in_row=n, input_board=initial_board)
         mcts_player_1.get_action(board, display=True)
 
 

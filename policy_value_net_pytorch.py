@@ -183,6 +183,8 @@ class PolicyValueNet():
         value = value.data[0][0]
         return act_probs, value
 
+
+
     def train_step(self, state_batch, mcts_probs, winner_batch, lr):
         """perform a training step"""
         # wrap in Variable
