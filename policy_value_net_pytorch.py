@@ -156,7 +156,7 @@ class PolicyValueNet():
             act_probs = np.exp(log_act_probs.data.numpy())
             return act_probs, value.data.numpy()
 
-    def policy_value_fn(self, board):
+    def policy_value_fn(self, board, board_current_state):
         """
         input: board
         output: a list of (action, probability) tuples for each available
@@ -164,7 +164,7 @@ class PolicyValueNet():
         """
         legal_positions = board.availables
 
-        current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
+        current_state = np.ascontiguousarray(board_current_state.reshape(
                 -1, self.input_plains_num , self.board_width, self.board_height))
 
 

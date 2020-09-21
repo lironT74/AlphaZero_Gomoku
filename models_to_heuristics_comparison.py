@@ -89,10 +89,11 @@ def compare_model_to_heuristics(path, model_name, game_board, n=4, width=6, heig
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sub model no.", fontsize=fontsize)
 
+    board_current_state = board.current_state(last_move=True, is_random_last_turn=False)
 
-    if input_plains_num == 4 and np.sum(board.current_state(last_move=True)[2]) == 1:
-        y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
-        x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+    if input_plains_num == 4 and np.sum(board_current_state[2]) == 1:
+        y_last_move = 6 - np.where(board_current_state[2] == 1)[0][0]
+        x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
         last_move = f" (last move - {x_last_move}{y_last_move})"
 
     else:
@@ -348,7 +349,7 @@ def get_people_distribution(board, board_name):
     return PEOPLE_DISTRIBUTIONS[board_name]
 
 
-def threshold_normalization_policy(board, model_name, input_plains_num, i, rounding=-1, threshold = 0.05, model_file=None):
+def threshold_normalization_policy(board, model_name, input_plains_num, i, rounding=-1, threshold = 0.05, model_file=None, is_random_last_turn=False):
 
     width, height = board.width, board.height
 
@@ -356,7 +357,10 @@ def threshold_normalization_policy(board, model_name, input_plains_num, i, round
         model_file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_name}/current_policy_{i}.model'
 
     policy = PolicyValueNet(width, height, model_file=model_file, input_plains_num=input_plains_num)
-    acts_policy, probas_policy = zip(*policy.policy_value_fn(board)[0])
+
+    board_current_state = board.current_state(last_move=True, is_random_last_turn=is_random_last_turn)
+
+    acts_policy, probas_policy = zip(*policy.policy_value_fn(board, board_current_state)[0])
 
     move_probs_policy = np.zeros(width * height)
     move_probs_policy[list(acts_policy)] = probas_policy

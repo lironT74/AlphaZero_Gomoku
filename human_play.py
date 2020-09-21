@@ -41,11 +41,15 @@ def run():
 
 
         best_policy_1 = PolicyValueNet(width, height, model_file=model_1_file, input_plains_num=3)
-        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, c=True, name="pt_6_6_4_p3_v7_2100", input_plains_num=3)
+        mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, c=True, name="pt_6_6_4_p4_v10_2100", input_plains_num=4)
 
         board = initialize_board_with_init_and_last_moves(last_move_p1=last_move_p1, board_height=height, board_width=width, n_in_row=n, input_board=initial_board)
-        mcts_player_1.get_action(board, display=True)
 
+        # mcts_player_1.get_action(board, display=True)
+
+        print("asdas")
+        print(board.current_state(last_move=True, is_random_last_turn=True))
+        print("asdasas")
 
         # results = {-1:0, 1:0, 2:0}
         # start_player = 2

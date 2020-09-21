@@ -24,7 +24,7 @@ def get_shutter_size(last_move, board, cur_move):
         return -1
 
     row_last, col_last = last_move
-    board_state = board.current_state(last_move=True)
+    board_state = board.current_state(last_move=True, is_random_last_turn=False)
     cur_positions = board_state[0]
     opponent_positions = board_state[1]
     open_paths_data, max_length_path = board.find_open_paths(row=row_last, col=col_last, cur_positions=cur_positions,
@@ -159,7 +159,7 @@ class Board(object):
             return -1
         return move
 
-    def current_state(self, last_move=True):
+    def current_state(self, last_move=True, **kwargs):
         """return the board state from the perspective of the current player.
         state shape: 4*width*height or 3*width*height
         """
@@ -180,26 +180,39 @@ class Board(object):
                                 move_oppo % self.height] = 1.0
 
 
-            last_moves = {1: self.last_move_p1, 2: self.last_move_p2}
+            is_random_last_turn = kwargs.get("is_random_last_turn", False)
+
+            if is_random_last_turn:
+                if len(move_curr) > 0:
+                    index_of_turn = np.random.choice(list(range(len(move_curr))))
+                    random_last_turn = move_curr[index_of_turn]
+                    square_state[2][random_last_turn // self.width,
+                                    random_last_turn % self.height] = 1.0
+
+            else:
+
+                last_moves = {1: self.last_move_p1, 2: self.last_move_p2}
+
+                if len(self.states) % 2 == 0: #start player's turn
+
+                    if last_moves[self.start_player] != -1: #if there is a last move
+
+                        square_state[2][last_moves[self.start_player] // self.width,
+                                        last_moves[self.start_player] % self.height] = 1.0
+
+                elif len(self.states) % 2 != 0: #other player's turn
+
+                    if last_moves[3 - self.start_player] != -1:  # if there is a last move
+
+                        square_state[2][last_moves[3 - self.start_player] // self.width,
+                                        last_moves[3 - self.start_player] % self.height] = 1.0
 
 
-            if len(self.states) % 2 == 0: #start player's turn
 
-                if last_moves[self.start_player] != -1: #if there is a last move
-                    square_state[2][last_moves[self.start_player] // self.width,
-                                    last_moves[self.start_player] % self.height] = 1.0
-
+            if len(self.states) % 2 == 0:  # start player's turn
                 square_state[3][:, :] = self.start_player - 1  # indicate the color to play (0-Player1, 1-Player2)
-
-
             elif len(self.states) % 2 != 0: #other player's turn
-
-                if last_moves[3 - self.start_player] != -1:  # if there is a last move
-                    square_state[2][last_moves[3 - self.start_player] // self.width,
-                                    last_moves[3 - self.start_player] % self.height] = 1.0
-
                 square_state[3][:, :] = (3 - self.start_player) - 1  # indicate the color to play (0-Player1, 1-Player2)
-
 
             return square_state[:, ::-1, :]
 
@@ -931,7 +944,7 @@ class Game(object):
             print('\r\n\r\n')
 
 
-    def save_game_graphic(self, board, path, players, shutter_size, move, time):
+    def save_game_graphic(self, board, path, players, shutter_size, move, time, is_random_last_turn=False):
 
         # mpl.use('Agg')
 
@@ -941,15 +954,18 @@ class Game(object):
 
         row, col = move
 
+        board_current_state = board.current_state(last_move=True, is_random_last_turn=is_random_last_turn)
+
+
         if board.get_current_player() == 1:
-            x_positions = board.current_state()[0]
+            x_positions = board_current_state[0]
             x_positions[row, col] = 1
 
-            o_positions = board.current_state()[1]
+            o_positions = board_current_state[1]
         else:
-            x_positions = board.current_state()[1]
+            x_positions = board_current_state[1]
 
-            o_positions = board.current_state()[0]
+            o_positions = board_current_state[0]
             o_positions[row, col] = 1
 
 
@@ -967,15 +983,24 @@ class Game(object):
             shutter_str = ""
 
 
-        if np.sum(board.current_state(last_move=True)[2]) == 1:
-            y_last_move = 6 - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
-            x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+
+
+
+        if np.sum(board_current_state[2]) == 1:
+            y_last_move = 6 - np.where(board_current_state[2] == 1)[0][0]
+            x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
             last_move = f"last move: {x_last_move}{y_last_move}"
         else:
             last_move = "No last move"
 
 
-        fig.suptitle(f"{players[board.get_current_player()].name}'s turn (plays {my_marker}), {last_move}{shutter_str}",
+        y_cur_move = board.height - row
+        x_cur_move = string.ascii_lowercase[col]
+        cur_move = f"chosen move: {x_cur_move}{y_cur_move}, "
+
+
+        fig.suptitle(f"{players[board.get_current_player()].name}'s turn (plays {my_marker})"
+                     f"\n{cur_move}{last_move}{shutter_str}",
                      fontsize=fontsize + 5)
 
 
@@ -1184,8 +1209,7 @@ class Game(object):
                 self.save_game_graphic(self.board, path, players=players, shutter_size=shutter_size, move=(row, col), time=game_length)
 
 
-            row = self.board.width - 1 - move // self.board.width
-            col = move % self.board.width
+
             last_moves[current_player] = (row, col)
             self.board.do_move(move)
 

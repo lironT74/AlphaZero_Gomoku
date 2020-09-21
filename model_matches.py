@@ -192,16 +192,16 @@ def compare_all_models_statistics(models_list, width=6, height=6, n=4, open_path
 def collect_statistics_two_models(model1, model2, width, height, n, open_path_threshold, n_playout, num_games):
 
 
-    path1, name1, plains1, no_playouts1 = model1
-    path2, name2, plains2, no_playouts2 = model2
+    path1, name1, plains1, no_playouts1, is_random_last_move1 = model1
+    path2, name2, plains2, no_playouts2, is_random_last_move2 = model2
 
     best_policy_1 = PolicyValueNet(width, height, model_file=path1, input_plains_num=plains1)
     mcts_player_1 = MCTSPlayer(best_policy_1.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=no_playouts1,
-                               name=name1, input_plains_num=plains1)
+                               name=name1, input_plains_num=plains1, is_random_last_turn=is_random_last_move1)
 
     best_policy_2 = PolicyValueNet(width, height, model_file=path2, input_plains_num=plains2)
     mcts_player_2 = MCTSPlayer(best_policy_2.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=no_playouts2,
-                               name=name2, input_plains_num=plains2)
+                               name=name2, input_plains_num=plains2, is_random_last_move1=is_random_last_move2)
 
     for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
 
@@ -219,49 +219,49 @@ def collect_statistics_two_models(model1, model2, width, height, n, open_path_th
                       start_player=2,
                       open_path_threshold=open_path_threshold, num_games=num_games)
 
-        if plains1 + plains2 >= 7:
-            save_games_statistics(width=width,
-                          height=height,
-                          n=n,
-                          board_state=board_state,
-                          board_name=board_name,
-                          mcts_player_1=mcts_player_1,
-                          mcts_player_2=mcts_player_2,
-                          last_move_p1=alternative_p1,
-                          last_move_p2=alternative_p2,
-                          correct_move_p1=p1,
-                          correct_move_p2=p2,
-                          start_player=2,
-                          open_path_threshold=open_path_threshold, num_games=num_games)
-
-        if plains1 + plains2 == 8:
-            save_games_statistics(width=width,
-                          height=height,
-                          n=n,
-                          board_state=board_state,
-                          board_name=board_name,
-                          mcts_player_1=mcts_player_1,
-                          mcts_player_2=mcts_player_2,
-                          last_move_p1=p1,
-                          last_move_p2=alternative_p2,
-                          correct_move_p1=p1,
-                          correct_move_p2=p2,
-                          start_player=2,
-                          open_path_threshold=open_path_threshold, num_games=num_games)
-
-            save_games_statistics(width=width,
-                          height=height,
-                          n=n,
-                          board_state=board_state,
-                          board_name=board_name,
-                          mcts_player_1=mcts_player_1,
-                          mcts_player_2=mcts_player_2,
-                          last_move_p1=alternative_p1,
-                          last_move_p2=p2,
-                          correct_move_p1=p1,
-                          correct_move_p2=p2,
-                          start_player=2,
-                          open_path_threshold=open_path_threshold, num_games=num_games)
+        # if plains1 + plains2 >= 7:
+        #     save_games_statistics(width=width,
+        #                   height=height,
+        #                   n=n,
+        #                   board_state=board_state,
+        #                   board_name=board_name,
+        #                   mcts_player_1=mcts_player_1,
+        #                   mcts_player_2=mcts_player_2,
+        #                   last_move_p1=alternative_p1,
+        #                   last_move_p2=alternative_p2,
+        #                   correct_move_p1=p1,
+        #                   correct_move_p2=p2,
+        #                   start_player=2,
+        #                   open_path_threshold=open_path_threshold, num_games=num_games)
+        #
+        # if plains1 + plains2 == 8:
+        #     save_games_statistics(width=width,
+        #                   height=height,
+        #                   n=n,
+        #                   board_state=board_state,
+        #                   board_name=board_name,
+        #                   mcts_player_1=mcts_player_1,
+        #                   mcts_player_2=mcts_player_2,
+        #                   last_move_p1=p1,
+        #                   last_move_p2=alternative_p2,
+        #                   correct_move_p1=p1,
+        #                   correct_move_p2=p2,
+        #                   start_player=2,
+        #                   open_path_threshold=open_path_threshold, num_games=num_games)
+        #
+        #     save_games_statistics(width=width,
+        #                   height=height,
+        #                   n=n,
+        #                   board_state=board_state,
+        #                   board_name=board_name,
+        #                   mcts_player_1=mcts_player_1,
+        #                   mcts_player_2=mcts_player_2,
+        #                   last_move_p1=alternative_p1,
+        #                   last_move_p2=p2,
+        #                   correct_move_p1=p1,
+        #                   correct_move_p2=p2,
+        #                   start_player=2,
+        #                   open_path_threshold=open_path_threshold, num_games=num_games)
 
     for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
         save_games_statistics(width=width,
@@ -372,25 +372,31 @@ def save_games_statistics(width, height, n, board_state, board_name, mcts_player
 
 if __name__ == '__main__':
 
-    v7 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_2100.model', 'pt_6_6_4_p3_v7_2100', 3, False)
-    v9 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1350.model', 'pt_6_6_4_p3_v9_1350', 3, False)
-    v10 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1150.model', 'pt_6_6_4_p4_v10_1150', 4, False)
-
-    models = [v7, v9, v10]
-    compare_all_models(models)
+    # v7 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_2100.model', 'pt_6_6_4_p3_v7_2100', 3, False)
+    # v9 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1350.model', 'pt_6_6_4_p3_v9_1350', 3, False)
+    # v10 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1150.model', 'pt_6_6_4_p4_v10_1150', 4, False)
+    #
+    # models = [v7, v9, v10]
+    # compare_all_models(models)
 
 
     v9 = ( '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1500.model',
-           'pt_6_6_4_p3_v9_1500', 3,True)
+           'pt_6_6_4_p3_v9_1500', 3,True, False)
 
     v10 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
-           'pt_6_6_4_p4_v10_1500', 4, True)
+           'pt_6_6_4_p4_v10_1500', 4, True, False)
+
+    v10_random = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
+           'pt_6_6_4_p4_v10_1500_random', 4, True, True)
 
     v7 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_1500.model',
-          'pt_6_6_4_p3_v7_1500', 3, True)
+          'pt_6_6_4_p3_v7_1500', 3, True, False)
 
-    models = [v7, v9, v10]
+    models = [v7, v9, v10, v10_random]
 
-    compare_all_models(models)
-    # compare_all_models_statistics(models, num_games=10000)
+    # compare_all_models(models)
+    compare_all_models_statistics(models, num_games=10)
+    compare_all_models_statistics(models, num_games=100)
+    compare_all_models_statistics(models, num_games=1000)
+    compare_all_models_statistics(models, num_games=10000)
 

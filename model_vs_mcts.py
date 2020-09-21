@@ -379,7 +379,11 @@ def check_mcts_flow():
     '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1350.model', 'pt_6_6_4_p3_v9_1350', 3)
     v10 = (
     '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1150.model', 'pt_6_6_4_p4_v10_1150', 4)
+
     models = [v7, v9, v10]
+
+    models = [v7, v9, v10]
+
 
 
     jobs = []

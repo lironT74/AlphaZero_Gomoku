@@ -197,6 +197,8 @@ class MCTSPlayer(object):
 
         self.input_plains_num = kwargs.get("input_plains_num", 4)  # default does receive last turn
         self.no_playouts = kwargs.get("no_playouts", False)
+        self.is_random_last_turn = kwargs.get("is_random_last_turn", False)
+
 
     def set_player_ind(self, p):
         self.player = p
@@ -207,6 +209,8 @@ class MCTSPlayer(object):
     def get_action(self, board, temp=1e-3, return_prob=False, **kwargs):
 
         sensible_moves = board.availables
+
+        board_current_state = board.current_state(last_move=(self.input_plains_num==4), is_random_last_turn=self.is_random_last_turn)
 
         return_fig = kwargs.get('return_fig', False)
 
@@ -219,7 +223,7 @@ class MCTSPlayer(object):
         if len(sensible_moves) > 0:
 
 
-            acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
+            acts_policy, probas_policy = zip(*self.mcts._policy(board, board_current_state)[0])
 
             # AlphaZero gives some probability to locations that are not available for some reason
             probas_policy = probas_policy / np.sum(probas_policy)
@@ -269,14 +273,13 @@ class MCTSPlayer(object):
             x_cur_move = string.ascii_lowercase[move % board.width]
             cur_move = f"{x_cur_move}{y_cur_move}"
 
-
-            if np.sum(board.current_state(last_move=True)[2]) == 1:
-                y_last_move = board.width - np.where(board.current_state(last_move=True)[2] == 1)[0][0]
-                x_last_move = string.ascii_lowercase[np.where(board.current_state(last_move=True)[2] == 1)[1][0]]
+            if np.sum(board_current_state[2]) == 1:
+                y_last_move = board.width - np.where(board_current_state[2] == 1)[0][0]
+                x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
                 last_move = f"last move: {x_last_move}{y_last_move}"
 
                 row_last = y_last_move - 1
-                col_last = np.where(board.current_state(last_move=True)[2] == 1)[1][0]
+                col_last = np.where(board_current_state[2] == 1)[1][0]
 
                 row_cur = board.height - 1 - move // board.width
                 col_cur = move % board.width
@@ -304,7 +307,8 @@ class MCTSPlayer(object):
                                            last_move=last_move,
                                            shutter_size=shutter_size,
                                            cur_move=cur_move,
-                                           display=True)
+                                           display=True,
+                                           board_current_state=board_current_state)
 
             if return_fig:
                 buf = self.create_probas_heatmap(acts_policy=acts_policy,
@@ -317,7 +321,8 @@ class MCTSPlayer(object):
                                                  board=board,
                                                  last_move=last_move,
                                                  cur_move=cur_move,
-                                                 shutter_size=shutter_size)
+                                                 shutter_size=shutter_size,
+                                                 board_current_state=board_current_state)
 
                 if return_prob:
                     return move, move_probs, buf
@@ -336,10 +341,9 @@ class MCTSPlayer(object):
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
 
+
     def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
-                              board, last_move, cur_move, shutter_size=-1, display=False):
-
-
+                              board, last_move, cur_move, board_current_state, shutter_size=-1, display=False):
 
         if not display:
             mpl.use('Agg')
@@ -350,19 +354,19 @@ class MCTSPlayer(object):
             my_marker = "X" if self.player == 1 else "O"
 
             if self.player == 1:
-                x_positions = board.current_state()[0]
-                o_positions = board.current_state()[1]
+                x_positions = board_current_state[0]
+                o_positions = board_current_state[1]
             else:
-                x_positions = board.current_state()[1]
-                o_positions = board.current_state()[0]
+                x_positions = board_current_state[1]
+                o_positions = board_current_state[0]
 
         else:
             # This is not a game, maybe just heatmaps savings. Make sure that in the board you've sent, its X's turn
             # to play (or as you wish)
             my_marker = "X"
 
-            x_positions = board.current_state()[0]
-            o_positions = board.current_state()[1]
+            x_positions = board_current_state[0]
+            o_positions = board_current_state[1]
 
 
         x_axis = [letter for i, letter in zip(range(width), string.ascii_lowercase)]
