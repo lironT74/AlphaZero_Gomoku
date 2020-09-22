@@ -29,7 +29,7 @@ def save_heatmaps(model_name,
 
     for i in range(model_check_freq, max_model_iter + model_check_freq, model_check_freq):
 
-        heatmap_save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/{model_name}/iteration_{i}/'
+        heatmap_save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/move selections with MCTS/{model_name}/iteration_{i}/'
         if not os.path.exists(heatmap_save_path):
             os.makedirs(heatmap_save_path)
 

@@ -9,7 +9,6 @@ import string
 import numpy as np
 import copy
 import matplotlib as mpl
-
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io
@@ -206,27 +205,31 @@ class MCTSPlayer(object):
     def reset_player(self):
         self.mcts.update_with_move(-1)
 
+
+
+
     def get_action(self, board, temp=1e-3, return_prob=False, **kwargs):
+
+        board_current_state = board.current_state(last_move=(self.input_plains_num == 4),
+                                                                 is_random_last_turn=self.is_random_last_turn)
+
 
         sensible_moves = board.availables
 
-        board_current_state = board.current_state(last_move=(self.input_plains_num==4), is_random_last_turn=self.is_random_last_turn)
-
+        return_shutter = kwargs.get('return_shutter', False)
         return_fig = kwargs.get('return_fig', False)
-
         display = kwargs.get('display', False)
 
         # the pi vector returned by MCTS as in the alphaGo Zero paper
-
         move_probs = np.zeros(board.width * board.height)
 
         if len(sensible_moves) > 0:
 
-
             acts_policy, probas_policy = zip(*self.mcts._policy(board, board_current_state)[0])
 
             # AlphaZero gives some probability to locations that are not available for some reason
-            probas_policy = probas_policy / np.sum(probas_policy)
+            if np.sum(probas_policy) != 0:
+                probas_policy = probas_policy / np.sum(probas_policy)
 
             if not self.no_playouts:
                 acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
@@ -235,11 +238,12 @@ class MCTSPlayer(object):
                 acts_mcts, probas_mcts = acts_policy, probas_policy
                 visits_mcts = 0
 
+
             move_probs[list(acts_mcts)] = probas_mcts
+
 
             # Check if there is a last move indicated - in the start of empty board
             # game there is no last move.
-
 
             if self._is_selfplay:
                 # add Dirichlet Noise for exploration (needed for
@@ -269,31 +273,9 @@ class MCTSPlayer(object):
             #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
 
-            y_cur_move = move // board.width + 1
-            x_cur_move = string.ascii_lowercase[move % board.width]
-            cur_move = f"{x_cur_move}{y_cur_move}"
 
-            if np.sum(board_current_state[2]) == 1:
-                y_last_move = board.width - np.where(board_current_state[2] == 1)[0][0]
-                x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
-                last_move = f"last move: {x_last_move}{y_last_move}"
+            last_move, cur_move, shutter_size = get_last_cur_shutter(board, board_current_state, move)
 
-                row_last = y_last_move - 1
-                col_last = np.where(board_current_state[2] == 1)[1][0]
-
-                row_cur = board.height - 1 - move // board.width
-                col_cur = move % board.width
-
-                shutter_size = get_shutter_size(last_move=(row_last, col_last), board = board, cur_move=(row_cur, col_cur))
-
-            else:
-                last_move = "No last move"
-                shutter_size = -1
-
-
-
-
-            # print(cur_move)
 
             if display:
                 self.create_probas_heatmap(acts_policy=acts_policy,
@@ -303,7 +285,6 @@ class MCTSPlayer(object):
                                            visits_mcts=visits_mcts,
                                            width=board.width,
                                            height=board.height,
-                                           board=board,
                                            last_move=last_move,
                                            shutter_size=shutter_size,
                                            cur_move=cur_move,
@@ -318,32 +299,49 @@ class MCTSPlayer(object):
                                                  visits_mcts=visits_mcts,
                                                  width=board.width,
                                                  height=board.height,
-                                                 board=board,
                                                  last_move=last_move,
                                                  cur_move=cur_move,
                                                  shutter_size=shutter_size,
                                                  board_current_state=board_current_state)
 
+
                 if return_prob:
-                    return move, move_probs, buf
+                    if return_shutter:
+                        return move, move_probs, buf, shutter_size
+                    else:
+                        return move, move_probs, buf
+
                 else:
-                    return move, buf
+                    if return_shutter:
+                        return move, buf, shutter_size
+                    else:
+                        return move, buf
+
 
             else:
+
                 if return_prob:
-                    return move, move_probs
+                    if return_shutter:
+                        return move, move_probs, shutter_size
+                    else:
+                        return move, move_probs
+
                 else:
-                    return move
+                    if return_shutter:
+                        return move, shutter_size
+                    else:
+                        return move
 
         else:
             print("WARNING: the board is full")
+
 
     def __str__(self):
         return str(self.name) + " {}".format(self.player)
 
 
     def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
-                              board, last_move, cur_move, board_current_state, shutter_size=-1, display=False):
+                              last_move, cur_move, board_current_state, shutter_size=-1, display=False):
 
         if not display:
             mpl.use('Agg')
@@ -405,7 +403,7 @@ class MCTSPlayer(object):
 
 
             titles = ["Probas of the policy value fn", "Normalized visit counts of MCTS",
-                      f"Probas of the MCTS. played: {cur_move}"]
+                      f"Probas of the MCTS.{cur_move}"]
 
             distributions = [move_probs_policy, normalized_visits, move_probs_mcts]
 
@@ -444,15 +442,16 @@ class MCTSPlayer(object):
             cbar_ax = fig.add_subplot(grid[1, 1:-1])
             fig.colorbar(sm, cax=cbar_ax, orientation="horizontal").ax.tick_params(labelsize=fontsize + 2)
 
+
         else:
 
 
             fontsize = 38
             fig, ax = plt.subplots(tight_layout=False, figsize = (25, 27))
 
-            sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
+            # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
             fig.suptitle(f"Model: {self.name}, using the policy value function.\nPlays: {my_marker}, "
-                         f"{last_move}{shutter_str}\n Chosen move: {cur_move}", fontsize=fontsize + 10)
+                         f"{last_move}{shutter_str}\n{cur_move}", fontsize=fontsize + 10)
 
 
             im = ax.imshow(move_probs_policy, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))

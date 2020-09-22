@@ -1,10 +1,11 @@
 from pyemd import emd
 import numpy as np
 import math
-from game import Board, Game, get_shutter_size
+from game import Board, Game, get_shutter_size, get_last_cur_shutter, get_last_cur_shutter_aux, get_shutter_aux
 import copy
 import json
 from policy_value_net_pytorch import PolicyValueNet
+import string
 
 BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
@@ -207,6 +208,8 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
     return distance
 
 
+
+
 class Human(object):
     """
     human player
@@ -214,6 +217,7 @@ class Human(object):
 
     def __init__(self):
         self.player = None
+        self.name = "Human"
 
     def set_player_ind(self, p):
         self.player = p
