@@ -1,7 +1,7 @@
 from pyemd import emd
 import numpy as np
 import math
-from game import Board, Game, get_shutter_size, get_last_cur_shutter, get_last_cur_shutter_aux, get_shutter_aux
+from game import Board, Game, get_shutter_size, get_last_cur_shutter, get_last_cur_shutter_aux, get_printable_move
 import copy
 import json
 from policy_value_net_pytorch import PolicyValueNet
@@ -171,6 +171,9 @@ def initialize_board_with_init_and_last_moves(board_height, board_width, input_b
     last_move_p1 = kwargs.get('last_move_p1', None)
     last_move_p2 = kwargs.get('last_move_p2', None)
 
+    is_random_last_turn_p1 = kwargs.get('is_random_last_turn_p1', False)
+    is_random_last_turn_p2 = kwargs.get('is_random_last_turn_p2', False)
+
     board = copy.deepcopy(input_board)
     board = np.flipud(board)
     i_board = np.zeros((2, board_height, board_width))
@@ -178,7 +181,8 @@ def initialize_board_with_init_and_last_moves(board_height, board_width, input_b
     i_board[1] = board == 2
 
     board = Board(width=board_width, height=board_height, n_in_row=n_in_row, open_path_threshold=open_path_threshold)
-    board.init_board(start_player=start_player, initial_state=i_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+    board.init_board(start_player=start_player, initial_state=i_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
+                     is_random_last_turn_p1=is_random_last_turn_p1, is_random_last_turn_p2=is_random_last_turn_p2)
     return board
 
 

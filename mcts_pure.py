@@ -189,6 +189,8 @@ class MCTSPlayer(object):
     def __init__(self, c_puct=5, n_playout=2000, name=""):
         self.mcts = MCTS(policy_value_fn, c_puct, n_playout)
         self.name=name
+        self.is_random_last_turn = False
+
     def set_player_ind(self, p):
         self.player = p
 

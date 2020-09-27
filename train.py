@@ -19,8 +19,8 @@ from tensorboardX import SummaryWriter
 # MODEL_NAME="pt_6_6_4_p4_v10"
 # INPUT_PLANES_NUM = 4
 
-MODEL_NAME="pt_10_10_5_p3_v0_1"
-INPUT_PLANES_NUM = 3
+MODEL_NAME="pt_10_10_5_p4_v0_2"
+INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
 MODEL_DIR = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{MODEL_NAME}'

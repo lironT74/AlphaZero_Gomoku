@@ -18,48 +18,41 @@ FORCING_BONUS = 20
 OPPONENT_THREAT_SCORE = 15
 
 
-def get_last_cur_shutter(board, board_current_state, move):
-    last_move, cur_move, shutter_size = get_last_cur_shutter_aux(board, board_current_state, move)
+def get_last_cur_shutter(board, cur_move):
+
+    last_move, cur_move, shutter_size = get_last_cur_shutter_aux(board, cur_move)
     return last_move, cur_move, shutter_size
 
 
-def get_last_cur_shutter_aux(board, board_current_state, move):
-    y_cur_move = move // board.width + 1
-    x_cur_move = string.ascii_lowercase[move % board.width]
-    cur_move = f"chosen move: {x_cur_move}{y_cur_move}"
+def get_last_cur_shutter_aux(board, cur_move):
+    cur_move_printable = f"chosen move: {get_printable_move(cur_move, board.width, board.height)}"
+    last_move = board.last_move_p1 if board.get_current_player() == board.players[0] else board.last_move_p2
 
-    if np.sum(board_current_state[2]) == 1:
-        y_last_move = board.width - np.where(board_current_state[2] == 1)[0][0]
-        x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
-        last_move = f" last move: {x_last_move}{y_last_move}"
+    if last_move != -1 and last_move != None:
+        last_move_printable = f"last move: {get_printable_move(last_move, board.width, board.height)}"
 
+        row_last = board.width - 1 - last_move // board.width
+        col_last = last_move % board.width
+        last_move = (row_last, col_last)
     else:
-        last_move = "No last move"
+        last_move_printable = "No last move"
+        last_move = None
 
-    return last_move, cur_move, get_shutter_aux(board, board_current_state, move)
+    row_cur = board.width - 1 - cur_move // board.width
+    col_cur = cur_move % board.width
+
+    return last_move_printable, cur_move_printable, get_shutter_size(last_move, board, (row_cur, col_cur))
 
 
-def get_shutter_aux(board, board_current_state, move):
-
-    if np.sum(board_current_state[2]) == 1:
-        row_last = board.width - np.where(board_current_state[2] == 1)[0][0] - 1
-        col_last = np.where(board_current_state[2] == 1)[1][0]
-
-        row_cur = board.height - 1 - move // board.width
-        col_cur = move % board.width
-
-        shutter_size = get_shutter_size(last_move=(row_last, col_last), board=board, cur_move=(row_cur, col_cur))
-
-    else:
-        shutter_size = -1
-
-    return shutter_size
-
+def get_printable_move(move, width, height):
+    x_cur_move = move // width + 1
+    y_cur_move = move % height
+    return f"{string.ascii_lowercase[y_cur_move]}{x_cur_move}"
 
 
 def get_shutter_size(last_move, board, cur_move):
     # No last turn
-    if last_move == None:
+    if last_move == None or last_move == -1:
         return -1
 
     row_last, col_last = last_move
@@ -98,11 +91,23 @@ class Board(object):
         self.n_in_row = int(kwargs.get('n_in_row', 5))
         self.players = [1, 2]  # player1 and player2
         self.open_path_threshold = kwargs.get('open_path_threshold', 0)
+        self.random_seed = -1
+
+    def set_random_seed(self, seed):
+        self.random_seed = seed
+
+    def set_is_random_last_turn(self, is_random_last_turn, player):
+        self.is_random_last_turn[player] = is_random_last_turn
 
     def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
 
         last_move_p1 = kwargs.get('last_move_p1', None)
         last_move_p2 = kwargs.get('last_move_p2', None)
+
+
+        is_random_last_turn_p1 = kwargs.get('is_random_last_turn_p1', False)
+        is_random_last_turn_p2 = kwargs.get('is_random_last_turn_p2', False)
+        self.is_random_last_turn = {1: is_random_last_turn_p1, 2:is_random_last_turn_p2}
 
         if self.width < self.n_in_row or self.height < self.n_in_row:
             raise Exception('board width and height can not be '
@@ -221,13 +226,33 @@ class Board(object):
                                 move_oppo % self.height] = 1.0
 
 
-            is_random_last_turn = kwargs.get("is_random_last_turn", False)
-
-            if is_random_last_turn:
+            if self.is_random_last_turn[self.current_player]:
 
                 if move_curr is not None and len(move_curr) > 0:
-                    index_of_turn = np.random.choice(list(range(len(move_curr))))
+
+                    if self.random_seed == -1:
+                        index_of_turn = np.random.choice(list(range(len(move_curr))))
+                    else:
+                        np.random.seed(self.random_seed)
+                        index_of_turn = np.random.choice(list(range(len(move_curr))))
+
                     random_last_turn = move_curr[index_of_turn]
+
+                    if self.current_player == self.players[0]:
+
+                        if self.last_move == self.last_move_p1:
+                            self.last_move = random_last_turn
+
+                        self.last_move_p1 = random_last_turn
+
+                    else:
+
+                        if self.last_move == self.last_move_p2:
+                            self.last_move = random_last_turn
+
+                        self.last_move_p2 = random_last_turn
+
+
                     square_state[2][random_last_turn // self.width,
                                     random_last_turn % self.height] = 1.0
 
@@ -1142,6 +1167,9 @@ class Game(object):
         last_move_p1 = kwargs.get('last_move_p1', None)
         last_move_p2 = kwargs.get('last_move_p2', None)
 
+        is_random_last_turn_p1 = kwargs.get('is_random_last_turn_p1', False)
+        is_random_last_turn_p2 = kwargs.get('is_random_last_turn_p2', False)
+
         correct_move_p1 = kwargs.get('correct_move_p1', None)
         correct_move_p2 = kwargs.get('correct_move_p2', None)
 
@@ -1157,7 +1185,10 @@ class Game(object):
                             'or 2 (player2 first)')
 
 
-        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
+                              is_random_last_turn_p1=is_random_last_turn_p1,
+                              is_random_last_turn_p2 =is_random_last_turn_p2)
+
         started_player = self.board.get_current_player()
 
         p1, p2 = self.board.players
@@ -1200,6 +1231,7 @@ class Game(object):
 
         last_moves = {1: last_move_p1, 2: last_move_p2}
 
+        game_history = []
 
         if is_shown:
             self.graphic(self.board, player1.player, player2.player)
@@ -1211,7 +1243,7 @@ class Game(object):
 
             player_in_turn = players[current_player]
 
-            shutter_size_real_last_move = -3
+            shutter_size_real_last_move = -1
 
             from mcts_alphaZero import MCTSPlayer
             if isinstance(players[current_player], MCTSPlayer):
@@ -1219,33 +1251,36 @@ class Game(object):
                                                                             return_fig=True, display=False,
                                                                             return_shutter=True)
 
-                if hasattr(players[current_player], 'is_random_last_turn'):
+                row = self.board.width - 1 - move // self.board.width
+                col = move % self.board.width
 
-                    if players[current_player].is_random_last_turn == True:
 
-                        # That means that the shutter size we got was calculated relatively to a random last move
-                        # (and that this player receives last move)
+                if self.board.is_random_last_turn[current_player]:
+                    # That means that the shutter size we got was calculated relatively to a random last move
+                    # (and that this player receives last move)
 
-                        shutter_size_real_last_move = get_shutter_aux(self.board,
-                                                                      self.board.current_state(last_move=True,
-                                                                                               is_random_last_turn=False),
-                                                                      move=move)
+                    shutter_size_real_last_move = get_shutter_size(last_move=last_moves[current_player],
+                                                                   board=self.board, cur_move=(row, col))
 
             else:
 
                 move = player_in_turn.get_action(self.board)
-                shutter_size = get_shutter_aux(self.board, self.board.current_state(last_move=False, is_random_last_turn=False), move=move)
+
+                row = self.board.width - 1 - move // self.board.width
+                col = move % self.board.width
+
+                shutter_size = get_shutter_size(last_move=last_moves[current_player],
+                                                                       board=self.board, cur_move=(row, col))
 
 
-            row = self.board.width - 1 - move // self.board.width
-            col = move % self.board.width
 
             shutter_sizes[current_player].append(shutter_size)
 
             real_last_move_shutter_sizes[current_player].append(shutter_size_real_last_move)
 
-
             last_moves[current_player] = (row, col)
+
+            game_history.append((row, col))
 
             self.board.do_move(move)
 
@@ -1278,7 +1313,7 @@ class Game(object):
                 if not return_statistics:
                     return winner
                 else:
-                    return winner, game_length, shutter_sizes, real_last_move_shutter_sizes
+                    return winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history
 
 
 
@@ -1287,6 +1322,8 @@ class Game(object):
         last_move_p1 = kwargs.get('last_move_p1', None)
         last_move_p2 = kwargs.get('last_move_p2', None)
 
+        is_random_last_turn_p1 = kwargs.get('is_random_last_turn_p1', False)
+        is_random_last_turn_p2 = kwargs.get('is_random_last_turn_p2', False)
 
         board_name = kwargs.get('board_name', 'empty board')
 
@@ -1297,7 +1334,9 @@ class Game(object):
 
 
 
-        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2)
+        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
+                              is_random_last_turn_p1=is_random_last_turn_p1, is_random_last_turn_p2 =is_random_last_turn_p2)
+
         started_player = self.board.get_current_player()
 
         p1, p2 = self.board.players

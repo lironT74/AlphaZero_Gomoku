@@ -206,12 +206,10 @@ class MCTSPlayer(object):
         self.mcts.update_with_move(-1)
 
 
-
-
     def get_action(self, board, temp=1e-3, return_prob=False, **kwargs):
 
-        board_current_state = board.current_state(last_move=(self.input_plains_num == 4),
-                                                                 is_random_last_turn=self.is_random_last_turn)
+
+        board_current_state = board.current_state(last_move=(self.input_plains_num == 4))
 
 
         sensible_moves = board.availables
@@ -225,7 +223,7 @@ class MCTSPlayer(object):
 
         if len(sensible_moves) > 0:
 
-            acts_policy, probas_policy = zip(*self.mcts._policy(board, board_current_state)[0])
+            acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
             # AlphaZero gives some probability to locations that are not available for some reason
             if np.sum(probas_policy) != 0:
@@ -274,7 +272,7 @@ class MCTSPlayer(object):
 
 
 
-            last_move, cur_move, shutter_size = get_last_cur_shutter(board, board_current_state, move)
+            last_move, cur_move, shutter_size = get_last_cur_shutter(board, move)
 
 
             if display:
