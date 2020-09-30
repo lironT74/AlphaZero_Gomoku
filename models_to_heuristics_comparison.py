@@ -35,7 +35,7 @@ def compare_model_to_heuristics(path, model_name, game_board, n=4, width=6, heig
 
 
     heuristics_scores = threshold_cutoff_heuristics(board, opponent_weight, max_radius_density=max_radius_density, rounding=-1,
-                                                    threshold=cut_off_threshold, board_name=board_name)
+                                                    cutoff_threshold=cut_off_threshold, board_name=board_name)
 
 
     models_num = max_model_iter//model_check_freq
@@ -50,103 +50,102 @@ def compare_model_to_heuristics(path, model_name, game_board, n=4, width=6, heig
                                                     input_plains_num=input_plains_num, model_iteration=i, rounding=-1,
                                                     cutoff_threshold=cut_off_threshold, is_random_last_turn=is_random_last_turn)
 
-    #     for key in heuristics_scores.keys():
-    #
-    #         distance = emd(np.asarray(np.reshape(move_probs_policy, width*height), dtype='float64'),
-    #                        np.asarray(np.reshape(heuristics_scores[key], width*height), dtype='float64'),
-    #                        dist_matrix)
-    #
-    #         distances_lists[key][index_i] = distance
-    #
-    #
-    # for key in heuristics_scores.keys():
-    #
-    #     move_probs_policy = threshold_cutoff_policy(model_name="base_model", board_name=board_name, board=board,
-    #                                                 model_iteration=-1,
-    #                                                 model_file=f'/home/lirontyomkin/AlphaZero_Gomoku/models/best_policy_6_6_4.model',
-    #                                                 input_plains_num=4, rounding=-1, cutoff_threshold=cut_off_threshold)
-    #
-    #
-    #     distances_base_models[key] = emd(np.asarray(np.reshape(move_probs_policy, width*height), dtype='float64'),
-    #                                    np.asarray(np.reshape(heuristics_scores[key], width*height), dtype='float64'),
-    #                                    dist_matrix)
-    #
-    #
-    #
-    # fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30,10))
-    #
-    # fontsize = 16
-    # linewidth=3
-    #
-    # model_name = f"{model_name}_random" if is_random_last_turn else model_name
-    #
-    #
-    # colors =  {"density": "blue",
-    #            "linear": "red",
-    #            "nonlinear": "green",
-    #            "interaction": "orange",
-    #            "interaction with forcing": "black",
-    #            "people": "fuchsia"}
-    #
-    #
-    # for index, key in enumerate(distances_lists.keys()):
-    #
-    #     ax.plot(range(models_num), distances_lists[key], label=f"{key}", color=colors[key], linewidth=linewidth)
-    #
-    #     ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
-    #                color=colors[key], linewidth=2 * linewidth)
-    #
-    #
-    # ax.set_xticks(range(models_num))
-    # ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
-    # ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    # ax.set_xlabel("sub model no.", fontsize=fontsize)
-    #
-    # board_current_state = board.current_state(last_move=True, is_random_last_turn=False)
-    #
-    # if is_random_last_turn:
-    #     last_move = " with random last move"
-    #
-    # else:
-    #     if np.sum(board_current_state[2]) == 1:
-    #         y_last_move = 6 - np.where(board_current_state[2] == 1)[0][0]
-    #         x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
-    #         last_move = f" (last move - {x_last_move}{y_last_move})"
-    #
-    #     else:
-    #         last_move = " (No last move)"
-    #
-    #
-    # ax.set_title(f"{model_name}{last_move} EMD distances from heuristics \no_weight={opponent_weight}, "
-    #              f"cutoff threshold={cut_off_threshold} on {board_name}", fontdict={'fontsize': fontsize + 15})
-    #
-    #
-    # h, l = ax.get_legend_handles_labels()
-    #
-    # if len(distances_lists.keys()) == 6:
-    #     ord = [0,6,1,7,2,8,3,9,4,10,5,11]
-    # elif len(distances_lists.keys()) == 5:
-    #     ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
-    #
-    # lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize+5)
-    #
-    #
-    # lax.axis("off")
-    # fig.tight_layout()
-    #
-    # buf = io.BytesIO()
-    # plt.savefig(buf, format='png')
-    # buf.seek(0)
-    # image = PIL.Image.open(buf)
-    #
-    # path = f"{path}{model_name}/"
-    #
-    # if not os.path.exists(path):
-    #     os.makedirs(path)
-    #
-    # plt.savefig(f"{path}{board_name}.png")
-    #
-    # plt.close('all')
+        for key in heuristics_scores.keys():
+
+            distance = emd(np.asarray(np.reshape(move_probs_policy, width*height), dtype='float64'),
+                           np.asarray(np.reshape(heuristics_scores[key], width*height), dtype='float64'),
+                           dist_matrix)
+
+            distances_lists[key][index_i] = distance
+
+
+    for key in heuristics_scores.keys():
+
+        move_probs_policy = threshold_cutoff_policy(model_name="base_model", board_name=board_name, board=board,
+                                                    model_iteration=-1,
+                                                    model_file=f'/home/lirontyomkin/AlphaZero_Gomoku/models/best_policy_6_6_4.model',
+                                                    input_plains_num=4, rounding=-1, cutoff_threshold=cut_off_threshold)
+
+
+        distances_base_models[key] = emd(np.asarray(np.reshape(move_probs_policy, width*height), dtype='float64'),
+                                       np.asarray(np.reshape(heuristics_scores[key], width*height), dtype='float64'),
+                                       dist_matrix)
+
+
+
+    fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30,10))
+
+    fontsize = 16
+    linewidth=3
+
+    model_name = f"{model_name}_random" if is_random_last_turn else model_name
+
+
+    colors =  {"density": "blue",
+               "linear": "red",
+               "nonlinear": "green",
+               "interaction": "orange",
+               "interaction with forcing": "black",
+               "people": "fuchsia"}
+
+
+    for index, key in enumerate(distances_lists.keys()):
+
+        ax.plot(range(models_num), distances_lists[key], label=f"{key}", color=colors[key], linewidth=linewidth)
+
+        ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
+                   color=colors[key], linewidth=2 * linewidth)
+
+
+    ax.set_xticks(range(models_num))
+    ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax.set_xlabel("sub model no.", fontsize=fontsize)
+
+    board_current_state = board.current_state(last_move=True, is_random_last_turn=False)
+
+    if is_random_last_turn:
+        last_move = " with random last move"
+
+    else:
+        if np.sum(board_current_state[2]) == 1:
+            y_last_move = 6 - np.where(board_current_state[2] == 1)[0][0]
+            x_last_move = string.ascii_lowercase[np.where(board_current_state[2] == 1)[1][0]]
+            last_move = f" (last move - {x_last_move}{y_last_move})"
+
+        else:
+            last_move = " (No last move)"
+
+
+    ax.set_title(f"{model_name}{last_move} EMD distances from heuristics \no_weight={opponent_weight}, "
+                 f"cutoff threshold={cut_off_threshold} on {board_name}", fontdict={'fontsize': fontsize + 15})
+
+
+    h, l = ax.get_legend_handles_labels()
+
+    if len(distances_lists.keys()) == 6:
+        ord = [0,6,1,7,2,8,3,9,4,10,5,11]
+    elif len(distances_lists.keys()) == 5:
+        ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+
+    lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize+5)
+    lax.axis("off")
+
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    path = f"{path}{model_name}/"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    plt.savefig(f"{path}{board_name}.png")
+
+    plt.close('all')
 
 
 def heuristics_heatmaps(game_board, path, height=6, width=6, n=4, opponent_weight=0.5, cutoff_threshold=0.05, max_radius_density=2, open_path_threshold=0):
@@ -155,7 +154,7 @@ def heuristics_heatmaps(game_board, path, height=6, width=6, n=4, opponent_weigh
     board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=last_move_p1,
                                                       last_move_p2=last_move_p2, open_path_threshold=open_path_threshold)
 
-    heuristics_scores = threshold_cutoff_heuristics(board=board, opponent_weight=opponent_weight, max_radius_density=max_radius_density, rounding=3, threshold=cutoff_threshold, board_name=board_name)
+    heuristics_scores = threshold_cutoff_heuristics(board=board, opponent_weight=opponent_weight, max_radius_density=max_radius_density, rounding=3, cutoff_threshold=cutoff_threshold, board_name=board_name)
 
     x_positions = board.current_state()[0]
     o_positions = board.current_state()[1]
@@ -348,7 +347,26 @@ def call_collage_compare_to_heuristics(path):
     create_collages_boards(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
 
 
-def threshold_cutoff_heuristics(board, opponent_weight, max_radius_density, rounding=-1, threshold = 0.05, board_name="empty board"):
+def get_people_distribution(board_name):
+    return PEOPLE_DISTRIBUTIONS[board_name]
+
+
+def keep_k_squares(matrix, k, height, width):
+
+    if k < 1 or k > width*height:
+        raise Exception(f"you cant keep {k} squares")
+
+    ind = [(ind // height, ind % width) for ind in np.argpartition(matrix.flatten(), -k)[-k:]]
+
+    result = np.zeros((width, height))
+
+    for row, col in ind:
+        result[row, col] = matrix[row, col]
+
+    return result
+
+
+def threshold_cutoff_heuristics(board, opponent_weight, max_radius_density, rounding=-1, cutoff_threshold = 0.05, board_name="empty board"):
 
     heuristics_scores = board.calc_all_heuristics(max_radius_density=max_radius_density,
                                                   normalize_all_heuristics=True,
@@ -358,16 +376,17 @@ def threshold_cutoff_heuristics(board, opponent_weight, max_radius_density, roun
         heuristics_scores["people"] = get_people_distribution(board_name)
 
     for key in heuristics_scores.keys():
-        if threshold < 1:
-            heuristics_scores[key][heuristics_scores[key] < threshold] = 0
+
+        if cutoff_threshold < 1:
+            heuristics_scores[key][heuristics_scores[key] < cutoff_threshold] = 0
+
+        elif isinstance(cutoff_threshold, int):
+            heuristics_scores[key] = keep_k_squares(heuristics_scores[key], cutoff_threshold, board.height, board.width)
+
 
         heuristics_scores[key] = normalize_matrix(heuristics_scores[key], board, rounding)
 
     return heuristics_scores
-
-
-def get_people_distribution(board_name):
-    return PEOPLE_DISTRIBUTIONS[board_name]
 
 
 def threshold_cutoff_policy(board, board_name, model_name,
@@ -400,16 +419,13 @@ def threshold_cutoff_policy(board, board_name, model_name,
 
     if cutoff_threshold < 1:
         move_probs_policy[move_probs_policy < cutoff_threshold] = 0
-        move_probs_policy = normalize_matrix(move_probs_policy, board, rounding)
+    elif isinstance(cutoff_threshold, int):
+        move_probs_policy = keep_k_squares(move_probs_policy, cutoff_threshold, board.height, board.width)
 
 
-    # if is_random_last_turn:
-    #     model_name = f"{model_name}_random"
-    #
-    # heatmap_save_path = f'/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/cutoff_threshold_{cutoff_threshold}/{model_name}/iteration_{model_iteration}/'
+    move_probs_policy = normalize_matrix(move_probs_policy, board, rounding)
 
-    # if not os.path.exists(f"{heatmap_save_path}{board_name}.png") and model_name != "base_model":
-    #     save_trimmed_policy_heatmap(move_probs_policy, model_name, board, board_name, heatmap_save_path)
+
 
     return move_probs_policy
 
@@ -536,16 +552,16 @@ def normalize_matrix(scores, board, rounding):
 def run_heuristics_for_threshold_and_weight(opponent_weight, cutoff_threshold, path, open_path_threshold=0):
 
     for game_board in BOARDS:
-        # compare_model_to_heuristics(path=path,
-        #                             model_name='pt_6_6_4_p4_v10',
-        #                             input_plains_num=4,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6,
-        #                             opponent_weight=opponent_weight,
-        #                             cut_off_threshold=cutoff_threshold,
-        #                             open_path_threshold=open_path_threshold)
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p4_v10',
+                                    input_plains_num=4,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6,
+                                    opponent_weight=opponent_weight,
+                                    cut_off_threshold=cutoff_threshold,
+                                    open_path_threshold=open_path_threshold)
 
         compare_model_to_heuristics(path=path,
                                     is_random_last_turn=True,
@@ -559,33 +575,33 @@ def run_heuristics_for_threshold_and_weight(opponent_weight, cutoff_threshold, p
                                     cut_off_threshold=cutoff_threshold,
                                     open_path_threshold=open_path_threshold)
 
-        # compare_model_to_heuristics(path=path,
-        #                             model_name='pt_6_6_4_p3_v7',
-        #                             input_plains_num=3,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6,
-        #                             opponent_weight=opponent_weight,
-        #                             cut_off_threshold=cutoff_threshold,
-        #                             open_path_threshold=open_path_threshold)
-        #
-        # compare_model_to_heuristics(path=path,
-        #                             model_name='pt_6_6_4_p3_v9',
-        #                             input_plains_num=3,
-        #                             model_check_freq=50,
-        #                             max_model_iter=5000,
-        #                             game_board=game_board,
-        #                             n=4, width=6, height=6,
-        #                             opponent_weight=opponent_weight,
-        #                             cut_off_threshold=cutoff_threshold,
-        #                             open_path_threshold=open_path_threshold)
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p3_v7',
+                                    input_plains_num=3,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6,
+                                    opponent_weight=opponent_weight,
+                                    cut_off_threshold=cutoff_threshold,
+                                    open_path_threshold=open_path_threshold)
+
+        compare_model_to_heuristics(path=path,
+                                    model_name='pt_6_6_4_p3_v9',
+                                    input_plains_num=3,
+                                    model_check_freq=50,
+                                    max_model_iter=5000,
+                                    game_board=game_board,
+                                    n=4, width=6, height=6,
+                                    opponent_weight=opponent_weight,
+                                    cut_off_threshold=cutoff_threshold,
+                                    open_path_threshold=open_path_threshold)
 
 
-    # for board in BOARDS:
-    #     heuristics_heatmaps(board, path, height=6, width=6, n=4, opponent_weight=opponent_weight, cutoff_threshold=cutoff_threshold, open_path_threshold=open_path_threshold)
+    for board in BOARDS:
+        heuristics_heatmaps(board, path, height=6, width=6, n=4, opponent_weight=opponent_weight, cutoff_threshold=cutoff_threshold, open_path_threshold=open_path_threshold)
 
-    # call_collage_compare_to_heuristics(path=path)
+    call_collage_compare_to_heuristics(path=path)
 
 
 def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, open_path_thresholds):
@@ -599,7 +615,12 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
             for cutoff_threshold in cutoff_thresholds:
                 for opponent_weight in o_weights:
 
-                    path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/cutoff_threshold_{cutoff_threshold}/"
+                    if cutoff_threshold < 1:
+                        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/cutoff_threshold_{cutoff_threshold}/"
+
+                    elif isinstance(cutoff_threshold, int):
+                        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/keep_{cutoff_threshold}_squares/"
+
                     jobs.append((opponent_weight, cutoff_threshold, path, open_path_threshold))
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
@@ -612,14 +633,22 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 if __name__ == "__main__":
 
     BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    # cutoff_thresholds = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 1]
-    # o_weights = [0, 0.2, 0.5, 0.7, 1]
-    # open_path_thresholds = [0, -1]
+    # cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3]
+    o_weights = [0, 0.2, 0.5, 0.7, 1]
+    open_path_thresholds = [0, -1]
 
-    # BOARDS = [EMPTY_BOARD]
-    cutoff_thresholds = [0.01, 0.05, 0.1, 0.2, 0.25, 0.3, 1]
-    o_weights = [0.5]
-    open_path_thresholds = [0]
-
+    cutoff_thresholds = [1, 2, 3, 4]
+    # o_weights = [0.5]
+    # open_path_thresholds = [0]
+    #
     run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds=cutoff_thresholds, o_weights=o_weights, open_path_thresholds=open_path_thresholds)
 
+
+    # for directory in os.listdir("/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons"):
+    #     for dir1 in os.listdir(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/"):
+    #         for dir2 in os.listdir(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/"):
+    #
+    #             if dir2 == "cutoff_threshold_0":
+    #                 print(dir2)
+    #                 os.rename(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/{dir2}", f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/cutoff_threshold_0")
+    #                 print(dir2)

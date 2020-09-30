@@ -7,7 +7,7 @@ from scipy.special import comb
 import pandas as pd
 import os
 from mcts_pure import MCTSPlayer as PUREMCTS
-
+import PIL
 
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
 
@@ -24,7 +24,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
 
     with Pool(len(jobs)) as pool:
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
-        pool.starmap(compare_all_models_statistics, jobs)
+        pool.starmap(collect_statistics_two_models, jobs)
         pool.close()
         pool.join()
 
@@ -73,32 +73,33 @@ def collect_statistics_two_models(players_list, opponent_player, board, width, h
 
     ]
 
-    result_df = pd.DataFrame(0, index=[player.name for player in players_list], columns=columns)
-
-    for cur_player in players_list:
-        result =              save_games_statistics(width=width,
-                              height=height,
-                              n=n,
-                              board_state=board_state,
-                              board_name=board_name,
-                              cur_player=cur_player,
-                              opponent_player=opponent_player,
-                              last_move_p1=p1,
-                              last_move_p2=p2,
-                              correct_move_p1=p1,
-                              correct_move_p2=p2,
-                              start_player=start_player,
-                              num_games=num_games)
-
-        print(result)
-        result_df.loc[cur_player.name] = result
-
-    print(result_df.to_string())
+    # result_df = pd.DataFrame(0, index=[player.name for player in players_list], columns=columns)
+    #
+    # for cur_player in players_list:
+    #     result =              save_games_statistics(width=width,
+    #                           height=height,
+    #                           n=n,
+    #                           board_state=board_state,
+    #                           board_name=board_name,
+    #                           cur_player=cur_player,
+    #                           opponent_player=opponent_player,
+    #                           last_move_p1=p1,
+    #                           last_move_p2=p2,
+    #                           correct_move_p1=p1,
+    #                           correct_move_p2=p2,
+    #                           start_player=start_player,
+    #                           num_games=num_games)
+    #
+    #     print(result)
+    #     result_df.loc[cur_player.name] = result
+    #
+    # print(result_df.to_string())
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
 
-    result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
+    # result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
 
+    create_statistics_graphics(path, num_games)
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                           opponent_player, last_move_p1, last_move_p2, correct_move_p1,
@@ -275,17 +276,196 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     return result
 
 
+def create_statistics_graphics(path, num_games):
+    save_plays_with_shutter_results(path, num_games)
+    save_shutter_size(path, num_games)
+    save_save_game_len(path, num_games)
+    save_game_results(path, num_games)
+
+
+def save_plays_with_shutter_results(path, num_games):
+    mpl.rcParams.update({'font.size': 16})
+
+    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+
+    fig = plt.figure(constrained_layout=False)
+    fig.suptitle("Plays with shutter results")
+
+    fig.set_size_inches(10, 10)
+    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
+
+    ind = np.arange(len(data.index) - 1)
+    width = 0.25
+
+    ax = fig.add_subplot(grid[0, 0])
+
+    ax.bar(ind-width, data["fraction of plays with shutter"][:-1], width=width, label="fraction of plays with shutter", color="blue")
+    ax.bar(ind, data["fraction of plays with shutter (wins)"][:-1], width=width, label="fraction of plays with shutter - wins", color="green")
+    ax.bar(ind + width, data["fraction of plays with shutter (losses)"][:-1], width=width, label="fraction of plays with shutter - losses", color="red")
+
+
+    ax.bar(len(data.index)- 0.5 - 3*width, data["fraction of plays with shutter"][-1], width=width, color="blue")
+    ax.bar(len(data.index)- 0.5 - 2*width, data["fraction of plays with shutter (real last turn)"][-1], label="real last turn", width=width, color="cornflowerblue")
+
+    ax.bar(len(data.index)- 0.5 - 0.5*width, data["fraction of plays with shutter (wins)"][-1], width=width, color="green")
+    ax.bar(len(data.index)- 0.5 + 0.5*width, data["fraction of plays with shutter (real last turn - wins)"][-1], label="real last turn", width=width, color="greenyellow")
+
+    ax.bar(len(data.index)- 0.5 + 2*width, data["fraction of plays with shutter (losses)"][-1], width=width, color="red")
+    ax.bar(len(data.index)- 0.5 + 3*width, data["fraction of plays with shutter (real last turn - losses)"][-1], label="real last turn", width=width, color="lightcoral")
+
+
+    ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
+    ax.set_xticklabels(data.index)
+
+    lax = fig.add_subplot(grid[1, 0])
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=2)
+    lax.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}Plays with shutter results.png", bbox_inches='tight')
+    plt.close('all')
+
+
+def save_shutter_size(path, num_games):
+    mpl.rcParams.update({'font.size': 16})
+
+    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+
+    fig = plt.figure(constrained_layout=False)
+    fig.suptitle("Shutter sizes results")
+
+    fig.set_size_inches(10, 10)
+    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
+
+    ind = np.arange(len(data.index) - 1)
+    width = 0.25
+
+    ax = fig.add_subplot(grid[0, 0])
+
+    ax.bar(ind-width, data["avg shutter size"][:-1], width=width, label="average shutter size", color="blue")
+    ax.bar(ind, data["avg shutter size (wins)"][:-1], width=width, label="average shutter size - wins", color="green")
+    ax.bar(ind + width, data["avg shutter size (losses)"][:-1], width=width, label="average shutter size - losses", color="red")
+
+
+    ax.bar(len(data.index)- 0.5 - 3*width, data["avg shutter size"][-1], width=width, color="blue")
+    ax.bar(len(data.index)- 0.5 - 2*width, data["avg shutter size (real last turn)"][-1], label="real last turn", width=width, color="cornflowerblue")
+
+    ax.bar(len(data.index)- 0.5 - 0.5*width, data["avg shutter size (wins)"][-1], width=width, color="green")
+    ax.bar(len(data.index)- 0.5 + 0.5*width, data["avg shutter size (real last turn - wins)"][-1], label="real last turn", width=width, color="greenyellow")
+
+    ax.bar(len(data.index)- 0.5 + 2*width, data["avg shutter size (losses)"][-1], width=width, color="red")
+    ax.bar(len(data.index)- 0.5 + 3*width, data["avg shutter size (real last turn - losses)"][-1], label="real last turn", width=width, color="lightcoral")
+
+
+    ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
+    ax.set_xticklabels(data.index)
+
+    lax = fig.add_subplot(grid[1, 0])
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=2)
+    lax.axis("off")
+
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}Shutter sizes results.png", bbox_inches='tight')
+    plt.close('all')
+
+
+def save_save_game_len(path, num_games):
+    mpl.rcParams.update({'font.size': 16})
+
+    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+
+    fig = plt.figure(constrained_layout=False)
+    fig.suptitle("Games length results")
+
+    fig.set_size_inches(10, 10)
+    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
+
+    ind = np.arange(len(data.index))
+    width = 0.25
+
+    ax = fig.add_subplot(grid[0, 0])
+
+    ax.bar(ind-width, data["avg game len"], width=width, label="average game len", color="blue")
+    ax.bar(ind, data["avg game len (wins)"], width=width, label="average game len - wins", color="green")
+    ax.bar(ind + width, data["avg game len (losses)"], width=width, label="average game len - losses", color="red")
+
+
+    ax.set_xticks(ind)
+    ax.set_xticklabels(data.index)
+
+    lax = fig.add_subplot(grid[1, 0])
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True)
+    lax.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}Games lengths results.png", bbox_inches='tight')
+    plt.close('all')
+
+
+def save_game_results(path, num_games):
+    mpl.rcParams.update({'font.size': 16})
+
+    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+
+    fig = plt.figure(constrained_layout=False)
+    fig.suptitle("Games results")
+
+    fig.set_size_inches(10, 10)
+    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20,1])
+
+    ind = np.arange(len(data.index))
+    width = 0.5
+
+    ax = fig.add_subplot(grid[0, 0])
+
+    ax.bar(ind, data["no. wins"], width=width, label="wins", color="green")
+    ax.bar(ind, data["no. losses"], width=width, label="losses", color="red", bottom=data["no. wins"])
+    ax.bar(ind, data["no. ties"], width=width, label = "ties", color="yellow", bottom=data["no. wins"]+data["no. losses"])
+
+    ax.set_xticks(ind)
+    ax.set_xticklabels(data.index)
+
+    lax = fig.add_subplot(grid[1, 0])
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h,l, borderaxespad=0, loc="center", fancybox=True, shadow=True)
+    lax.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}Games results.png", bbox_inches='tight')
+    plt.close('all')
+
+
 if __name__ == '__main__':
     n_playout = 400
 
     v9 = ( '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1500.model',
-           'pt_6_6_4_p3_v9_1500', 3,True, False)
+           'v9_1500', 3,True, False)
     v10 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
-           'pt_6_6_4_p4_v10_1500', 4, True, False)
+           'v10_1500', 4, True, False)
     v10_random = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
-           'pt_6_6_4_p4_v10_1500_random', 4, True, True)
+           'v10_1500_random', 4, True, True)
     v7 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_1500.model',
-          'pt_6_6_4_p3_v7_1500', 3, True, False)
+          'v7_1500', 3, True, False)
 
     policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2])
     player_v7 = MCTSPlayer(policy_v7.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v7[3],
@@ -324,4 +504,5 @@ if __name__ == '__main__':
     opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4]
 
 
+    set_start_method("spawn")
     compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
