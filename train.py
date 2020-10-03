@@ -188,7 +188,7 @@ class TrainPipeline():
         #                                               'explained var new': explained_var_new,
         #                                               'training loss':loss,
         #                                               'training entropy':entropy},
-        #                         i+1)
+        #                                                i+1)
 
 
         return loss, entropy

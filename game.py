@@ -1040,6 +1040,60 @@ class Board(object):
         return False
 
 
+
+
+    def squares_shutter_sizes(self):
+
+        result_dict = {}
+        last_move = self.last_move_p1 if self.get_current_player() == self.players[0] else self.last_move_p2
+
+        if last_move != -1 and last_move != None:
+            row_last = self.width - 1 - last_move // self.width
+            col_last = last_move % self.width
+            last_move = (row_last, col_last)
+
+
+            for move in self.availables:
+                row_cur = self.width - 1 - move // self.width
+                col_cur = move % self.width
+                cur_move = (row_cur, col_cur)
+
+                result_dict[move] = get_shutter_size(last_move=last_move, board=self, cur_move=cur_move)
+
+        else:
+            return None
+
+
+        if all([x==-1 for x in list(result_dict.values())]):
+            return None
+
+
+        return result_dict
+
+
+
+    def keep_only_close_enough_squares(self, shutter_threshold):
+
+        result_dict = self.squares_shutter_sizes()
+
+        if result_dict is None:
+            return self.availables
+
+
+        else:
+            res_availables = []
+
+            for move, shutter_distance in result_dict.items():
+                if shutter_distance < shutter_threshold:
+                    res_availables.append(move)
+
+            return res_availables
+
+
+
+
+
+
 class Game(object):
     """game server"""
 

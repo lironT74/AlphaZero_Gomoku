@@ -163,6 +163,7 @@ class PolicyValueNet():
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
+
         legal_positions = board.availables
 
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
@@ -177,7 +178,6 @@ class PolicyValueNet():
             log_act_probs, value = self.policy_value_net(
                     Variable(torch.from_numpy(current_state)).float())
             act_probs = np.exp(log_act_probs.data.numpy().flatten())
-
 
         act_probs = zip(legal_positions, act_probs[legal_positions])
 

@@ -9,6 +9,7 @@ import os
 from mcts_pure import MCTSPlayer as PUREMCTS
 import PIL
 
+
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
 
     jobs = []
@@ -27,7 +28,6 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         pool.starmap(collect_statistics_two_models, jobs)
         pool.close()
         pool.join()
-
 
 
 def collect_statistics_two_models(players_list, opponent_player, board, width, height, n, num_games, start_player):
@@ -73,33 +73,34 @@ def collect_statistics_two_models(players_list, opponent_player, board, width, h
 
     ]
 
-    # result_df = pd.DataFrame(0, index=[player.name for player in players_list], columns=columns)
-    #
-    # for cur_player in players_list:
-    #     result =              save_games_statistics(width=width,
-    #                           height=height,
-    #                           n=n,
-    #                           board_state=board_state,
-    #                           board_name=board_name,
-    #                           cur_player=cur_player,
-    #                           opponent_player=opponent_player,
-    #                           last_move_p1=p1,
-    #                           last_move_p2=p2,
-    #                           correct_move_p1=p1,
-    #                           correct_move_p2=p2,
-    #                           start_player=start_player,
-    #                           num_games=num_games)
-    #
-    #     print(result)
-    #     result_df.loc[cur_player.name] = result
-    #
-    # print(result_df.to_string())
+    result_df = pd.DataFrame(0, index=[player.name for player in players_list], columns=columns)
+
+    for cur_player in players_list:
+        result =              save_games_statistics(width=width,
+                              height=height,
+                              n=n,
+                              board_state=board_state,
+                              board_name=board_name,
+                              cur_player=cur_player,
+                              opponent_player=opponent_player,
+                              last_move_p1=p1,
+                              last_move_p2=p2,
+                              correct_move_p1=p1,
+                              correct_move_p2=p2,
+                              start_player=start_player,
+                              num_games=num_games)
+
+        print(result)
+        result_df.loc[cur_player.name] = result
+
+    print(result_df.to_string())
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
 
-    # result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
+    result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
 
     create_statistics_graphics(path, num_games)
+
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                           opponent_player, last_move_p1, last_move_p2, correct_move_p1,

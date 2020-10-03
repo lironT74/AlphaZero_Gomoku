@@ -225,9 +225,11 @@ class MCTSPlayer(object):
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
+
             # AlphaZero gives some probability to locations that are not available for some reason
             if np.sum(probas_policy) != 0:
                 probas_policy = probas_policy / np.sum(probas_policy)
+
 
             if not self.no_playouts:
                 acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)

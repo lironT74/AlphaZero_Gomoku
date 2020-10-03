@@ -47,7 +47,15 @@ def run():
         board = initialize_board_with_init_and_last_moves(last_move_p1=last_move_p1, board_height=height,
                                                           board_width=width, n_in_row=n, input_board=initial_board)
 
-        mcts_player_1.get_action(board, display=True)
+        # mcts_player_1.get_action(board, display=True)
+
+
+        print(initial_board)
+        print(board.keep_only_close_enough_squares(3))
+        print(board.keep_only_close_enough_squares(2))
+        print(board.keep_only_close_enough_squares(1))
+        print(board.keep_only_close_enough_squares(0))
+
 
         # print("asdas")
         # print(board.current_state(last_move=True, is_random_last_turn=True))
