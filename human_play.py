@@ -26,7 +26,7 @@ def run():
 
     try:
 
-        initial_board, board_name, last_move_p1, last_move_p2, _, _ = BOARD_1_TRUNCATED
+        initial_board, board_name, last_move_p1, last_move_p2, _, _ = EMPTY_BOARD
 
         # i_board, board = initialize_board_without_init_call(height, width, n, input_board=initial_board)
         #

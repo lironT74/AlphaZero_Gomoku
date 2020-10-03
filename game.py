@@ -1074,11 +1074,15 @@ class Board(object):
 
     def keep_only_close_enough_squares(self, shutter_threshold):
 
+
+        if not isinstance(shutter_threshold, int):
+            raise Exception("Shutter threshold should be a positive whole number")
+
+
         result_dict = self.squares_shutter_sizes()
 
         if result_dict is None:
             return self.availables
-
 
         else:
             res_availables = []

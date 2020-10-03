@@ -81,13 +81,13 @@ class Net(nn.Module):
 
 
 class PolicyValueNet():
-    """policy-value network """
     def __init__(self,
                  board_width,
                  board_height,
                  input_plains_num,
                  model_file=None,
-                 use_gpu=True):
+                 use_gpu=True,
+                 shutter_threshold_availables=None):
 
         self.use_gpu = use_gpu
 
@@ -99,6 +99,14 @@ class PolicyValueNet():
         self.board_height = board_height
         self.l2_const = 1e-4  # coef of l2 penalty
         self.input_plains_num = input_plains_num
+
+
+        if shutter_threshold_availables is None:
+            self.shutter_threshold_availables = 3 * board_width
+        else:
+            self.shutter_threshold_availables = shutter_threshold_availables
+
+
 
         # # the policy value net module
         if self.use_gpu:
@@ -137,6 +145,7 @@ class PolicyValueNet():
                         param_pytorch[key] = torch.FloatTensor(value)
 
                 self.policy_value_net.load_state_dict(param_pytorch)
+    """policy-value network """
 
 
     def policy_value(self, state_batch):
@@ -157,6 +166,7 @@ class PolicyValueNet():
             return act_probs, value.data.numpy()
 
 
+
     def policy_value_fn(self, board):
         """
         input: board
@@ -164,7 +174,11 @@ class PolicyValueNet():
         action and the score of the board state
         """
 
-        legal_positions = board.availables
+
+        # legal_positions = board.availables
+        legal_positions = board.keep_only_close_enough_squares(self.shutter_threshold_availables)
+
+
 
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
                 -1, self.input_plains_num , self.board_width, self.board_height))
