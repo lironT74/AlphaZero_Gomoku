@@ -179,7 +179,6 @@ class PolicyValueNet():
         legal_positions = board.keep_only_close_enough_squares(self.shutter_threshold_availables)
 
 
-
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
                 -1, self.input_plains_num , self.board_width, self.board_height))
 
@@ -193,7 +192,11 @@ class PolicyValueNet():
                     Variable(torch.from_numpy(current_state)).float())
             act_probs = np.exp(log_act_probs.data.numpy().flatten())
 
+
+
         act_probs = zip(legal_positions, act_probs[legal_positions])
+
+
 
         value = value.data[0][0]
         return act_probs, value

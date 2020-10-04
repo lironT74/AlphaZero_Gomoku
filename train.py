@@ -15,15 +15,16 @@ from mcts_alphaZero import MCTSPlayer
 from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 import os
 from tensorboardX import SummaryWriter
+import copy
+from Game_boards_and_aux import *
 
-# MODEL_NAME="pt_6_6_4_p4_v10"
-# INPUT_PLANES_NUM = 4
-
-MODEL_NAME="pt_10_10_5_p4_v0_2"
+MODEL_NAME="pt_6_6_4_p4_v12"
 INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
 MODEL_DIR = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{MODEL_NAME}'
+
+
 
 class TrainPipeline():
     def __init__(self, init_model=None):
@@ -31,9 +32,9 @@ class TrainPipeline():
         self.writer = SummaryWriter(WRITER_DIR)
 
         # params of the board and the game
-        self.board_width = 10
-        self.board_height = 10
-        self.n_in_row = 5
+        self.board_width = 6
+        self.board_height = 6
+        self.n_in_row = 4
 
         self.board = Board(width=self.board_width,
                            height=self.board_height,
@@ -46,9 +47,7 @@ class TrainPipeline():
         self.lr_multiplier = 1.0  # adaptively adjust the learning rate based on KL
         self.temp = 1.0  # the temperature param
 
-        self.n_playout = 400  # num of simulations for each move
 
-        self.c_puct = 5
         self.buffer_size = 10000
         self.batch_size = 512  # mini-batch size for training
         self.data_buffer = deque(maxlen=self.buffer_size)
@@ -56,29 +55,42 @@ class TrainPipeline():
         self.epochs = 5  # num of train_steps for each update
         self.kl_targ = 0.02
 
+
         self.check_freq = 50
         self.game_batch_num = 5000
+
 
         self.improvement_counter = 1000
         self.best_win_ratio = 0.0
 
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
-        self.pure_mcts_playout_num = 1000
+        self.pure_mcts_playout_num = 200
+
 
         self.input_plains_num = INPUT_PLANES_NUM
+
+
+        self.c_puct = 5
+        self.n_playout = 50  # num of simulations for each move
+        self.shutter_threshold_availables = 1
+
 
         if init_model:
             # start training from an initial policy-value net
             self.policy_value_net = PolicyValueNet(self.board_width,
                                                    self.board_height,
                                                    self.input_plains_num,
-                                                   model_file=init_model)
+                                                   model_file=init_model,
+                                                   shutter_threshold_availables=self.shutter_threshold_availables)
         else:
             # start training from a new policy-value net
             self.policy_value_net = PolicyValueNet(self.board_width,
                                                    self.board_height,
-                                                   self.input_plains_num)
+                                                   self.input_plains_num,
+                                                   shutter_threshold_availables=self.shutter_threshold_availables)
+
+
 
 
         self.mcts_player = MCTSPlayer(self.policy_value_net.policy_value_fn,
@@ -110,20 +122,68 @@ class TrainPipeline():
         return extend_data
 
 
+
     def collect_selfplay_data(self, n_games=1):
+
         """collect self-play data for training"""
         for i in range(n_games):
 
+
+            #EMPTY BOARD:
             winner, play_data = self.game.start_self_play(self.mcts_player,
                                                           temp=self.temp,
                                                           is_last_move=(self.input_plains_num == 4))
-
             play_data = list(play_data)[:]
             self.episode_len = len(play_data)
 
             # augment the data
             play_data = self.get_equi_data(play_data)
             self.data_buffer.extend(play_data)
+
+
+
+
+            #BOARD 1 FULL
+            board = copy.deepcopy(BOARD_1_FULL[0])
+            board = np.flipud(board)
+            i_board_1 = np.zeros((2, self.board_width, self.board_height))
+            i_board_1[0] = board == 1
+            i_board_1[1] = board == 2
+
+            winner_full_1, play_data_full_1 = self.game.start_self_play(self.mcts_player,
+                                                          temp=self.temp,
+                                                          is_last_move=(self.input_plains_num == 4),
+                                                          initial_state=i_board_1)
+
+            play_data_full_1 = list(play_data_full_1)[:]
+            self.episode_len_full_1 = len(play_data_full_1)
+
+            # augment the data
+            play_data_full_1 = self.get_equi_data(play_data_full_1)
+            self.data_buffer.extend(play_data_full_1)
+
+
+
+
+            # BOARD 2 FULL
+            board = copy.deepcopy(BOARD_2_FULL[0])
+            board = np.flipud(board)
+            i_board_2 = np.zeros((2, self.board_width, self.board_height))
+            i_board_2[0] = board == 1
+            i_board_2[1] = board == 2
+
+            winner_full_2, play_data_full_2 = self.game.start_self_play(self.mcts_player,
+                                                                 temp=self.temp,
+                                                                 is_last_move=(self.input_plains_num == 4),
+                                                                 initial_state=i_board_2)
+
+            play_data_full_2 = list(play_data_full_2)[:]
+            self.episode_len_full_2 = len(play_data_full_2)
+
+            # augment the data
+            play_data_full_2 = self.get_equi_data(play_data_full_2)
+            self.data_buffer.extend(play_data_full_2)
+
 
 
     def policy_update(self, iteration):
@@ -214,14 +274,14 @@ class TrainPipeline():
                                           is_shown=0,
                                           savefig=False)
             win_cnt[winner] += 1
-        win_ratio = 1.0*(win_cnt[1] + 0.5*win_cnt[-1]) / n_games
+        win_ratio = 1.0 * (win_cnt[1] + 0.5 * win_cnt[-1]) / n_games
         print("num_playouts: {}, win: {}, lose: {}, tie:{}".format(
-                self.pure_mcts_playout_num,
-                win_cnt[1], win_cnt[2], win_cnt[-1]))
+            self.pure_mcts_playout_num,
+            win_cnt[1], win_cnt[2], win_cnt[-1]))
 
         self.writer.add_text(tag='evaluation results',
                              text_string=f"num_playouts: {self.pure_mcts_playout_num}, win: {win_cnt[1]}, lose: {win_cnt[2]}, tie:{win_cnt[-1]}",
-                             global_step=iteration+1)
+                             global_step=iteration + 1)
 
         return win_ratio
 
@@ -241,22 +301,25 @@ class TrainPipeline():
 
                 self.collect_selfplay_data(self.play_batch_size)
 
-                print("batch i:{}, episode_len:{}".format(
-                        i+1, self.episode_len))
+                print("batch i:{}, episode_len:{}, episode len full 1: {}, episode len full 2: {}".format(
+                    i + 1, self.episode_len, self.episode_len_full_1, self.episode_len_full_2))
+
 
                 self.writer.add_scalar('episode len', self.episode_len, i + 1)
+                self.writer.add_scalar('episode len full 1', self.episode_len_full_1, i + 1)
+                self.writer.add_scalar('episode len full 2', self.episode_len_full_2, i + 1)
+
 
                 if len(self.data_buffer) > self.batch_size:
                     loss, entropy = self.policy_update(iteration=i)
 
-
                 # check the performance of the current model,
                 # and save the model params
-                if (i+1) % self.check_freq == 0:
-                    print("current self-play batch: {}".format(i+1))
+                if (i + 1) % self.check_freq == 0:
+                    print("current self-play batch: {}".format(i + 1))
                     win_ratio = self.policy_evaluate(iteration=i)
 
-                    self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i+1}.model')
+                    self.policy_value_net.save_model(f'{MODEL_DIR}/current_policy_{i + 1}.model')
 
                     if win_ratio > self.best_win_ratio:
 
@@ -274,7 +337,7 @@ class TrainPipeline():
                         #         self.pure_mcts_playout_num < 5000):
 
                         if self.best_win_ratio == 1.0:
-                            self.pure_mcts_playout_num += 1000
+                            self.pure_mcts_playout_num += self.pure_mcts_playout_num
                             self.best_win_ratio = 0.0
 
                     else:
@@ -286,13 +349,11 @@ class TrainPipeline():
                             self.writer.add_text('best model savings', f"No better policy was found "
                                                                        f"in the last {self.improvement_counter} "
                                                                        f"checks. Ending training. ", i + 1)
-
                             break
 
 
         except KeyboardInterrupt:
             print('\n\rquit')
-
 
 
 if __name__ == '__main__':

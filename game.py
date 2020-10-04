@@ -99,7 +99,10 @@ class Board(object):
     def set_is_random_last_turn(self, is_random_last_turn, player):
         self.is_random_last_turn[player] = is_random_last_turn
 
-    def init_board(self, start_player=2, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
+    def init_board(self, initial_state=None, **kwargs): #Default start player is 2! (O player!!!)
+
+        start_player = kwargs.get('start_player', 2)
+
 
         last_move_p1 = kwargs.get('last_move_p1', None)
         last_move_p2 = kwargs.get('last_move_p2', None)
@@ -156,6 +159,7 @@ class Board(object):
             if len(p1_moves) == len(p2_moves):
                 self.current_player = self.players[start_player - 1]  #not the current player, but the one that should start in the coming for loop
                 self.start_player = self.players[start_player - 1]
+
             else:
                 if len(p1_moves) > len(p2_moves):
 
@@ -1088,7 +1092,7 @@ class Board(object):
             res_availables = []
 
             for move, shutter_distance in result_dict.items():
-                if shutter_distance < shutter_threshold:
+                if shutter_distance <= shutter_threshold:
                     res_availables.append(move)
 
             return res_availables
@@ -1243,7 +1247,7 @@ class Game(object):
                             'or 2 (player2 first)')
 
 
-        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
+        self.board.init_board(start_board, start_player=start_player, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
                               is_random_last_turn_p1=is_random_last_turn_p1,
                               is_random_last_turn_p2 =is_random_last_turn_p2)
 
@@ -1392,7 +1396,7 @@ class Game(object):
 
 
 
-        self.board.init_board(start_player, start_board, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
+        self.board.init_board(start_board, start_player=start_player, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
                               is_random_last_turn_p1=is_random_last_turn_p1, is_random_last_turn_p2 =is_random_last_turn_p2)
 
         started_player = self.board.get_current_player()
@@ -1502,11 +1506,11 @@ class Game(object):
         plt.close('all')
 
 
-    def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True):
+    def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True, initial_state=None):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
-        self.board.init_board()
+        self.board.init_board(initial_state)
         p1, p2 = self.board.players
         states, mcts_probs, current_players = [], [], []
 
@@ -1520,9 +1524,12 @@ class Game(object):
             current_players.append(self.board.current_player)
             # perform a move
             self.board.do_move(move)
+
             if is_shown:
                 self.graphic(self.board, p1, p2)
             end, winner = self.board.game_end()
+
+
             if end:
                 # winner from the perspective of the current player of each state
                 winners_z = np.zeros(len(current_players))
@@ -1537,6 +1544,8 @@ class Game(object):
                     else:
                         print("Game end. Tie")
                 return winner, zip(states, mcts_probs, winners_z)
+
+
 
 
     def start_play_training(self, player, opponent, is_shown=0, temp=1e-3):
