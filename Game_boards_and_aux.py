@@ -201,8 +201,8 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
     board_current_state1 = board1.current_state(last_move=True, is_random_last_turn=False)
     board_current_state2 = board2.current_state(last_move=True, is_random_last_turn=False)
 
-    acts_policy1, probas_policy1 = zip(*policy_1.policy_value_fn(board1, board_current_state1)[0])
-    acts_policy2, probas_policy2 = zip(*policy_2.policy_value_fn(board2, board_current_state2)[0])
+    acts_policy1, probas_policy1 = zip(*policy_1.policy_value_fn(board1)[0])
+    acts_policy2, probas_policy2 = zip(*policy_2.policy_value_fn(board2)[0])
 
     dist_matrix = generate_matrix_dist_metric(6)
 

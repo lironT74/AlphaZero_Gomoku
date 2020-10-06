@@ -104,7 +104,7 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
 if __name__ == '__main__':
 
     for board in PAPER_TRUNCATED_BOARDS:
-        model_stat_emd_board('pt_6_6_4_p4_v10',
+        model_stat_emd_board('pt_6_6_4_p4_v14',
                             4,
                             board,
                             curr_player=1,
@@ -115,7 +115,7 @@ if __name__ == '__main__':
                              stat_name="Varience"
                              )
 
-        model_stat_emd_board('pt_6_6_4_p4_v10',
+        model_stat_emd_board('pt_6_6_4_p4_v14',
                              4,
                              board,
                              curr_player=1,
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
         Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
 
-        model_stat_emd_board('pt_6_6_4_p4_v10',
+        model_stat_emd_board('pt_6_6_4_p4_v14',
                              4,
                              board,
                              curr_player=1,
