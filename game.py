@@ -1049,7 +1049,11 @@ class Board(object):
     def squares_shutter_sizes(self):
 
         result_dict = {}
-        last_move = self.last_move_p1 if self.get_current_player() == self.players[0] else self.last_move_p2
+
+        # last_move = self.last_move_p1 if self.get_current_player() == self.players[0] else self.last_move_p2
+
+        last_move = self.last_move_p1
+
 
         if last_move != -1 and last_move != None:
             row_last = self.width - 1 - last_move // self.width
@@ -1081,6 +1085,10 @@ class Board(object):
 
         if not isinstance(shutter_threshold, int):
             raise Exception("Shutter threshold should be a positive whole number")
+
+
+        # if self.current_player == 2:
+        #     return self.availables
 
 
         result_dict = self.squares_shutter_sizes()
@@ -1506,11 +1514,14 @@ class Game(object):
         plt.close('all')
 
 
-    def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True, initial_state=None):
+    def start_self_play(self, player, is_shown=0, temp=1e-3, is_last_move=True, initial_state=None, **kwargs):
         """ start a self-play game using a MCTS player, reuse the search tree,
         and store the self-play data: (state, mcts_probs, z) for training
         """
-        self.board.init_board(initial_state)
+
+        start_player = kwargs.get('start_player', 2)
+
+        self.board.init_board(initial_state, start_player=start_player)
         p1, p2 = self.board.players
         states, mcts_probs, current_players = [], [], []
 

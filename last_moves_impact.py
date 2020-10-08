@@ -60,7 +60,7 @@ def model_stat_emd_board(model_name,
 
 def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat_name):
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -79,7 +79,7 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sub model no.", fontsize=fontsize)
-    ax.set_title(f"{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
+    ax.set_title(f"{model_name}\n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
                  fontdict={'fontsize': fontsize + 15})
 
     h, l = ax.get_legend_handles_labels()
@@ -93,7 +93,7 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}{model_name}_{board_name}_{stat_name}.png")
+    plt.savefig(f"{path}{model_name}_{board_name}.png")
 
     plt.close('all')
 
@@ -103,40 +103,45 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
 
 if __name__ == '__main__':
 
-    for board in PAPER_TRUNCATED_BOARDS:
-        model_stat_emd_board('pt_6_6_4_p4_v14',
-                            4,
-                            board,
-                            curr_player=1,
-                            max_model_iter=5000,
-                            model_check_freq=50,
-                            width=6, height=6, n=4,
-                             stat=np.var,
-                             stat_name="Varience"
-                             )
+    # model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v12', 'pt_6_6_4_p4_v14', 'pt_6_6_4_p4_v16', 'pt_6_6_4_p4_v18',
+    #                'pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
 
-        model_stat_emd_board('pt_6_6_4_p4_v14',
-                             4,
-                             board,
-                             curr_player=1,
-                             max_model_iter=5000,
-                             model_check_freq=50,
-                             width=6, height=6, n=4,
-                             stat=np.average,
-                             stat_name="Average"
-                             )
+    model_names = ['pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
 
+    for model_name in model_names:
+        for board in PAPER_TRUNCATED_BOARDS:
+            model_stat_emd_board(model_name,
+                                4,
+                                board,
+                                curr_player=1,
+                                max_model_iter=5000,
+                                model_check_freq=50,
+                                width=6, height=6, n=4,
+                                 stat=np.var,
+                                 stat_name="Varience"
+                                 )
 
-        Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
+            model_stat_emd_board(model_name,
+                                 4,
+                                 board,
+                                 curr_player=1,
+                                 max_model_iter=5000,
+                                 model_check_freq=50,
+                                 width=6, height=6, n=4,
+                                 stat=np.average,
+                                 stat_name="Average"
+                                 )
 
-        model_stat_emd_board('pt_6_6_4_p4_v14',
-                             4,
-                             board,
-                             curr_player=1,
-                             max_model_iter=5000,
-                             model_check_freq=50,
-                             width=6, height=6, n=4,
-                             stat=Coefficient_of_Variation,
-                             stat_name="Coefficient of Variation"
-                             )
+            Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
+
+            model_stat_emd_board(model_name,
+                                 4,
+                                 board,
+                                 curr_player=1,
+                                 max_model_iter=5000,
+                                 model_check_freq=50,
+                                 width=6, height=6, n=4,
+                                 stat=Coefficient_of_Variation,
+                                 stat_name="Coefficient of Variation"
+                                 )
 

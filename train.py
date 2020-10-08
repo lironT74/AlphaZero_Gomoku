@@ -18,7 +18,7 @@ from tensorboardX import SummaryWriter
 import copy
 from Game_boards_and_aux import *
 
-MODEL_NAME="pt_6_6_4_p4_v14"
+MODEL_NAME="pt_6_6_4_p4_v20"
 INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
@@ -73,7 +73,7 @@ class TrainPipeline():
 
         self.c_puct = 5
         self.n_playout = 50  # num of simulations for each move
-        self.shutter_threshold_availables = 0
+        self.shutter_threshold_availables = 1
 
 
 
@@ -126,6 +126,11 @@ class TrainPipeline():
 
     def collect_selfplay_data(self, n_games=1):
 
+        self.episode_len = 0
+        self.episode_len_full_1 = 0
+        self.episode_len_full_2 = 0
+
+
         """collect self-play data for training"""
         for i in range(n_games):
 
@@ -133,9 +138,10 @@ class TrainPipeline():
             #EMPTY BOARD:
             winner, play_data = self.game.start_self_play(self.mcts_player,
                                                           temp=self.temp,
-                                                          is_last_move=(self.input_plains_num == 4))
+                                                          is_last_move=(self.input_plains_num == 4),
+                                                          start_player = i % 2 + 1)
             play_data = list(play_data)[:]
-            self.episode_len = len(play_data)
+            self.episode_len += len(play_data)/n_games
 
             # augment the data
             play_data = self.get_equi_data(play_data)
@@ -157,7 +163,7 @@ class TrainPipeline():
                                                           initial_state=i_board_1)
 
             play_data_full_1 = list(play_data_full_1)[:]
-            self.episode_len_full_1 = len(play_data_full_1)
+            self.episode_len_full_1 += len(play_data_full_1)/n_games
 
             # augment the data
             play_data_full_1 = self.get_equi_data(play_data_full_1)
@@ -179,7 +185,7 @@ class TrainPipeline():
                                                                  initial_state=i_board_2)
 
             play_data_full_2 = list(play_data_full_2)[:]
-            self.episode_len_full_2 = len(play_data_full_2)
+            self.episode_len_full_2 += len(play_data_full_2)/n_games
 
             # augment the data
             play_data_full_2 = self.get_equi_data(play_data_full_2)

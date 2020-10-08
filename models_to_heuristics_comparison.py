@@ -270,12 +270,12 @@ def create_collages_boards(listofimages, fig_name, path):
 
     im_check = PIL.Image.open(listofimages[0])
     width1, height1 = im_check.size
-    width = width1
-    height = len(listofimages) * height1
 
-    cols = 1
-    rows = len(listofimages)
+    cols = 2
+    rows = 2
 
+    width = width1 * cols
+    height = height1 * rows
 
     thumbnail_width = width // cols
     thumbnail_height = height // rows
@@ -395,6 +395,9 @@ def threshold_cutoff_policy(board, board_name, model_name,
     move_probs_policy = move_probs_policy.reshape(width, height)
     move_probs_policy = np.flipud(move_probs_policy)
 
+
+    heatmap_save_path = f"/home/"
+
     if cutoff_threshold < 1:
         move_probs_policy[move_probs_policy < cutoff_threshold] = 0
         heatmap_save_path = f"/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/cutoff_threshold_{cutoff_threshold}/{model_namee}/iteration_{model_iteration}/"
@@ -403,9 +406,7 @@ def threshold_cutoff_policy(board, board_name, model_name,
         move_probs_policy = keep_k_squares(move_probs_policy, cutoff_threshold, board.height, board.width)
         heatmap_save_path = f"/home/lirontyomkin/AlphaZero_Gomoku/models_heatmaps/keep_{cutoff_threshold}_squares/{model_namee}/iteration_{model_iteration}/"
 
-
     move_probs_policy = normalize_matrix(move_probs_policy, board, rounding)
-
 
     if not os.path.exists(f"{heatmap_save_path}{board_name}.png"):
         save_trimmed_policy_heatmap(move_probs_policy, model_name, board, board_name, heatmap_save_path)
@@ -531,20 +532,35 @@ def normalize_matrix(scores, board, rounding):
     return scores
 
 
-def run_heuristics_for_threshold_and_weight(opponent_weight, cutoff_threshold, path, open_path_threshold=0):
+
+def run_heuristics_for_threshold_and_weight(opponent_weight, cutoff_threshold, open_path_threshold=0):
+
+    v7 = ('pt_6_6_4_p3_v7', 'v7', 3, False)
     v9 = ('pt_6_6_4_p3_v9', 'v9', 3, False)
 
     v10 = ('pt_6_6_4_p4_v10', 'v10', 4, False)
     v10_random = ('pt_6_6_4_p4_v10','v10_random', 4, True)
 
-    v7 = ('pt_6_6_4_p3_v7', 'v7', 3, False)
 
     v_12 = ('pt_6_6_4_p4_v12', 'v12', 4, False)
     v_14 = ('pt_6_6_4_p4_v14', 'v14', 4, False)
 
+    v_16 = ('pt_6_6_4_p4_v16', 'v16', 4, False)
+    v_18 = ('pt_6_6_4_p4_v18', 'v18', 4, False)
 
-    models = [v10, v10_random, v_12, v_14]
+    v_20 = ('pt_6_6_4_p4_v20', 'v20', 4, False)
+    v_22 = ('pt_6_6_4_p4_v22', 'v22', 4, False)
 
+
+    models = [v10, v10_random, v_12, v_14, v_16, v_18, v_20, v_22]
+
+
+
+    if cutoff_threshold < 1:
+        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/shutter_models/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/cutoff_threshold_{cutoff_threshold}/"
+
+    elif isinstance(cutoff_threshold, int):
+        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/shutter_models/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/keep_{cutoff_threshold}_squares/"
 
 
     for model in models:
@@ -577,14 +593,7 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
         for open_path_threshold in open_path_thresholds:
             for cutoff_threshold in cutoff_thresholds:
                 for opponent_weight in o_weights:
-
-                    if cutoff_threshold < 1:
-                        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/shutter models/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/cutoff_threshold_{cutoff_threshold}/"
-
-                    elif isinstance(cutoff_threshold, int):
-                        path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/shutter models/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/keep_{cutoff_threshold}_squares/"
-
-                    jobs.append((opponent_weight, cutoff_threshold, path, open_path_threshold))
+                    jobs.append((opponent_weight, cutoff_threshold, open_path_threshold))
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
         pool.starmap(run_heuristics_for_threshold_and_weight, jobs)
@@ -596,22 +605,9 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 if __name__ == "__main__":
 
     BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 1, 2, 3, 4]
+    cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
     o_weights = [0, 0.2, 0.5, 0.7, 1]
     open_path_thresholds = [0, -1]
 
-    # cutoff_thresholds = [1, 2, 3, 4]
-    # o_weights = [0.5]
-    # open_path_thresholds = [0]
-
     run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds=cutoff_thresholds, o_weights=o_weights, open_path_thresholds=open_path_thresholds)
 
-
-    # for directory in os.listdir("/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons"):
-    #     for dir1 in os.listdir(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/"):
-    #         for dir2 in os.listdir(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/"):
-    #
-    #             if dir2 == "cutoff_threshold_0":
-    #                 print(dir2)
-    #                 os.rename(f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/{dir2}", f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/{directory}/{dir1}/cutoff_threshold_0")
-    #                 print(dir2)
