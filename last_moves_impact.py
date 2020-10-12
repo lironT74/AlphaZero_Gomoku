@@ -55,10 +55,13 @@ def model_stat_emd_board(model_name,
 
         stat_list.append(stat(emd_list))
 
-    save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name)
+
+    return (stat_list, models_num, model_list, model_name, board_name, stat_name)
+
+    # save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name)
 
 
-def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat_name):
+def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim):
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/"
 
@@ -71,9 +74,11 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
     linewidth = 3
 
 
-    ax.plot(range(models_num), var_list, color="blue", linewidth=linewidth)
+    ax.plot(range(models_num), stat_list, color="blue", linewidth=linewidth)
 
-    # ax.set_ylim([0, max(var_list) + 1e-10])
+
+    ax.set_ylim([0, y_top_lim])
+
 
     ax.set_xticks(range(models_num))
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
@@ -103,14 +108,17 @@ def save_fig_stat(var_list, models_num, model_list, model_name, board_name, stat
 
 if __name__ == '__main__':
 
-    # model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v12', 'pt_6_6_4_p4_v14', 'pt_6_6_4_p4_v16', 'pt_6_6_4_p4_v18',
-    #                'pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
+    model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v12', 'pt_6_6_4_p4_v14', 'pt_6_6_4_p4_v16', 'pt_6_6_4_p4_v18',
+                   'pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
 
-    model_names = ['pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
+    Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
+
+
+    distances_list = []
 
     for model_name in model_names:
         for board in PAPER_TRUNCATED_BOARDS:
-            model_stat_emd_board(model_name,
+            distances_list.append(model_stat_emd_board(model_name,
                                 4,
                                 board,
                                 curr_player=1,
@@ -119,20 +127,43 @@ if __name__ == '__main__':
                                 width=6, height=6, n=4,
                                  stat=np.var,
                                  stat_name="Varience"
-                                 )
+                                 ))
 
-            model_stat_emd_board(model_name,
-                                 4,
-                                 board,
-                                 curr_player=1,
-                                 max_model_iter=5000,
-                                 model_check_freq=50,
-                                 width=6, height=6, n=4,
-                                 stat=np.average,
-                                 stat_name="Average"
-                                 )
 
-            Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
+    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
+    y_top_lim = 1.1 * y_top_lim
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
+
+
+    distances_list = []
+
+    for model_name in model_names:
+        for board in PAPER_TRUNCATED_BOARDS:
+            distances_list.append(model_stat_emd_board(model_name,
+                                                       4,
+                                                       board,
+                                                       curr_player=1,
+                                                       max_model_iter=5000,
+                                                       model_check_freq=50,
+                                                       width=6, height=6, n=4,
+                                                       stat=np.average,
+                                                       stat_name="Average"
+                                                       ))
+
+    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
+    y_top_lim = 1.1 * y_top_lim
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
+
+
+
+    distances_list = []
+
+    for model_name in model_names:
+        for board in PAPER_TRUNCATED_BOARDS:
 
             model_stat_emd_board(model_name,
                                  4,
@@ -144,4 +175,12 @@ if __name__ == '__main__':
                                  stat=Coefficient_of_Variation,
                                  stat_name="Coefficient of Variation"
                                  )
+
+    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
+    y_top_lim = 1.1 * y_top_lim
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
+
+
 

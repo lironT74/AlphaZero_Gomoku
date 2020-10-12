@@ -91,6 +91,8 @@ class TreeNode(object):
         return self._parent is None
 
 
+
+
 class MCTS(object):
     """An implementation of Monte Carlo Tree Search."""
 
@@ -110,7 +112,9 @@ class MCTS(object):
         self._n_playout = n_playout
         self.name = name
 
-    def _playout(self, state):
+
+
+    def _playout(self, state, **kwargs):
         """Run a single playout from the root to the leaf, getting a value at
         the leaf and propagating it back through its parents.
         State is modified in-place, so a copy must be provided.
@@ -123,10 +127,11 @@ class MCTS(object):
             action, node = node.select(self._c_puct)
             state.do_move(action)
 
+
         # Evaluate the leaf using a network which outputs a list of
         # (action, probability) tuples p and also a score v in [-1, 1]
         # for the current player.
-        action_probs, leaf_value = self._policy(state)
+        action_probs, leaf_value = self._policy(state, **kwargs)
         # Check for end of game.
         end, winner = state.game_end()
         if not end:
@@ -143,6 +148,8 @@ class MCTS(object):
         # Update value and visit count of nodes in this traversal.
         node.update_recursive(-leaf_value)
 
+
+
     def get_move_probs(self, state, temp=1e-3, **kwargs):
         """Run all playouts sequentially and return the available actions and
         their corresponding probabilities.
@@ -154,7 +161,8 @@ class MCTS(object):
 
         for n in range(self._n_playout):
             state_copy = copy.deepcopy(state)
-            self._playout(state_copy)
+            self._playout(state_copy, **kwargs)
+
 
         # calc the move probabilities based on visit counts at the root node
         act_visits = [(act, node._n_visits)
@@ -169,6 +177,7 @@ class MCTS(object):
 
         else:
             return acts, act_probs
+
 
     def update_with_move(self, last_move):
         """Step forward in the tree, keeping everything we already know
@@ -225,14 +234,13 @@ class MCTSPlayer(object):
 
             acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
 
-
             # AlphaZero gives some probability to locations that are not available for some reason
             if np.sum(probas_policy) != 0:
                 probas_policy = probas_policy / np.sum(probas_policy)
 
 
             if not self.no_playouts:
-                acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True)
+                acts_mcts, probas_mcts, visits_mcts = self.mcts.get_move_probs(board, temp, return_visits=True, **kwargs)
 
             else:
                 acts_mcts, probas_mcts = acts_policy, probas_policy

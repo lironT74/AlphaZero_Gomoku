@@ -18,7 +18,7 @@ from tensorboardX import SummaryWriter
 import copy
 from Game_boards_and_aux import *
 
-MODEL_NAME="pt_6_6_4_p4_v20"
+MODEL_NAME="pt_6_6_4_p4_v23"
 INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
@@ -63,6 +63,7 @@ class TrainPipeline():
         self.improvement_counter = 1000
         self.best_win_ratio = 0.0
 
+
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
         self.pure_mcts_playout_num = 200
@@ -70,11 +71,9 @@ class TrainPipeline():
 
         self.input_plains_num = INPUT_PLANES_NUM
 
-
         self.c_puct = 5
         self.n_playout = 50  # num of simulations for each move
         self.shutter_threshold_availables = 1
-
 
 
         if init_model:
@@ -139,7 +138,7 @@ class TrainPipeline():
             winner, play_data = self.game.start_self_play(self.mcts_player,
                                                           temp=self.temp,
                                                           is_last_move=(self.input_plains_num == 4),
-                                                          start_player = i % 2 + 1)
+                                                          start_player = 1)
             play_data = list(play_data)[:]
             self.episode_len += len(play_data)/n_games
 

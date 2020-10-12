@@ -167,16 +167,23 @@ class PolicyValueNet():
 
 
 
-    def policy_value_fn(self, board):
+    def policy_value_fn(self, board, **kwargs):
         """
         input: board
         output: a list of (action, probability) tuples for each available
         action and the score of the board state
         """
 
+        cur_playout_player = kwargs.get("cur_playout_player", -1)
 
-        # legal_positions = board.availables
-        legal_positions = board.keep_only_close_enough_squares(self.shutter_threshold_availables)
+
+        if cur_playout_player == -1:
+            legal_positions = board.availables
+
+        else:
+            assert (cur_playout_player == board.players[0] or cur_playout_player == board.players[1])
+            legal_positions = board.keep_only_close_enough_squares(self.shutter_threshold_availables, cur_playout_player)
+
 
 
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(

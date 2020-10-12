@@ -1046,14 +1046,9 @@ class Board(object):
 
 
 
-    def squares_shutter_sizes(self):
+    def squares_shutter_sizes(self, last_move):
 
         result_dict = {}
-
-        # last_move = self.last_move_p1 if self.get_current_player() == self.players[0] else self.last_move_p2
-
-        last_move = self.last_move_p1
-
 
         if last_move != -1 and last_move != None:
             row_last = self.width - 1 - last_move // self.width
@@ -1080,18 +1075,16 @@ class Board(object):
 
 
 
-    def keep_only_close_enough_squares(self, shutter_threshold):
+    def keep_only_close_enough_squares(self, shutter_threshold, cur_playout_player):
 
 
         if not isinstance(shutter_threshold, int):
             raise Exception("Shutter threshold should be a positive whole number")
 
 
-        # if self.current_player == 2:
-        #     return self.availables
+        last_move = self.last_move_p1 if cur_playout_player == self.players[0] else self.last_move_p2
 
-
-        result_dict = self.squares_shutter_sizes()
+        result_dict = self.squares_shutter_sizes(last_move)
 
         if result_dict is None:
             return self.availables
@@ -1528,7 +1521,9 @@ class Game(object):
         while True:
             move, move_probs = player.get_action(self.board,
                                                  temp=temp,
-                                                 return_prob=1)
+                                                 return_prob=1,
+                                                 cur_playout_player=self.board.current_player)
+
             # store the data
             states.append(self.board.current_state(is_last_move))
             mcts_probs.append(move_probs)
