@@ -10,6 +10,41 @@ from mcts_pure import MCTSPlayer as PUREMCTS
 import PIL
 
 
+def plot_all_statistics_results(opponents, num_games=1000):
+
+    jobs = []
+    for opponent_player in opponents:
+        for board in PAPER_TRUNCATED_BOARDS:
+            board_name = board[1]
+            jobs.append((opponent_player, board_name, num_games))
+
+        for board in PAPER_FULL_BOARDS:
+            board_name = board[1]
+            jobs.append((opponent_player, board_name, num_games))
+
+        board_name = EMPTY_BOARD[1]
+        jobs.append((opponent_player, board_name, num_games))
+
+    with Pool(len(jobs)) as pool:
+        pool.starmap(plot_statistics, jobs)
+        pool.close()
+        pool.join()
+
+
+    jobs_collage = []
+    BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+    for board in BOARDS:
+        board_name = board[1]
+        jobs_collage.append((board_name, opponents))
+
+    with Pool(len(jobs_collage)) as pool:
+        pool.starmap(call_collage_statistics_results, jobs_collage)
+        pool.close()
+        pool.join()
+
+
+
+
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
 
     jobs = []
@@ -30,6 +65,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         pool.join()
 
     # collect_statistics_againts_opponent(*jobs[0])
+
 
 
 def collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, start_player):
@@ -85,35 +121,32 @@ def collect_statistics_againts_opponent(players_list, opponent_player, board, wi
     # for model_name in already_saved_names:
     #     result_df.loc[model_name] = already_saved_df.loc[model_name]
 
+    for cur_player in players_list:
 
-    # for cur_player in players_list:
-    #
-    #     # if cur_player.name in already_saved_names:
-    #     #     print(f"Skipping {cur_player.name} ({opponent_player.name})")
-    #     #     continue
-    #
-    #     result =              save_games_statistics(width=width,
-    #                           height=height,
-    #                           n=n,
-    #                           board_state=board_state,
-    #                           board_name=board_name,
-    #                           cur_player=cur_player,
-    #                           opponent_player=opponent_player,
-    #                           last_move_p1=p1,
-    #                           last_move_p2=p2,
-    #                           correct_move_p1=p1,
-    #                           correct_move_p2=p2,
-    #                           start_player=start_player,
-    #                           num_games=num_games)
-    #
-    #     result_df.loc[cur_player.name] = result
-    #
-    # print(f"{opponent_player.name}")
-    # print(result_df.to_string())
-    #
-    # result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
+        # if cur_player.name in already_saved_names:
+        #     print(f"Skipping {cur_player.name} ({opponent_player.name})")
+        #     continue
 
-    create_statistics_graphics(path, num_games, opponent_player.name)
+        result =              save_games_statistics(width=width,
+                              height=height,
+                              n=n,
+                              board_state=board_state,
+                              board_name=board_name,
+                              cur_player=cur_player,
+                              opponent_player=opponent_player,
+                              last_move_p1=p1,
+                              last_move_p2=p2,
+                              correct_move_p1=p1,
+                              correct_move_p2=p2,
+                              start_player=start_player,
+                              num_games=num_games)
+
+        result_df.loc[cur_player.name] = result
+
+    print(f"{opponent_player.name}")
+    print(result_df.to_string())
+
+    result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
 
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
@@ -144,33 +177,31 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     else:
         player_by_index = {2: cur_player, 1: opponent_player}
 
-    # games_history = []
+    games_history = []
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    games_history = pickle.load(open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'rb'))
+    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    # games_history = pickle.load(open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
 
     for i in range(num_games):
-        # winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(player1=player_by_index[1],
-        #                                                      player2=player_by_index[2],
-        #                                                      start_player=start_player,
-        #                                                      is_shown=0,
-        #                                                      start_board=i_board1,
-        #                                                      last_move_p1=last_move_p1,
-        #                                                      last_move_p2=last_move_p2,
-        #                                                      correct_move_p1=correct_move_p1,
-        #                                                      correct_move_p2=correct_move_p2,
-        #                                                      is_random_last_turn_p1=player_by_index[1].is_random_last_turn,
-        #                                                      is_random_last_turn_p2=player_by_index[2].is_random_last_turn,
-        #                                                      savefig=0,
-        #                                                      board_name=board_name,
-        #                                                      return_statistics=1)
-        #
-        # games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
+        winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(player1=player_by_index[1],
+                                                             player2=player_by_index[2],
+                                                             start_player=start_player,
+                                                             is_shown=0,
+                                                             start_board=i_board1,
+                                                             last_move_p1=last_move_p1,
+                                                             last_move_p2=last_move_p2,
+                                                             correct_move_p1=correct_move_p1,
+                                                             correct_move_p2=correct_move_p2,
+                                                             is_random_last_turn_p1=player_by_index[1].is_random_last_turn,
+                                                             is_random_last_turn_p2=player_by_index[2].is_random_last_turn,
+                                                             savefig=0,
+                                                             board_name=board_name,
+                                                             return_statistics=1)
 
+        games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
 
-        winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
-
+        # winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
 
         plays = range(1, game_length + 1, 1)
         start_player_range = [(index, shutter) for index, shutter in zip(plays[0::2], shutter_sizes[start_player]) if shutter != -1]
@@ -257,14 +288,14 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
         plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses
 
 
-    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    #
-    # if not os.path.exists(f"{path}{cur_player.name}/"):
-    #     os.makedirs(f"{path}{cur_player.name}/")
-    #
-    # outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
-    # pickle.dump(games_history, outfile)
-    # outfile.close()
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+
+    if not os.path.exists(f"{path}{cur_player.name}/"):
+        os.makedirs(f"{path}{cur_player.name}/")
+
+    outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
+    pickle.dump(games_history, outfile)
+    outfile.close()
 
 
     result =    [no_games,
@@ -294,6 +325,13 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                  plays_with_shutter_fraction_losses_real_last_turn]
 
     return result
+
+
+
+
+def plot_statistics(opponent_player, board_name, num_games):
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    create_statistics_graphics(path, num_games, opponent_player.name)
 
 
 def create_statistics_graphics(path, num_games, opponent_name):
@@ -645,8 +683,3 @@ if __name__ == '__main__':
     set_start_method("spawn")
     compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
 
-
-    BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    for board in BOARDS:
-        board_name = board[1]
-        call_collage_statistics_results(board_name, opponents)

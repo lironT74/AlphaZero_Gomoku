@@ -138,7 +138,7 @@ class TrainPipeline():
             winner, play_data = self.game.start_self_play(self.mcts_player,
                                                           temp=self.temp,
                                                           is_last_move=(self.input_plains_num == 4),
-                                                          start_player = 1)
+                                                          start_player = i%2 +1)
             play_data = list(play_data)[:]
             self.episode_len += len(play_data)/n_games
 

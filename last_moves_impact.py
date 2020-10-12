@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from Game_boards_and_aux import *
 import os
 import matplotlib.pyplot as plt
@@ -63,7 +64,7 @@ def model_stat_emd_board(model_name,
 
 def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim):
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/{board_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -103,6 +104,87 @@ def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, sta
     plt.close('all')
 
 
+def save_figs_stat(distances_list, y_top_lim):
+
+    fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
+
+    fontsize = 17
+    linewidth = 3
+
+    from matplotlib import cm
+
+    colors = iter(cm.rainbow(np.linspace(0, 1, len(distances_list))))
+
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
+        ax.plot(range(models_num), stat_list, linewidth=linewidth, color = next(colors), label=model_name[-3:])
+
+
+
+    ax.set_ylim([0, y_top_lim])
+
+    _, models_num, model_list, _, board_name, stat_name = distances_list[0]
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/{board_name}/"
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+    ax.set_xticks(range(models_num))
+    ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
+    ax.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax.set_xlabel("sub model no.", fontsize=fontsize)
+    ax.set_title(f"All models \n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
+                 fontdict={'fontsize': fontsize + 15})
+
+
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_list), fontsize=fontsize + 3)
+    lax.axis("off")
+
+    fig.tight_layout()
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='jpeg')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}All models.png")
+
+    plt.close('all')
+
+
+def last_move_aux(board, stat_name, model_names):
+
+    if stat_name == "Varience":
+        stat = np.var
+    elif stat_name == "Average":
+        stat = np.average
+    elif stat_name == "Coefficient of Variation":
+        stat = lambda np_array: np.std(np_array) / np.mean(np_array)
+
+
+    distances_list = []
+    for model_name in model_names:
+        distances_list.append(model_stat_emd_board(model_name,
+                                                   4,
+                                                   board,
+                                                   curr_player=1,
+                                                   max_model_iter=5000,
+                                                   model_check_freq=50,
+                                                   width=6, height=6, n=4,
+                                                   stat=stat,
+                                                   stat_name=stat_name
+                                                   ))
+
+    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
+    y_top_lim = 1.1 * y_top_lim
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
+
+    save_figs_stat(distances_list, y_top_lim)
 
 
 
@@ -111,76 +193,17 @@ if __name__ == '__main__':
     model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v12', 'pt_6_6_4_p4_v14', 'pt_6_6_4_p4_v16', 'pt_6_6_4_p4_v18',
                    'pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
 
-    Coefficient_of_Variation = lambda np_array: np.std(np_array) / np.mean(np_array)
+    # stats = ["Coefficient of Variation", "Varience", "Average"]
+    stats = ["Coefficient of Variation"]
 
+    jobs = []
 
-    distances_list = []
+    with Pool() as pool:
+        for stat_name in stats:
+            for board in PAPER_TRUNCATED_BOARDS:
+                jobs.append((board, stat_name, model_names))
 
-    for model_name in model_names:
-        for board in PAPER_TRUNCATED_BOARDS:
-            distances_list.append(model_stat_emd_board(model_name,
-                                4,
-                                board,
-                                curr_player=1,
-                                max_model_iter=5000,
-                                model_check_freq=50,
-                                width=6, height=6, n=4,
-                                 stat=np.var,
-                                 stat_name="Varience"
-                                 ))
-
-
-    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
-    y_top_lim = 1.1 * y_top_lim
-
-    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
-        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
-
-
-    distances_list = []
-
-    for model_name in model_names:
-        for board in PAPER_TRUNCATED_BOARDS:
-            distances_list.append(model_stat_emd_board(model_name,
-                                                       4,
-                                                       board,
-                                                       curr_player=1,
-                                                       max_model_iter=5000,
-                                                       model_check_freq=50,
-                                                       width=6, height=6, n=4,
-                                                       stat=np.average,
-                                                       stat_name="Average"
-                                                       ))
-
-    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
-    y_top_lim = 1.1 * y_top_lim
-
-    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
-        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
-
-
-
-    distances_list = []
-
-    for model_name in model_names:
-        for board in PAPER_TRUNCATED_BOARDS:
-
-            model_stat_emd_board(model_name,
-                                 4,
-                                 board,
-                                 curr_player=1,
-                                 max_model_iter=5000,
-                                 model_check_freq=50,
-                                 width=6, height=6, n=4,
-                                 stat=Coefficient_of_Variation,
-                                 stat_name="Coefficient of Variation"
-                                 )
-
-    y_top_lim = max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list])
-    y_top_lim = 1.1 * y_top_lim
-
-    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
-        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
-
-
+        pool.starmap(last_move_aux, jobs)
+        pool.close()
+        pool.join()
 
