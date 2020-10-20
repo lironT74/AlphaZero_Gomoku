@@ -1,3 +1,4 @@
+from scipy import stats
 from pyemd import emd
 import numpy as np
 import math
@@ -5,7 +6,11 @@ from game import Board, Game, get_shutter_size, get_last_cur_shutter, get_last_c
 import copy
 import json
 from policy_value_net_pytorch import PolicyValueNet
+from datetime import datetime
+from dateutil.relativedelta import relativedelta as rd
 import string
+import re
+import ast
 
 BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
@@ -243,9 +248,63 @@ class Human(object):
         return "Human {}".format(self.player)
 
 
+def boot_matrix(z, B):
+    """Bootstrap sample
+
+    Returns all bootstrap samples in a matrix"""
+
+    n = len(z)  # sample size
+    idz = np.random.randint(0, n, size=(B, n))  # indices to pick for all boostrap samples
+    return z[idz]
+
+
+def bootstrap_mean(x, B=100000, alpha=0.05, plot=False):
+    """Bootstrap standard error and (1-alpha)*100% c.i. for the population mean
+
+    Returns bootstrapped standard error and different types of confidence intervals"""
+
+    x = np.array(x)
+    # Deterministic things
+    n = len(x)  # sample size
+    orig = np.average(x)  # sample mean
+    se_mean = np.std(x)/np.sqrt(n) # standard error of the mean
+    qt = stats.t.ppf(q=1 - alpha/2, df=n - 1) # Student quantile
+
+    # Generate boostrap distribution of sample mean
+    xboot = boot_matrix(x, B=B)
+    sampling_distribution = np.average(xboot, axis=1)
+
+   # Standard error and sample quantiles
+    se_mean_boot = np.std(sampling_distribution)
+    quantile_boot = np.percentile(sampling_distribution, q=(100*alpha/2, 100*(1-alpha/2)))
+
+    # # RESULTS
+    # print("Estimated mean:", orig)
+    # print("Classic standard error:", se_mean)
+    # print("Classic student c.i.:", orig + np.array([-qt, qt])*se_mean)
+    # print("\nBootstrap results:")
+    # print("Standard error:", se_mean_boot)
+    # print("t-type c.i.:", orig + np.array([-qt, qt])*se_mean_boot)
+    # print("Percentile c.i.:", quantile_boot)
+    # print("Basic c.i.:", 2*orig - quantile_boot[::-1])
+
+    return quantile_boot
+
+
+
+def cur_time():
+    now = datetime.now()
+    cur_time = now.strftime("%d/%m/%Y %H:%M:%S")
+    return cur_time
+
+
+def npstr2tuple(s):
+    # Remove space after [
+    s = re.sub('\[ +', '[', s.strip())
+    # Replace commas and spaces
+    s = re.sub('[,\s]+', ', ', s)
+    return tuple(np.array(ast.literal_eval(s)))
+
 
 if __name__ == '__main__':
-    pass
-
-
-
+    print(bootstrap_mean(np.random.binomial(1, 0.5, 10)))

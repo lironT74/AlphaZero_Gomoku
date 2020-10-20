@@ -190,11 +190,10 @@ def last_move_aux(board, stat_name, model_names):
 
 if __name__ == '__main__':
 
-    model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v12', 'pt_6_6_4_p4_v14', 'pt_6_6_4_p4_v16', 'pt_6_6_4_p4_v18',
-                   'pt_6_6_4_p4_v20', 'pt_6_6_4_p4_v22']
+    model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v23', 'pt_6_6_4_p4_v24', 'pt_6_6_4_p4_v25', 'pt_6_6_4_p4_v26']
 
     # stats = ["Coefficient of Variation", "Varience", "Average"]
-    stats = ["Coefficient of Variation"]
+    stats = ["Varience", "Average"]
 
     jobs = []
 

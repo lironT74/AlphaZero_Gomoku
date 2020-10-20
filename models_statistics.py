@@ -10,39 +10,8 @@ from mcts_pure import MCTSPlayer as PUREMCTS
 import PIL
 
 
-def plot_all_statistics_results(opponents, num_games=1000):
-
-    jobs = []
-    for opponent_player in opponents:
-        for board in PAPER_TRUNCATED_BOARDS:
-            board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games))
-
-        for board in PAPER_FULL_BOARDS:
-            board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games))
-
-        board_name = EMPTY_BOARD[1]
-        jobs.append((opponent_player, board_name, num_games))
-
-    with Pool(len(jobs)) as pool:
-        pool.starmap(plot_statistics, jobs)
-        pool.close()
-        pool.join()
-
-
-    jobs_collage = []
-    BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    for board in BOARDS:
-        board_name = board[1]
-        jobs_collage.append((board_name, opponents))
-
-    with Pool(len(jobs_collage)) as pool:
-        pool.starmap(call_collage_statistics_results, jobs_collage)
-        pool.close()
-        pool.join()
-
-
+import warnings
+warnings.simplefilter("error", np.VisibleDeprecationWarning)
 
 
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
@@ -63,10 +32,6 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         pool.starmap(collect_statistics_againts_opponent, jobs)
         pool.close()
         pool.join()
-
-    # collect_statistics_againts_opponent(*jobs[0])
-
-
 
 def collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, start_player):
 
@@ -99,6 +64,28 @@ def collect_statistics_againts_opponent(players_list, opponent_player, board, wi
         f"fraction of plays with shutter (real last turn - wins)",
         f"fraction of plays with shutter (real last turn - losses)",
 
+        "CI_wins_losses",
+
+        "CI_game_length",
+        "CI_game_length_wins",
+        "CI_game_length_losses",
+
+        "CI_shutter_size",
+        "CI_shutter_size_wins",
+        "CI_shutter_size_losses",
+
+        "CI_plays_with_shutter_all",
+        "CI_plays_with_shutter_wins",
+        "CI_plays_with_shutter_losses",
+
+        "CI_shutter_size_real_last_turn",
+        "CI_shutter_size_wins_real_last_turn",
+        "CI_shutter_size_losses_real_last_turn",
+
+        "CI_plays_with_shutter_all_real_last_turn",
+        "CI_plays_with_shutter_wins_real_last_turn",
+        "CI_plays_with_shutter_losses_real_last_turn"
+
         # f"no. plays with shutter",
         # f"total no. of plays",
         #
@@ -111,15 +98,15 @@ def collect_statistics_againts_opponent(players_list, opponent_player, board, wi
 
     ]
 
-    result_df = pd.DataFrame(0, index=[player.name for player in players_list], columns=columns)
+    result_df = pd.DataFrame(index=[player.name for player in players_list], columns=columns)
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
 
     # already_saved_df = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
     # already_saved_names = ["v7_1500", "v9_1500", "v10_1500", "v10_1500_random"]
-    #
     # for model_name in already_saved_names:
     #     result_df.loc[model_name] = already_saved_df.loc[model_name]
+
 
     for cur_player in players_list:
 
@@ -141,7 +128,11 @@ def collect_statistics_againts_opponent(players_list, opponent_player, board, wi
                               start_player=start_player,
                               num_games=num_games)
 
-        result_df.loc[cur_player.name] = result
+
+        for i, col in enumerate(columns):
+            result_df.loc[cur_player.name, col] = result[i]
+
+        # result_df.loc[cur_player.name] = result
 
     print(f"{opponent_player.name}")
     print(result_df.to_string())
@@ -177,13 +168,16 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     else:
         player_by_index = {2: cur_player, 1: opponent_player}
 
-    games_history = []
+    all_games_history = []
 
     # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
     # games_history = pickle.load(open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
 
     for i in range(num_games):
+
+        print(f"game {i+1}: {cur_player.name} vs {opponent_player.name} {cur_time()}")
+
         winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(player1=player_by_index[1],
                                                              player2=player_by_index[2],
                                                              start_player=start_player,
@@ -199,7 +193,8 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                                                              board_name=board_name,
                                                              return_statistics=1)
 
-        games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
+        all_games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
+
 
         # winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
 
@@ -236,8 +231,18 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
             else:
                 real_last_turn_shutters_cur_player_ties.extend([x[1] for x in start_player_range])
 
-
         total_plays += len(plays[0::2])
+
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+
+    if not os.path.exists(f"{path}{cur_player.name}/"):
+        os.makedirs(f"{path}{cur_player.name}/")
+
+    outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
+    pickle.dump(all_games_history, outfile)
+    outfile.close()
+
 
 
     no_games = num_games
@@ -260,12 +265,54 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     plays_with_shutter_fraction_losses = len(shutters_losses)/total_plays_losses
 
 
+
+    wins_losses_sample = [1 if x[0] == cur_player.name else 0 for x in wins]
+    CI_wins_losses = bootstrap_mean(wins_losses_sample)
+
+    CI_game_length = bootstrap_mean([x[1] for x in wins]) if len([x[1] for x in wins]) > 0 else [-1,-1]
+    CI_game_length_wins = bootstrap_mean([x[1] for x in wins if x[0] == cur_player.name]) if len([x[1] for x in wins if x[0] == cur_player.name]) > 0 else [-1,-1]
+    CI_game_length_losses = bootstrap_mean([x[1] for x in wins if x[0] == opponent_player.name]) if len([x[1] for x in wins if x[0] == opponent_player.name]) > 0 else [-1,-1]
+
+    CI_shutter_size = bootstrap_mean(shutters_wins + shutters_losses + shutters_ties) if len(shutters_wins + shutters_losses + shutters_ties) > 0 else [-1,-1]
+    CI_shutter_size_wins = bootstrap_mean(shutters_wins) if len(shutters_wins) > 0 else [-1,-1]
+    CI_shutter_size_losses = bootstrap_mean(shutters_losses) if len(shutters_losses) > 0 else [-1,-1]
+
+
+
+    plays_with_shutter_all = len(shutters_wins + shutters_losses + shutters_ties)
+    plays_without_shutter_all = total_plays - plays_with_shutter_all
+    plays_with_shutter_sample_all_plays = np.concatenate((np.ones(plays_with_shutter_all), np.zeros(plays_without_shutter_all)))
+    CI_plays_with_shutter_all = bootstrap_mean(plays_with_shutter_sample_all_plays)
+
+
+    plays_with_shutter_wins = len(shutters_wins)
+    plays_without_shutter_wins = total_plays_wins - plays_with_shutter_wins
+    plays_with_shutter_sample_wins_plays = np.concatenate((np.ones(plays_with_shutter_wins), np.zeros(plays_without_shutter_wins)))
+    CI_plays_with_shutter_wins = bootstrap_mean(plays_with_shutter_sample_wins_plays)
+
+
+    plays_with_shutter_losses = len(shutters_losses)
+    plays_without_shutter_losses = total_plays_losses - plays_with_shutter_losses
+    plays_with_shutter_sample_losses_plays = np.concatenate((np.ones(plays_with_shutter_losses), np.zeros(plays_without_shutter_losses)))
+    CI_plays_with_shutter_losses = bootstrap_mean(plays_with_shutter_sample_losses_plays)
+
+
+
     avg_shutter_size_real_last_turn = -1
     avg_shutter_size_wins_real_last_turn = -1
     avg_shutter_size_losses_real_last_turn = -1
     plays_with_shutter_fraction_real_last_turn = -1
     plays_with_shutter_fraction_wins_real_last_turn = -1
     plays_with_shutter_fraction_losses_real_last_turn = -1
+
+    CI_shutter_size_real_last_turn = [-1, -1]
+    CI_shutter_size_wins_real_last_turn = [-1, -1]
+    CI_shutter_size_losses_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_all_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_wins_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_losses_real_last_turn = [-1, -1]
+
+
 
 
     if cur_player.is_random_last_turn:
@@ -288,14 +335,35 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
         plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses
 
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+        CI_shutter_size_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties) if len(
+                                                    real_last_turn_shutters_cur_player_wins +
+                                                    real_last_turn_shutters_cur_player_losses +
+                                                    real_last_turn_shutters_cur_player_ties) > 0 else [-1, -1]
 
-    if not os.path.exists(f"{path}{cur_player.name}/"):
-        os.makedirs(f"{path}{cur_player.name}/")
+        CI_shutter_size_wins_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins) if len(real_last_turn_shutters_cur_player_wins) > 0 else [-1, -1]
+        CI_shutter_size_losses_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_losses) if len(real_last_turn_shutters_cur_player_losses) > 0 else [-1, -1]
 
-    outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
-    pickle.dump(games_history, outfile)
-    outfile.close()
+
+        plays_with_shutter_all_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties)
+        plays_without_shutter_all_real_last_turn = total_plays - plays_with_shutter_all_real_last_turn
+        plays_with_shutter_sample_all_plays_real_last_turn =  np.concatenate((np.ones(plays_with_shutter_all_real_last_turn), np.zeros(plays_without_shutter_all_real_last_turn)))
+        CI_plays_with_shutter_all_real_last_turn = bootstrap_mean(plays_with_shutter_sample_all_plays_real_last_turn)
+
+
+        plays_with_shutter_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins)
+        plays_without_shutter_wins_real_last_turn = total_plays_wins - plays_with_shutter_wins_real_last_turn
+        plays_with_shutter_sample_wins_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_wins_real_last_turn), np.zeros(plays_without_shutter_wins_real_last_turn)))
+        CI_plays_with_shutter_wins_real_last_turn = bootstrap_mean(plays_with_shutter_sample_wins_plays_real_last_turn)
+
+        plays_with_shutter_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses)
+        plays_without_shutter_losses_real_last_turn = total_plays_losses - plays_with_shutter_losses_real_last_turn
+        plays_with_shutter_sample_losses_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_losses_real_last_turn), np.zeros(plays_without_shutter_losses_real_last_turn)))
+        CI_plays_with_shutter_losses_real_last_turn = bootstrap_mean(plays_with_shutter_sample_losses_plays_real_last_turn)
+
 
 
     result =    [no_games,
@@ -322,11 +390,68 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
 
                  plays_with_shutter_fraction_real_last_turn,
                  plays_with_shutter_fraction_wins_real_last_turn,
-                 plays_with_shutter_fraction_losses_real_last_turn]
+                 plays_with_shutter_fraction_losses_real_last_turn,
+
+
+                 np.array2string(np.array(CI_wins_losses)),
+
+                 np.array2string(np.array(CI_game_length)),
+                 np.array2string(np.array(CI_game_length_wins)),
+                 np.array2string(np.array(CI_game_length_losses)),
+
+                 np.array2string(np.array(CI_shutter_size)),
+                 np.array2string(np.array(CI_shutter_size_wins)),
+                 np.array2string(np.array(CI_shutter_size_losses)),
+
+                 np.array2string(np.array(CI_plays_with_shutter_all)),
+                 np.array2string(np.array(CI_plays_with_shutter_wins)),
+                 np.array2string(np.array(CI_plays_with_shutter_losses)),
+
+                 np.array2string(np.array(CI_shutter_size_real_last_turn)),
+                 np.array2string(np.array(CI_shutter_size_wins_real_last_turn)),
+                 np.array2string(np.array(CI_shutter_size_losses_real_last_turn)),
+
+                 np.array2string(np.array(CI_plays_with_shutter_all_real_last_turn)),
+                 np.array2string(np.array(CI_plays_with_shutter_wins_real_last_turn)),
+                 np.array2string(np.array(CI_plays_with_shutter_losses_real_last_turn))
+    ]
+
 
     return result
 
 
+
+def plot_all_statistics_results(opponents, num_games=1000):
+
+    jobs = []
+    for opponent_player in opponents:
+        for board in PAPER_TRUNCATED_BOARDS:
+            board_name = board[1]
+            jobs.append((opponent_player, board_name, num_games))
+
+        for board in PAPER_FULL_BOARDS:
+            board_name = board[1]
+            jobs.append((opponent_player, board_name, num_games))
+
+        board_name = EMPTY_BOARD[1]
+        jobs.append((opponent_player, board_name, num_games))
+
+    with Pool(len(jobs)) as pool:
+        pool.starmap(plot_statistics, jobs)
+        pool.close()
+        pool.join()
+
+
+    jobs_collage = []
+    BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD]
+    for board in BOARDS:
+        board_name = board[1]
+        jobs_collage.append((board_name, opponents))
+
+    with Pool(len(jobs_collage)) as pool:
+        pool.starmap(call_collage_statistics_results, jobs_collage)
+        pool.close()
+        pool.join()
 
 
 def plot_statistics(opponent_player, board_name, num_games):
@@ -344,6 +469,8 @@ def create_statistics_graphics(path, num_games, opponent_name):
     save_shutter_size(path, num_games, width,height, font_size, opponent_name)
     save_save_game_len(path, num_games, width,height, font_size, opponent_name)
     save_game_results(path, num_games, width,height, font_size, opponent_name)
+    save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name)
+
 
 
 def save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name):
@@ -367,6 +494,17 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
     ax.bar(ind + width, data["fraction of plays with shutter (losses)"][:-1], width=width, label="fraction of plays with shutter - losses", color="red")
 
 
+    for index, ci in zip(ind - width, data["CI_plays_with_shutter_all"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind, data["CI_plays_with_shutter_wins"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind + width, data["CI_plays_with_shutter_losses"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+
+
     ax.bar(len(data.index)- 0.5 - 3*width, data["fraction of plays with shutter"][-1], width=width, color="blue")
     ax.bar(len(data.index)- 0.5 - 2*width, data["fraction of plays with shutter (real last turn)"][-1], label="real last turn", width=width, color="cornflowerblue")
 
@@ -377,10 +515,21 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
     ax.bar(len(data.index)- 0.5 + 3*width, data["fraction of plays with shutter (real last turn - losses)"][-1], label="real last turn", width=width, color="lightcoral")
 
 
+    ax.plot((len(data.index)- 0.5 - 3*width, len(data.index)- 0.5 - 3*width), npstr2tuple(data["CI_plays_with_shutter_all"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index)- 0.5 - 2*width, len(data.index)- 0.5 - 2*width), npstr2tuple(data["CI_plays_with_shutter_all_real_last_turn"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+    ax.plot((len(data.index)- 0.5 - 0.5*width, len(data.index)- 0.5 - 0.5*width), npstr2tuple(data["CI_plays_with_shutter_wins"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index)- 0.5 + 0.5*width, len(data.index)- 0.5 + 0.5*width), npstr2tuple(data["CI_plays_with_shutter_wins_real_last_turn"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+    ax.plot((len(data.index)- 0.5 + 2*width, len(data.index)- 0.5 + 2*width), npstr2tuple(data["CI_plays_with_shutter_losses"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index)- 0.5 + 3*width, len(data.index)- 0.5 + 3*width), npstr2tuple(data["CI_plays_with_shutter_losses_real_last_turn"][-1]) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+
+
     ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
     ax.set_xticklabels(data.index)
 
-    ax.set_ylim([0,1])
+    ax.set_ylim([0,1.1])
 
     lax = fig.add_subplot(grid[1, 0])
     h, l = ax.get_legend_handles_labels()
@@ -416,6 +565,15 @@ def save_shutter_size(path, num_games, width, height, font_size, opponent_name):
     ax.bar(ind, data["avg shutter size (wins)"][:-1], width=width, label="average shutter size - wins", color="green")
     ax.bar(ind + width, data["avg shutter size (losses)"][:-1], width=width, label="average shutter size - losses", color="red")
 
+    for index, ci in zip(ind - width, data["CI_shutter_size"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind, data["CI_shutter_size_wins"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind + width, data["CI_shutter_size_losses"][:-1]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
 
     ax.bar(len(data.index)- 0.5 - 3*width, data["avg shutter size"][-1], width=width, color="blue")
     ax.bar(len(data.index)- 0.5 - 2*width, data["avg shutter size (real last turn)"][-1], label="real last turn", width=width, color="cornflowerblue")
@@ -425,6 +583,16 @@ def save_shutter_size(path, num_games, width, height, font_size, opponent_name):
 
     ax.bar(len(data.index)- 0.5 + 2*width, data["avg shutter size (losses)"][-1], width=width, color="red")
     ax.bar(len(data.index)- 0.5 + 3*width, data["avg shutter size (real last turn - losses)"][-1], label="real last turn", width=width, color="lightcoral")
+
+
+    ax.plot((len(data.index) - 0.5 - 3 * width, len(data.index) - 0.5 - 3 * width),npstr2tuple(data["CI_shutter_size"][-1]), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index) - 0.5 - 2 * width, len(data.index) - 0.5 - 2 * width),npstr2tuple(data["CI_shutter_size_real_last_turn"][-1]), 'r_-', color='black', linewidth=4, mew=4,ms=20)
+
+    ax.plot((len(data.index) - 0.5 - 0.5 * width, len(data.index) - 0.5 - 0.5 * width),npstr2tuple(data["CI_shutter_size_wins"][-1]), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index) - 0.5 + 0.5 * width, len(data.index) - 0.5 + 0.5 * width),npstr2tuple(data["CI_shutter_size_wins_real_last_turn"][-1]), 'r_-', color='black', linewidth=2,mew=2, ms=20)
+
+    ax.plot((len(data.index) - 0.5 + 2 * width, len(data.index) - 0.5 + 2 * width),npstr2tuple(data["CI_shutter_size_losses"][-1]), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+    ax.plot((len(data.index) - 0.5 + 3 * width, len(data.index) - 0.5 + 3 * width),npstr2tuple(data["CI_shutter_size_losses_real_last_turn"][-1]), 'r_-', color='black', linewidth=2,mew=2, ms=20)
 
 
     ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
@@ -465,6 +633,16 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name)
     ax.bar(ind, data["avg game len (wins)"], width=width, label="average game len - wins", color="green")
     ax.bar(ind + width, data["avg game len (losses)"], width=width, label="average game len - losses", color="red")
 
+    for index, ci in zip(ind - width, data["CI_game_length"]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind, data["CI_game_length_wins"]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+    for index, ci in zip(ind + width, data["CI_game_length_losses"]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+
+
 
     ax.set_xticks(ind)
     ax.set_xticklabels(data.index)
@@ -480,6 +658,48 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name)
     image = PIL.Image.open(buf)
 
     plt.savefig(f"{path}Games lengths results.png", bbox_inches='tight')
+    plt.close('all')
+
+
+def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name):
+    mpl.rcParams.update({'font.size': font_size})
+
+    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+
+    fig = plt.figure(constrained_layout=True)
+    fig.suptitle(f"Win ratio ignoring ties - {opponent_name}", y=1.05)
+
+    fig.set_size_inches(width, height)
+    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20,1])
+
+    ind = np.arange(len(data.index))
+    width = 0.5
+
+
+    ax = fig.add_subplot(grid[0, 0])
+
+
+    ax.set_ylim([0,1.1])
+
+    ax.bar(ind, data["no. wins"] * (1/(num_games - data["no. ties"])), width=width, label="win ratio", color="blue", alpha=0.5)
+
+    for index, ci in zip(ind, data["CI_wins_losses"]):
+        ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=40)
+
+    ax.set_xticks(ind)
+    ax.set_xticklabels(data.index)
+
+    lax = fig.add_subplot(grid[1, 0])
+    h, l = ax.get_legend_handles_labels()
+    lax.legend(h,l, borderaxespad=0, loc="center", fancybox=True, shadow=True)
+    lax.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    image = PIL.Image.open(buf)
+
+    plt.savefig(f"{path}Win ratio ignoring ties.png", bbox_inches='tight')
     plt.close('all')
 
 
@@ -522,6 +742,7 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name):
     plt.close('all')
 
 
+
 def call_collage_statistics_results(board_name, opponents):
 
     opponents_names = [opp.name for opp in opponents]
@@ -546,11 +767,15 @@ def call_collage_statistics_results(board_name, opponents):
         f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results.png"
         for opponent_name in opponents_names]
 
+    listofimages5 = [
+        f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties.png"
+        for opponent_name in opponents_names]
 
     create_collages_boards(listofimages1, "Fraction of plays with shutter results", path_collage)
     create_collages_boards(listofimages2, "Games lengths results", path_collage)
     create_collages_boards(listofimages3, "Games results", path_collage)
     create_collages_boards(listofimages4, "Shutter sizes results", path_collage)
+    create_collages_boards(listofimages5, "Win ratio ignoring ties", path_collage)
 
 
 def create_collages_boards(listofimages, fig_name, path):
@@ -559,7 +784,7 @@ def create_collages_boards(listofimages, fig_name, path):
     width1, height1 = im_check.size
 
     cols = 1
-    rows = 4
+    rows = len(listofimages)
 
     width = width1 * cols
     height = height1 * rows
@@ -601,6 +826,26 @@ if __name__ == '__main__':
            'v10_1500', 4, True, False)
     v10_random = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
            'v10_1500_random', 4, True, True)
+    v12 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v12/current_policy_5000.model',
+           'v12_5000', 4, True, False)
+    v14 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v14/current_policy_5000.model',
+           'v14_5000', 4, True, False)
+    v16 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v16/current_policy_5000.model',
+           'v16_5000', 4, True, False)
+    v18 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v18/current_policy_5000.model',
+           'v18_5000', 4, True, False)
+    v20 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v20/current_policy_5000.model',
+           'v20_5000', 4, True, False)
+    v22 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v22/current_policy_5000.model',
+           'v22_5000', 4, True, False)
+    v23 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v23/current_policy_5000.model',
+           'v23_5000', 4, True, False)
+    v24 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v24/current_policy_5000.model',
+           'v24_5000', 4, True, False)
+    v25 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v25/current_policy_5000.model',
+           'v25_5000', 4, True, False)
+    v26 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v26/current_policy_5000.model',
+           'v26_5000', 4, True, False)
 
 
     policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2])
@@ -615,20 +860,6 @@ if __name__ == '__main__':
     policy_v10_random = PolicyValueNet(6, 6, model_file=v10_random[0], input_plains_num=v10_random[2])
     player_v10_random = MCTSPlayer(policy_v10_random.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_random[3],
                                name=v10_random[1], input_plains_num=v10_random[2], is_random_last_turn=v10_random[4])
-
-
-    v12 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v12/current_policy_5000.model',
-           'v12_5000', 4, True, False)
-    v14 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v14/current_policy_5000.model',
-           'v14_5000', 4, True, False)
-    v16 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v16/current_policy_5000.model',
-           'v16_5000', 4, True, False)
-    v18 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v18/current_policy_5000.model',
-           'v18_5000', 4, True, False)
-    v20 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v20/current_policy_5000.model',
-           'v20_5000', 4, True, False)
-    v22 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v22/current_policy_5000.model',
-           'v22_5000', 4, True, False)
 
     policy_v12 = PolicyValueNet(6, 6, model_file=v12[0], input_plains_num=v12[2])
     player_v12 = MCTSPlayer(policy_v12.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v12[3],
@@ -654,32 +885,48 @@ if __name__ == '__main__':
     player_v22 = MCTSPlayer(policy_v22.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v22[3],
                             name=v22[1], input_plains_num=v22[2], is_random_last_turn=v22[4])
 
+    policy_v23 = PolicyValueNet(6, 6, model_file=v23[0], input_plains_num=v23[2])
+    player_v23 = MCTSPlayer(policy_v23.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v23[3],
+                            name=v23[1], input_plains_num=v23[2], is_random_last_turn=v23[4])
 
-    players_list = [player_v7, player_v9, player_v10, player_v12, player_v14,
-                    player_v16, player_v18, player_v20, player_v22, player_v10_random]
+    policy_v24 = PolicyValueNet(6, 6, model_file=v24[0], input_plains_num=v24[2])
+    player_v24 = MCTSPlayer(policy_v24.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v24[3],
+                            name=v24[1], input_plains_num=v24[2], is_random_last_turn=v24[4])
+
+    policy_v25 = PolicyValueNet(6, 6, model_file=v25[0], input_plains_num=v25[2])
+    player_v25 = MCTSPlayer(policy_v25.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v25[3],
+                            name=v25[1], input_plains_num=v25[2], is_random_last_turn=v25[4])
+
+    policy_v26 = PolicyValueNet(6, 6, model_file=v26[0], input_plains_num=v26[2])
+    player_v26 = MCTSPlayer(policy_v26.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v26[3],
+                            name=v26[1], input_plains_num=v26[2], is_random_last_turn=v26[4])
+
+
+    players_list = [player_v7, player_v9, player_v10, player_v23, player_v24, player_v25, player_v26, player_v10_random]
 
 
     opponent_player_1 = Heuristic_player(name="forcing heuristic", heuristic="interaction with forcing")
     opponent_player_2 = PUREMCTS(c_puct=5, n_playout=500, name="pure MCTS 500")
+    opponent_player_3 = PUREMCTS(c_puct=5, n_playout=1000, name="pure MCTS 1000")
 
 
     v9_5000 = ( '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_5000.model',
            'v9_5000_no_MCTS', 3, True, False)
-    policy_opponent_3 = PolicyValueNet(6, 6, model_file=v9_5000[0], input_plains_num=v9_5000[2])
-    opponent_player_3 = MCTSPlayer(policy_opponent_3.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v9_5000[3],
+    policy_opponent_4 = PolicyValueNet(6, 6, model_file=v9_5000[0], input_plains_num=v9_5000[2])
+    opponent_player_4 = MCTSPlayer(policy_opponent_4.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v9_5000[3],
                                name=v9_5000[1], input_plains_num=v9_5000[2], is_random_last_turn=v9_5000[4])
-
 
     v10_5000 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model',
            f'v10_5000_no_MCTS', 4, True, False)
-    policy_opponent_4 = PolicyValueNet(6, 6, model_file=v10_5000[0], input_plains_num=v10_5000[2])
-    opponent_player_4 = MCTSPlayer(policy_opponent_4.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_5000[3],
+    policy_opponent_5 = PolicyValueNet(6, 6, model_file=v10_5000[0], input_plains_num=v10_5000[2])
+    opponent_player_5 = MCTSPlayer(policy_opponent_5.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_5000[3],
                                name=v10_5000[1], input_plains_num=v10_5000[2], is_random_last_turn=v10_5000[4])
 
 
-    opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4]
+
+    opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4, opponent_player_5]
 
 
     set_start_method("spawn")
-    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
-
+    # compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
+    plot_all_statistics_results(opponents, num_games=1000)
