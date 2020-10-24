@@ -397,7 +397,7 @@ class TrainPipeline():
                         self.writer.add_scalar('episode len', self.episode_len, i + 1)
 
                     else:
-                        print("batch i:{}, episode_len:{}, episode len full 3: {}, episode len full 4: {}, episode len full 4: {}".format(
+                        print("batch i:{}, episode_len:{}, episode len full 3: {}, episode len full 4: {}, episode len full 5: {}".format(
                             i + 1, self.episode_len, self.episode_len_full_3, self.episode_len_full_4, self.episode_len_full_5))
 
                         self.writer.add_scalar('episode len full 3', self.episode_len_full_3, i + 1)
