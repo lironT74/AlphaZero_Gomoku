@@ -45,7 +45,7 @@ def save_heatmaps(model_name,
                                     save_to_local, save_to_tensorboard, writer,
                                     i, heatmap_save_path, use_gpu)
 
-        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
+        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_6X6_BOARDS:
 
             board = initialize_board_with_init_and_last_moves(height, width, input_board=board_state, n_in_row=n, last_move_p1=p1, last_move_p2=p2, open_path_threshold=-1)
 
@@ -59,7 +59,7 @@ def save_heatmaps(model_name,
                                     save_to_local, save_to_tensorboard, writer,
                                     i, heatmap_save_path, use_gpu)
 
-        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
+        for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_6X6_TRUNCATED_BOARDS:
 
             board = initialize_board_with_init_and_last_moves(height, width,
                                                               input_board=board_state,

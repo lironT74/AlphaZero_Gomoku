@@ -44,16 +44,6 @@ BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0], [1, 1], [4, 3])
 
 
-PEOPLE_DISTRIBUTIONS = json.load(open('./avg_people_first_moves_all.json'))
-PEOPLE_DISTRIBUTIONS["board 1 full"] = PEOPLE_DISTRIBUTIONS.pop("6_easy_full")
-PEOPLE_DISTRIBUTIONS["board 2 full"] = PEOPLE_DISTRIBUTIONS.pop("6_hard_full")
-PEOPLE_DISTRIBUTIONS["board 1 truncated"] = PEOPLE_DISTRIBUTIONS.pop("6_easy_pruned")
-PEOPLE_DISTRIBUTIONS["board 2 truncated"] = PEOPLE_DISTRIBUTIONS.pop("6_hard_pruned")
-for key, value in PEOPLE_DISTRIBUTIONS.items():
-    PEOPLE_DISTRIBUTIONS[key] = np.array(PEOPLE_DISTRIBUTIONS[key])
-    PEOPLE_DISTRIBUTIONS[key][PEOPLE_DISTRIBUTIONS[key] < 0] = 0
-
-
 EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
@@ -61,79 +51,123 @@ EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0]]), "empty board", None, None, None, None)
 
-PAPER_FULL_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 
-PAPER_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+PAPER_FULL_6X6_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
+
+PAPER_6X6_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
 
 ALL_PAPER_6X6_BOARD = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
 
-START_POSITIONS_10 = np.array([
-                  [[0,0,0,2,0,0,0,0,0,0],
-                   [0,0,0,1,0,2,0,0,0,0],
-                   [0,2,2,0,0,1,1,0,2,0],
-                   [0,0,2,1,2,0,0,0,0,0],
-                   [0,1,1,0,0,0,0,0,0,0],
-                   [0,1,1,0,2,0,0,0,0,0],
-                   [0,0,1,0,2,0,0,0,0,0],
-                   [0,0,1,0,0,0,0,0,0,0],
-                   [0,0,2,0,0,2,2,0,0,0],
-                   [0,0,0,0,1,0,0,0,0,0]],
-
-                 [[0,0,0,2,0,0,0,0,0,0],
-                  [0,0,0,1,0,2,0,0,0,0],
-                  [0,2,2,0,1,1,1,0,2,0],
-                  [0,0,2,1,2,0,0,0,0,0],
-                  [0,1,1,0,0,0,0,0,0,0],
-                  [0,1,1,0,2,0,0,0,0,0],
-                  [2,0,1,0,2,0,0,0,0,0],
-                  [0,0,1,0,0,0,0,0,0,0],
-                  [0,0,2,0,0,2,2,0,0,0],
-                  [0,0,0,0,1,0,0,0,0,0]],
 
 
-                [[0,0,0,0,1,0,2,0,0,0],
-                 [0,0,0,0,2,1,1,1,0,0],
-                 [0,0,0,1,2,2,2,1,0,0],
-                 [0,0,0,2,2,1,1,2,1,1],
-                 [2,0,0,1,0,2,2,0,0,0],
-                 [1,0,0,0,0,0,0,0,0,0],
-                 [1,1,0,0,0,0,0,0,0,0],
-                 [2,2,0,0,0,0,1,0,0,0],
-                 [0,0,0,0,0,0,1,0,0,0],
-                 [0,0,0,0,0,2,2,2,0,0]],
+PEOPLE_DISTRIBUTIONS_6X6 = json.load(open('./avg_people_first_moves_all.json'))
+PEOPLE_DISTRIBUTIONS_6X6["board 1 full"] = PEOPLE_DISTRIBUTIONS_6X6.pop("6_easy_full")
+PEOPLE_DISTRIBUTIONS_6X6["board 2 full"] = PEOPLE_DISTRIBUTIONS_6X6.pop("6_hard_full")
+PEOPLE_DISTRIBUTIONS_6X6["board 1 truncated"] = PEOPLE_DISTRIBUTIONS_6X6.pop("6_easy_pruned")
+PEOPLE_DISTRIBUTIONS_6X6["board 2 truncated"] = PEOPLE_DISTRIBUTIONS_6X6.pop("6_hard_pruned")
 
-                  [[0,0,0,0,1,2,2,0,0,0],
-                   [0,0,0,0,2,1,1,1,0,0],
-                   [0,0,0,1,2,2,2,1,0,0],
-                   [0,0,0,2,2,1,1,2,1,1],
-                   [2,0,0,1,0,2,2,0,0,1],
-                   [1,0,0,0,0,0,0,0,0,0],
-                   [1,1,0,0,0,0,0,0,0,0],
-                   [2,2,0,0,0,0,1,0,0,0],
-                   [0,0,0,0,0,0,1,0,0,0],
-                   [0,0,0,0,0,2,2,2,0,0]],
+for key, value in PEOPLE_DISTRIBUTIONS_6X6.items():
+    PEOPLE_DISTRIBUTIONS_6X6[key] = np.array(PEOPLE_DISTRIBUTIONS_6X6[key])
+    PEOPLE_DISTRIBUTIONS_6X6[key][PEOPLE_DISTRIBUTIONS_6X6[key] < 0] = 0
 
-                [[0,0,0,0,0,0,0,0,0,0],
-                 [0,0,0,0,0,0,0,0,0,0],
-                 [0,0,1,0,0,2,0,0,0,0],
-                 [0,0,0,1,1,0,0,0,0,0],
-                 [0,0,0,0,2,2,2,1,2,0],
-                 [0,0,0,0,0,1,2,2,0,0],
-                 [0,0,0,1,0,2,0,0,0,0],
-                 [0,0,0,0,1,1,0,0,0,0],
-                 [0,0,0,0,0,1,0,0,0,0],
-                 [0,0,0,0,0,0,2,0,0,0]],
 
-                 [[0,0,0,0,0,0,0,0,0,0],
-                  [0,0,0,0,0,0,0,0,0,0],
-                  [0,0,1,0,0,2,0,0,0,0],
-                  [0,0,1,1,1,2,0,0,0,0],
-                  [0,0,0,0,2,2,2,1,2,0],
-                  [0,0,0,0,0,1,2,2,0,0],
-                  [0,0,0,1,0,2,0,0,0,0],
-                  [0,0,0,0,1,1,0,0,0,0],
-                  [0,0,0,0,0,1,0,0,0,0],
-                  [0,0,0,0,0,0,2,0,0,0]]])
+
+
+EMPTY_BIG_BOARD = (np.array([[[0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0],
+                               [0,0,0,0,0,0,0,0,0,0]]]), "empty board", None, None, None, None)
+
+
+BOARD_3_FULL = (np.array([
+                        [[0, 0, 0, 0, 1, 0, 2, 0, 0, 0],
+                         [0, 0, 0, 0, 2, 1, 1, 1, 0, 0],
+                         [0, 0, 0, 1, 2, 2, 2, 1, 0, 0],
+                         [0, 0, 0, 2, 2, 1, 1, 2, 1, 1],
+                         [2, 0, 0, 1, 0, 2, 2, 0, 0, 0],
+                         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [2, 2, 0, 0, 0, 0, 1, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]]), "board 3 full", None, None, None, None)
+
+
+BOARD_3_TRUNCATED = (np.array([[[0, 0, 0, 0, 1, 2, 2, 0, 0, 0],
+                               [0, 0, 0, 0, 2, 1, 1, 1, 0, 0],
+                               [0, 0, 0, 1, 2, 2, 2, 1, 0, 0],
+                               [0, 0, 0, 2, 2, 1, 1, 2, 1, 1],
+                               [2, 0, 0, 1, 0, 2, 2, 0, 0, 1],
+                               [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                               [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                               [2, 2, 0, 0, 0, 0, 1, 0, 0, 0],
+                               [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                               [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]]), "board 3 truncated", [5, 9], [9, 5], None, None)
+
+
+BOARD_4_FULL = (np.array([
+                            [[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+                             [0, 2, 2, 0, 0, 1, 1, 0, 2, 0],
+                             [0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
+                             [0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 1, 1, 0, 2, 0, 0, 0, 0, 0],
+                             [0, 0, 1, 0, 2, 0, 0, 0, 0, 0],
+                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 2, 0, 0, 2, 2, 0, 0, 0],
+                             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]]), "board 4 full", None, None, None, None)
+
+
+BOARD_4_TRUNCATED = (np.array([[[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+                              [0, 2, 2, 0, 1, 1, 1, 0, 2, 0],
+                              [0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
+                              [0, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 1, 1, 0, 2, 0, 0, 0, 0, 0],
+                              [2, 0, 1, 0, 2, 0, 0, 0, 0, 0],
+                              [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                              [0, 0, 2, 0, 0, 2, 2, 0, 0, 0],
+                              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]]), "board 4 truncated", [7, 4], [3, 0], None, None)
+
+
+BOARD_5_FULL = (np.array([
+                            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 1, 0, 0, 2, 0, 0, 0, 0],
+                             [0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 2, 2, 2, 1, 2, 0],
+                             [0, 0, 0, 0, 0, 1, 2, 2, 0, 0],
+                             [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]]), "board 5 full", None, None, None, None)
+
+
+BOARD_5_TRUNCATED = (np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 1, 0, 0, 2, 0, 0, 0, 0],
+                                  [0, 0, 1, 1, 1, 2, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 2, 2, 2, 1, 2, 0],
+                                  [0, 0, 0, 0, 0, 1, 2, 2, 0, 0],
+                                  [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]]), "board 5 truncated", [6, 2], [6, 5], None, None)
+
+
+PAPER_FULL_10X10_BOARDS = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL]
+
+PAPER_10X10_TRUNCATED_BOARDS = [BOARD_3_TRUNCATED, BOARD_4_TRUNCATED, BOARD_5_TRUNCATED]
+
+ALL_PAPER_10X10_BOARD = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL, BOARD_3_TRUNCATED,
+                         BOARD_4_TRUNCATED, BOARD_5_TRUNCATED, EMPTY_BIG_BOARD]
+
+
 
 
 def convert_position_to_row_col(pos, dimension):
@@ -197,6 +231,7 @@ def initialize_board_with_init_and_last_moves(board_height, board_width, input_b
 def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
                                     model2_name, input_plains_num_2, i2,
                                     board1, board2, width=6, height=6, use_gpu=True):
+
     model_file_1 = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model1_name}/current_policy_{i1}.model'
     policy_1 = PolicyValueNet(width, height, model_file=model_file_1, input_plains_num=input_plains_num_1,
                               use_gpu=use_gpu)
@@ -212,10 +247,9 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
     acts_policy1, probas_policy1 = zip(*policy_1.policy_value_fn(board1)[0])
     acts_policy2, probas_policy2 = zip(*policy_2.policy_value_fn(board2)[0])
 
-    dist_matrix = generate_matrix_dist_metric(6)
+    dist_matrix = generate_matrix_dist_metric(width)
 
-    distance = emd(np.asarray(probas_policy1, dtype='float64'), np.asarray(probas_policy2, dtype='float64'),
-                   dist_matrix)
+    distance = emd(np.asarray(probas_policy1, dtype='float64'), np.asarray(probas_policy2, dtype='float64'),dist_matrix)
 
     return distance
 

@@ -27,7 +27,7 @@ def compare_two_models(player1, player2, width, height, n, open_path_threshold):
     main_dir = "matches/matches - new selected models" if not player1.is_random_last_turn and not player2.is_random_last_turn \
         else "matches/no MCTS matches"
 
-    for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_TRUNCATED_BOARDS:
+    for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_6X6_TRUNCATED_BOARDS:
 
         save_game_res(width=width,
                       height=height,
@@ -94,7 +94,7 @@ def compare_two_models(player1, player2, width, height, n, open_path_threshold):
                           open_path_threshold=open_path_threshold,
                           main_dir=main_dir)
 
-    for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_BOARDS:
+    for board_state, board_name, p1, p2, alternative_p1, alternative_p2 in PAPER_FULL_6X6_BOARDS:
         save_game_res(width=width,
                       height=height,
                       n=n,

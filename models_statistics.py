@@ -32,10 +32,10 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
 
     jobs = []
     for opponent_player in opponents:
-        for board in PAPER_TRUNCATED_BOARDS:
+        for board in PAPER_6X6_TRUNCATED_BOARDS:
             jobs.append((players_list, opponent_player, board, width, height, n, num_games, 2))
 
-        for board in PAPER_FULL_BOARDS:
+        for board in PAPER_FULL_6X6_BOARDS:
             jobs.append((players_list, opponent_player, board, width, height, n, num_games, 2))
 
         jobs.append((players_list, opponent_player, EMPTY_BOARD, width, height, n, num_games, 1))
@@ -46,6 +46,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         pool.starmap(collect_statistics_againts_opponent, jobs)
         pool.close()
         pool.join()
+
 
 def collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, start_player):
 
@@ -439,11 +440,11 @@ def plot_all_statistics_results(opponents, num_games=1000):
 
     jobs = []
     for opponent_player in opponents:
-        for board in PAPER_TRUNCATED_BOARDS:
+        for board in PAPER_6X6_TRUNCATED_BOARDS:
             board_name = board[1]
             jobs.append((opponent_player, board_name, num_games))
 
-        for board in PAPER_FULL_BOARDS:
+        for board in PAPER_FULL_6X6_BOARDS:
             board_name = board[1]
             jobs.append((opponent_player, board_name, num_games))
 

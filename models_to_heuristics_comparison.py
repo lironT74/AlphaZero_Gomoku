@@ -573,7 +573,7 @@ def call_collage_compare_to_heuristics(opponent_weight, cutoff_threshold, models
 
 
 def get_people_distribution(board_name):
-    return PEOPLE_DISTRIBUTIONS[board_name]
+    return PEOPLE_DISTRIBUTIONS_6X6[board_name]
 
 
 def keep_k_squares(matrix, k, height, width):

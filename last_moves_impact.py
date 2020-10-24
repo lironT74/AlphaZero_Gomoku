@@ -199,7 +199,7 @@ if __name__ == '__main__':
 
     with Pool() as pool:
         for stat_name in stats:
-            for board in PAPER_TRUNCATED_BOARDS:
+            for board in PAPER_6X6_TRUNCATED_BOARDS:
                 jobs.append((board, stat_name, model_names))
 
         pool.starmap(last_move_aux, jobs)
