@@ -9,9 +9,23 @@ import os
 from mcts_pure import MCTSPlayer as PUREMCTS
 import PIL
 
-
 import warnings
 warnings.simplefilter("error", np.VisibleDeprecationWarning)
+
+discription_dict = {
+    "v23_5000": "v23\ntrain simulations:50\nshutter:1\nfull boards:yes\nsub model:5000",
+    "v24_5000": "v24\ntrain simulations:50\nshutter:0\nfull boards:yes\nsub model:5000",
+    "v25_5000": "v25\ntrain simulations:50\nshutter:1\nfull boards:no\nsub model:5000",
+    "v26_5000": "v26\ntrain simulations:50\nshutter:0\nfull boards:no\nsub model:5000",
+    "v27_5000": "v27\ntrain simulations:25\nshutter:1\nfull boards:yes\nsub model:5000",
+    "v28_5000": "v28\ntrain simulations:25\nshutter:0\nfull boards:yes\nsub model:5000",
+    "v29_5000": "v29\ntrain simulations:25\nshutter:1\nfull boards:no\nsub model:5000",
+    "v30_5000": "v30\ntrain simulations:25\nshutter:0\nfull boards:no\nsub model:5000",
+    "v31_5000": "v31\ntrain simulations:100\nshutter:1\nfull boards:yes\nsub model:5000",
+    "v32_5000": "v32\ntrain simulations:100\nshutter:0\nfull boards:yes\nsub model:5000",
+    "v33_5000": "v33\ntrain simulations:100\nshutter:1\nfull boards:no\nsub model:5000",
+    "v34_5000": "v34\ntrain simulations:100\nshutter:0\nfull boards:no\nsub model:5000"
+}
 
 
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
@@ -461,8 +475,8 @@ def plot_statistics(opponent_player, board_name, num_games):
 
 def create_statistics_graphics(path, num_games, opponent_name):
 
-    width = 30
-    height = 8
+    width = 40
+    height = 10
     font_size = 27
 
     save_plays_with_shutter_results(path, num_games, width,height, font_size, opponent_name)
@@ -527,7 +541,9 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
 
 
     ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
-    ax.set_xticklabels(data.index)
+    # ax.set_xticklabels(data.index)
+    ax.set_xticklabels([discription_dict[name] for name in data.index])
+
 
     ax.set_ylim([0,1.1])
 
@@ -596,7 +612,8 @@ def save_shutter_size(path, num_games, width, height, font_size, opponent_name):
 
 
     ax.set_xticks(list(np.arange(len(data.index) - 1)) + [len(data.index) - 0.5])
-    ax.set_xticklabels(data.index)
+    # ax.set_xticklabels(data.index)
+    ax.set_xticklabels([discription_dict[name] for name in data.index])
 
     lax = fig.add_subplot(grid[1, 0])
     h, l = ax.get_legend_handles_labels()
@@ -645,7 +662,8 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name)
 
 
     ax.set_xticks(ind)
-    ax.set_xticklabels(data.index)
+    # ax.set_xticklabels(data.index)
+    ax.set_xticklabels([discription_dict[name] for name in data.index])
 
     lax = fig.add_subplot(grid[1, 0])
     h, l = ax.get_legend_handles_labels()
@@ -687,7 +705,9 @@ def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_n
         ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=40)
 
     ax.set_xticks(ind)
-    ax.set_xticklabels(data.index)
+    # ax.set_xticklabels(data.index)
+    ax.set_xticklabels([discription_dict[name] for name in data.index])
+
 
     lax = fig.add_subplot(grid[1, 0])
     h, l = ax.get_legend_handles_labels()
@@ -726,7 +746,9 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name):
     ax.bar(ind, data["no. ties"], width=width, label = "ties", color="yellow", bottom=data["no. wins"]+data["no. losses"])
 
     ax.set_xticks(ind)
-    ax.set_xticklabels(data.index)
+    # ax.set_xticklabels(data.index)
+    ax.set_xticklabels([discription_dict[name] for name in data.index])
+
 
     lax = fig.add_subplot(grid[1, 0])
     h, l = ax.get_legend_handles_labels()
@@ -815,6 +837,60 @@ def create_collages_boards(listofimages, fig_name, path):
 
 
 
+
+def save_states_from_history_empty_board(opponent, players_list, num_games):
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent.name}/empty board/"
+    start_player = 1
+
+    states = []
+
+    for cur_player in players_list:
+
+        print(cur_player.name, ": \n")
+
+        game_stats_path = f"{path}{cur_player.name}/full_{num_games}_games_stats"
+        game_stats = pickle.load(open(game_stats_path, "rb"))
+        chosen_games = np.random.choice(num_games, size=3)
+
+        for chosen_game in chosen_games:
+            _, _, _, _, game_history = game_stats[chosen_game]
+
+            board_state = copy.deepcopy(EMPTY_BOARD[0])
+            print(board_state, "\n")
+
+            cur_player = 1
+            last_move_p1 = None
+            last_move_p2 = None
+
+
+            for row, col in game_history:
+
+                board_state[row, col] = cur_player
+                print(board_state, "\n")
+
+                if cur_player == 1:
+                    last_move_p1 = [board_state.shape[1] - 1 - row, col]
+                else:
+                    last_move_p2 = [board_state.shape[1] - 1 - row, col]
+
+
+                if all([(state[0] != board_state).any() for state in states]):
+
+                    states.append((copy.deepcopy(board_state), last_move_p1, last_move_p2, start_player))
+
+                cur_player = 3 - cur_player
+
+
+    print(f"{len(states)} states")
+
+    names = "_".join([player.name for player in players_list])
+
+    pickle.dump(states, open(f"{path}sampled_states_{names}", "wb"))
+
+
+
+
 if __name__ == '__main__':
     n_playout = 400
 
@@ -826,6 +902,8 @@ if __name__ == '__main__':
            'v10_1500', 4, True, False)
     v10_random = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
            'v10_1500_random', 4, True, True)
+
+
     v12 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v12/current_policy_5000.model',
            'v12_5000', 4, True, False)
     v14 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v14/current_policy_5000.model',
@@ -838,6 +916,8 @@ if __name__ == '__main__':
            'v20_5000', 4, True, False)
     v22 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v22/current_policy_5000.model',
            'v22_5000', 4, True, False)
+
+
     v23 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v23/current_policy_5000.model',
            'v23_5000', 4, True, False)
     v24 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v24/current_policy_5000.model',
@@ -846,6 +926,24 @@ if __name__ == '__main__':
            'v25_5000', 4, True, False)
     v26 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v26/current_policy_5000.model',
            'v26_5000', 4, True, False)
+    v27 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v27/current_policy_5000.model',
+           'v27_5000', 4, True, False)
+    v28 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v28/current_policy_5000.model',
+           'v28_5000', 4, True, False)
+    v29 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v29/current_policy_5000.model',
+           'v29_5000', 4, True, False)
+    v30 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v30/current_policy_5000.model',
+           'v30_5000', 4, True, False)
+    v31 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v31/current_policy_5000.model',
+           'v31_5000', 4, True, False)
+    v32 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v32/current_policy_5000.model',
+           'v32_5000', 4, True, False)
+    v33 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v33/current_policy_5000.model',
+           'v33_5000', 4, True, False)
+    v34 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v34/current_policy_5000.model',
+           'v34_5000', 4, True, False)
+
+
 
 
     policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2])
@@ -901,8 +999,46 @@ if __name__ == '__main__':
     player_v26 = MCTSPlayer(policy_v26.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v26[3],
                             name=v26[1], input_plains_num=v26[2], is_random_last_turn=v26[4])
 
+    policy_v27 = PolicyValueNet(6, 6, model_file=v27[0], input_plains_num=v27[2])
+    player_v27 = MCTSPlayer(policy_v27.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v27[3],
+                            name=v27[1], input_plains_num=v27[2], is_random_last_turn=v27[4])
 
-    players_list = [player_v7, player_v9, player_v10, player_v23, player_v24, player_v25, player_v26, player_v10_random]
+    policy_v28 = PolicyValueNet(6, 6, model_file=v28[0], input_plains_num=v28[2])
+    player_v28 = MCTSPlayer(policy_v28.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v28[3],
+                            name=v28[1], input_plains_num=v28[2], is_random_last_turn=v28[4])
+
+    policy_v29 = PolicyValueNet(6, 6, model_file=v29[0], input_plains_num=v29[2])
+    player_v29 = MCTSPlayer(policy_v29.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v29[3],
+                            name=v29[1], input_plains_num=v29[2], is_random_last_turn=v29[4])
+
+    policy_v30 = PolicyValueNet(6, 6, model_file=v30[0], input_plains_num=v30[2])
+    player_v30 = MCTSPlayer(policy_v30.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v30[3],
+                            name=v30[1], input_plains_num=v30[2], is_random_last_turn=v30[4])
+
+    policy_v31 = PolicyValueNet(6, 6, model_file=v31[0], input_plains_num=v31[2])
+    player_v31 = MCTSPlayer(policy_v31.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v31[3],
+                            name=v31[1], input_plains_num=v31[2], is_random_last_turn=v31[4])
+
+    policy_v32 = PolicyValueNet(6, 6, model_file=v32[0], input_plains_num=v32[2])
+    player_v32 = MCTSPlayer(policy_v32.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v32[3],
+                            name=v32[1], input_plains_num=v32[2], is_random_last_turn=v32[4])
+
+    policy_v33 = PolicyValueNet(6, 6, model_file=v33[0], input_plains_num=v33[2])
+    player_v33 = MCTSPlayer(policy_v33.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v33[3],
+                            name=v33[1], input_plains_num=v33[2], is_random_last_turn=v33[4])
+
+    policy_v34 = PolicyValueNet(6, 6, model_file=v34[0], input_plains_num=v34[2])
+    player_v34 = MCTSPlayer(policy_v34.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v34[3],
+                            name=v34[1], input_plains_num=v34[2], is_random_last_turn=v34[4])
+
+
+
+    players_list = [player_v23, player_v24, player_v25, player_v26,
+                    player_v27, player_v28, player_v29, player_v30,
+                    player_v31, player_v32, player_v33, player_v34,
+
+                    player_v7, player_v9, player_v10, player_v10_random]
+
 
 
     opponent_player_1 = Heuristic_player(name="forcing heuristic", heuristic="interaction with forcing")
@@ -928,5 +1064,6 @@ if __name__ == '__main__':
 
 
     set_start_method("spawn")
-    # compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
-    plot_all_statistics_results(opponents, num_games=1000)
+    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
+    # plot_all_statistics_results(opponents, num_games=1000)
+    # save_states_from_history_empty_board(opponent_player_1, players_list, 1000)

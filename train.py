@@ -18,7 +18,7 @@ from tensorboardX import SummaryWriter
 import copy
 from Game_boards_and_aux import *
 
-MODEL_NAME="pt_6_6_4_p4_v27"
+MODEL_NAME="pt_6_6_4_p4_v34"
 INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
@@ -67,9 +67,9 @@ class TrainPipeline():
         self.input_plains_num = INPUT_PLANES_NUM
 
         self.c_puct = 5
-        self.n_playout = 25  # num of simulations for each move
-        self.shutter_threshold_availables = 1
-        self.full_boards_selfplay = True
+        self.n_playout = 100  # num of simulations for each move
+        self.shutter_threshold_availables = 0
+        self.full_boards_selfplay = False
 
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
@@ -127,15 +127,14 @@ class TrainPipeline():
     def collect_selfplay_data(self, n_games=1):
 
         self.episode_len = 0
-        # self.episode_len_full_1 = 0
-        # self.episode_len_full_2 = 0
-
+        self.episode_len_full_1 = 0
+        self.episode_len_full_2 = 0
 
 
         if self.full_boards_selfplay:
 
             """collect self-play data for training"""
-            for i in range(n_games//3):
+            for i in range(n_games):
 
                 #EMPTY BOARD:
                 winner, play_data = self.game.start_self_play(self.mcts_player,
@@ -327,6 +326,7 @@ class TrainPipeline():
                     self.writer.add_scalar('episode len full 1', self.episode_len_full_1, i + 1)
                     self.writer.add_scalar('episode len full 2', self.episode_len_full_2, i + 1)
                     self.writer.add_scalar('episode len', self.episode_len, i + 1)
+
 
                 else:
                     print("batch i:{}, episode_len:{}".format(i + 1, self.episode_len))

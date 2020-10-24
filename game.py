@@ -135,6 +135,7 @@ class Board(object):
                 try:
                     p1_moves.remove(last_move_p1)
                 except:
+
                     raise Exception("The given last move for player 1 was never played")
 
                 p1_moves.append(last_move_p1)
@@ -1396,7 +1397,6 @@ class Game(object):
                             'or 2 (player2 first)')
 
 
-
         self.board.init_board(start_board, start_player=start_player, last_move_p1=last_move_p1, last_move_p2=last_move_p2,
                               is_random_last_turn_p1=is_random_last_turn_p1, is_random_last_turn_p2 =is_random_last_turn_p2)
 
@@ -1417,7 +1417,6 @@ class Game(object):
 
 
         last_moves = {1: last_move_p1, 2: last_move_p2}
-
 
 
         while True:

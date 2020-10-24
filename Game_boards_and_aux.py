@@ -12,21 +12,24 @@ import string
 import re
 import ast
 
-BOARD_1_FULL = (np.array([[0, 1, 0, 2, 0, 0],
+BOARD_1_FULL = (np.array([
+                [0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
                 [1, 2, 2, 2, 1, 0],
                 [2, 0, 1, 1, 2, 0],
                 [1, 0, 2, 2, 0, 0],
                 [0, 0, 0, 0, 0, 0]]), "board 1 full", None, None, None, None)
 
-BOARD_1_TRUNCATED = (np.array([[0, 1, 2, 2, 0, 0],
+BOARD_1_TRUNCATED = (np.array([
+                    [0, 1, 2, 2, 0, 0],
                     [0, 2, 1, 1, 0, 0],
                     [1, 2, 2, 2, 1, 0],
                     [2, 0, 1, 1, 2, 1],
                     [1, 0, 2, 2, 0, 0],
                     [0, 0, 0, 0, 0, 0]]), "board 1 truncated", [2, 5], [5, 2], [1, 0], [2, 0])
 
-BOARD_2_FULL =  (np.array([[0, 2, 0, 0, 1, 0],
+BOARD_2_FULL =  (np.array([
+                    [0, 2, 0, 0, 1, 0],
                     [0, 2, 1, 2, 0, 0],
                     [0, 1, 0, 0, 0, 0],
                     [0, 1, 0, 2, 0, 0],
