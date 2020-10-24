@@ -129,7 +129,9 @@ class TrainPipeline():
         self.episode_len = 0
         self.episode_len_full_1 = 0
         self.episode_len_full_2 = 0
-
+        self.episode_len_full_3 = 0
+        self.episode_len_full_4 = 0
+        self.episode_len_full_5 = 0
 
         if self.full_boards_selfplay:
 
@@ -149,45 +151,109 @@ class TrainPipeline():
                 self.data_buffer.extend(play_data)
 
 
-                #BOARD 1 FULL
-                board = copy.deepcopy(BOARD_1_FULL[0])
-                board = np.flipud(board)
-                i_board_1 = np.zeros((2, self.board_width, self.board_height))
-                i_board_1[0] = board == 1
-                i_board_1[1] = board == 2
+                if self.board_width == 6:
+                    #BOARD 1 FULL
+                    board = copy.deepcopy(BOARD_1_FULL[0])
+                    board = np.flipud(board)
+                    i_board_1 = np.zeros((2, self.board_width, self.board_height))
+                    i_board_1[0] = board == 1
+                    i_board_1[1] = board == 2
 
-                winner_full_1, play_data_full_1 = self.game.start_self_play(self.mcts_player,
-                                                              temp=self.temp,
-                                                              is_last_move=(self.input_plains_num == 4),
-                                                              initial_state=i_board_1)
+                    winner_full_1, play_data_full_1 = self.game.start_self_play(self.mcts_player,
+                                                                  temp=self.temp,
+                                                                  is_last_move=(self.input_plains_num == 4),
+                                                                  initial_state=i_board_1)
 
-                play_data_full_1 = list(play_data_full_1)[:]
-                self.episode_len_full_1 += len(play_data_full_1)/n_games
+                    play_data_full_1 = list(play_data_full_1)[:]
+                    self.episode_len_full_1 += len(play_data_full_1)/n_games
 
-                # augment the data
-                play_data_full_1 = self.get_equi_data(play_data_full_1)
-                self.data_buffer.extend(play_data_full_1)
+                    # augment the data
+                    play_data_full_1 = self.get_equi_data(play_data_full_1)
+                    self.data_buffer.extend(play_data_full_1)
+
+                    # BOARD 2 FULL
+                    board = copy.deepcopy(BOARD_2_FULL[0])
+                    board = np.flipud(board)
+                    i_board_2 = np.zeros((2, self.board_width, self.board_height))
+                    i_board_2[0] = board == 1
+                    i_board_2[1] = board == 2
+
+                    winner_full_2, play_data_full_2 = self.game.start_self_play(self.mcts_player,
+                                                                         temp=self.temp,
+                                                                         is_last_move=(self.input_plains_num == 4),
+                                                                         initial_state=i_board_2)
+
+                    play_data_full_2 = list(play_data_full_2)[:]
+                    self.episode_len_full_2 += len(play_data_full_2)/n_games
+
+                    # augment the data
+                    play_data_full_2 = self.get_equi_data(play_data_full_2)
+                    self.data_buffer.extend(play_data_full_2)
+
+                else:
+                    # BOARD 3 FULL
+                    board = copy.deepcopy(BOARD_3_FULL[0])
+                    board = np.flipud(board)
+                    i_board_3 = np.zeros((2, self.board_width, self.board_height))
+                    i_board_3[0] = board == 1
+                    i_board_3[1] = board == 2
+
+                    winner_full_3, play_data_full_3 = self.game.start_self_play(self.mcts_player,
+                                                                                temp=self.temp,
+                                                                                is_last_move=(
+                                                                                        self.input_plains_num == 4),
+                                                                                initial_state=i_board_3)
+
+                    play_data_full_3 = list(play_data_full_3)[:]
+                    self.episode_len_full_3 += len(play_data_full_3) / n_games
+
+                    # augment the data
+                    play_data_full_3 = self.get_equi_data(play_data_full_3)
+                    self.data_buffer.extend(play_data_full_3)
 
 
 
-                # BOARD 2 FULL
-                board = copy.deepcopy(BOARD_2_FULL[0])
-                board = np.flipud(board)
-                i_board_2 = np.zeros((2, self.board_width, self.board_height))
-                i_board_2[0] = board == 1
-                i_board_2[1] = board == 2
+                    # BOARD 4 FULL
+                    board = copy.deepcopy(BOARD_4_FULL[0])
+                    board = np.flipud(board)
+                    i_board_4 = np.zeros((2, self.board_width, self.board_height))
+                    i_board_4[0] = board == 1
+                    i_board_4[1] = board == 2
 
-                winner_full_2, play_data_full_2 = self.game.start_self_play(self.mcts_player,
-                                                                     temp=self.temp,
-                                                                     is_last_move=(self.input_plains_num == 4),
-                                                                     initial_state=i_board_2)
+                    winner_full_4, play_data_full_4 = self.game.start_self_play(self.mcts_player,
+                                                                                temp=self.temp,
+                                                                                is_last_move=(
+                                                                                        self.input_plains_num == 4),
+                                                                                initial_state=i_board_4)
 
-                play_data_full_2 = list(play_data_full_2)[:]
-                self.episode_len_full_2 += len(play_data_full_2)/n_games
+                    play_data_full_4 = list(play_data_full_4)[:]
+                    self.episode_len_full_4 += len(play_data_full_4) / n_games
 
-                # augment the data
-                play_data_full_2 = self.get_equi_data(play_data_full_2)
-                self.data_buffer.extend(play_data_full_2)
+                    # augment the data
+                    play_data_full_4 = self.get_equi_data(play_data_full_4)
+                    self.data_buffer.extend(play_data_full_4)
+
+
+                    # BOARD 5 FULL
+                    board = copy.deepcopy(BOARD_5_FULL[0])
+                    board = np.flipud(board)
+                    i_board_5 = np.zeros((2, self.board_width, self.board_height))
+                    i_board_5[0] = board == 1
+                    i_board_5[1] = board == 2
+
+                    winner_full_5, play_data_full_5 = self.game.start_self_play(self.mcts_player,
+                                                                                temp=self.temp,
+                                                                                is_last_move=(
+                                                                                        self.input_plains_num == 4),
+                                                                                initial_state=i_board_5)
+
+                    play_data_full_5 = list(play_data_full_5)[:]
+                    self.episode_len_full_5 += len(play_data_full_5) / n_games
+
+                    # augment the data
+                    play_data_full_5 = self.get_equi_data(play_data_full_5)
+                    self.data_buffer.extend(play_data_full_5)
+
 
         else:
             for i in range(n_games):
@@ -202,6 +268,7 @@ class TrainPipeline():
                 # augment the data
                 play_data = self.get_equi_data(play_data)
                 self.data_buffer.extend(play_data)
+
 
 
     def policy_update(self, iteration):
@@ -321,11 +388,23 @@ class TrainPipeline():
 
 
                 if self.full_boards_selfplay:
-                    print("batch i:{}, episode_len:{}, episode len full 1: {}, episode len full 2: {}".format(
-                        i + 1, self.episode_len, self.episode_len_full_1, self.episode_len_full_2))
-                    self.writer.add_scalar('episode len full 1', self.episode_len_full_1, i + 1)
-                    self.writer.add_scalar('episode len full 2', self.episode_len_full_2, i + 1)
-                    self.writer.add_scalar('episode len', self.episode_len, i + 1)
+
+                    if self.board_width == 6:
+                        print("batch i:{}, episode_len:{}, episode len full 1: {}, episode len full 2: {}".format(
+                            i + 1, self.episode_len, self.episode_len_full_1, self.episode_len_full_2))
+                        self.writer.add_scalar('episode len full 1', self.episode_len_full_1, i + 1)
+                        self.writer.add_scalar('episode len full 2', self.episode_len_full_2, i + 1)
+                        self.writer.add_scalar('episode len', self.episode_len, i + 1)
+
+                    else:
+                        print("batch i:{}, episode_len:{}, episode len full 3: {}, episode len full 4: {}, episode len full 4: {}".format(
+                            i + 1, self.episode_len, self.episode_len_full_3, self.episode_len_full_4, self.episode_len_full_5))
+
+                        self.writer.add_scalar('episode len full 3', self.episode_len_full_3, i + 1)
+                        self.writer.add_scalar('episode len full 4', self.episode_len_full_4, i + 1)
+                        self.writer.add_scalar('episode len full 5', self.episode_len_full_5, i + 1)
+
+                        self.writer.add_scalar('episode len', self.episode_len, i + 1)
 
 
                 else:
