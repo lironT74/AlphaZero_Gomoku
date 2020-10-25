@@ -188,30 +188,43 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
     # games_history = pickle.load(open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
+    already_saved = False
+
+    if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+                      f"{cur_player.name}/full_{num_games}_games_stats"):
+        games_history = pickle.load(open(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+                      f"{cur_player.name}/full_{num_games}_games_stats", 'rb'))
+
+        already_saved = True
+
 
     for i in range(num_games):
 
         print(f"game {i+1}: {cur_player.name} vs {opponent_player.name} {cur_time()}")
 
-        winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(player1=player_by_index[1],
-                                                             player2=player_by_index[2],
-                                                             start_player=start_player,
-                                                             is_shown=0,
-                                                             start_board=i_board1,
-                                                             last_move_p1=last_move_p1,
-                                                             last_move_p2=last_move_p2,
-                                                             correct_move_p1=correct_move_p1,
-                                                             correct_move_p2=correct_move_p2,
-                                                             is_random_last_turn_p1=player_by_index[1].is_random_last_turn,
-                                                             is_random_last_turn_p2=player_by_index[2].is_random_last_turn,
-                                                             savefig=0,
-                                                             board_name=board_name,
-                                                             return_statistics=1)
 
-        all_games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
+        if not already_saved:
+            winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(player1=player_by_index[1],
+                                                                 player2=player_by_index[2],
+                                                                 start_player=start_player,
+                                                                 is_shown=0,
+                                                                 start_board=i_board1,
+                                                                 last_move_p1=last_move_p1,
+                                                                 last_move_p2=last_move_p2,
+                                                                 correct_move_p1=correct_move_p1,
+                                                                 correct_move_p2=correct_move_p2,
+                                                                 is_random_last_turn_p1=player_by_index[1].is_random_last_turn,
+                                                                 is_random_last_turn_p2=player_by_index[2].is_random_last_turn,
+                                                                 savefig=0,
+                                                                 board_name=board_name,
+                                                                 return_statistics=1)
+
+            all_games_history.append((winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
 
 
-        # winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
+        else:
+            winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
+
 
         plays = range(1, game_length + 1, 1)
         start_player_range = [(index, shutter) for index, shutter in zip(plays[0::2], shutter_sizes[start_player]) if shutter != -1]
@@ -249,15 +262,15 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
         total_plays += len(plays[0::2])
 
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    if not already_saved:
+        path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
 
-    if not os.path.exists(f"{path}{cur_player.name}/"):
-        os.makedirs(f"{path}{cur_player.name}/")
+        if not os.path.exists(f"{path}{cur_player.name}/"):
+            os.makedirs(f"{path}{cur_player.name}/")
 
-    outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
-    pickle.dump(all_games_history, outfile)
-    outfile.close()
-
+        outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
+        pickle.dump(all_games_history, outfile)
+        outfile.close()
 
 
     no_games = num_games
@@ -326,8 +339,6 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     CI_plays_with_shutter_all_real_last_turn = [-1, -1]
     CI_plays_with_shutter_wins_real_last_turn = [-1, -1]
     CI_plays_with_shutter_losses_real_last_turn = [-1, -1]
-
-
 
 
     if cur_player.is_random_last_turn:
