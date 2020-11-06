@@ -18,7 +18,9 @@ from tensorboardX import SummaryWriter
 import copy
 from Game_boards_and_aux import *
 
-MODEL_NAME="pt_6_6_4_p4_v34"
+# MODEL_NAME="pt_6_6_4_p4_v34"
+MODEL_NAME="pt_10_10_5_p4_v0_3"
+
 INPUT_PLANES_NUM = 4
 
 WRITER_DIR = f'./runs/{MODEL_NAME}_training'
@@ -32,9 +34,9 @@ class TrainPipeline():
         self.writer = SummaryWriter(WRITER_DIR)
 
         # params of the board and the game
-        self.board_width = 6
-        self.board_height = 6
-        self.n_in_row = 4
+        self.board_width = 10
+        self.board_height = 10
+        self.n_in_row = 5
 
         self.board = Board(width=self.board_width,
                            height=self.board_height,
@@ -68,8 +70,9 @@ class TrainPipeline():
 
         self.c_puct = 5
         self.n_playout = 100  # num of simulations for each move
-        self.shutter_threshold_availables = 0
-        self.full_boards_selfplay = False
+        self.shutter_threshold_availables = 2
+        self.full_boards_selfplay = True
+
 
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
@@ -189,6 +192,7 @@ class TrainPipeline():
                     # augment the data
                     play_data_full_2 = self.get_equi_data(play_data_full_2)
                     self.data_buffer.extend(play_data_full_2)
+
 
                 else:
                     # BOARD 3 FULL

@@ -16,31 +16,53 @@ warnings.simplefilter("error", np.VisibleDeprecationWarning)
 
 
 discription_dict = {
-    "v23_5000": "v23\ntrain simulations:50\nshutter:1\nfull boards:yes\nsub model:5000",
-    "v24_5000": "v24\ntrain simulations:50\nshutter:0\nfull boards:yes\nsub model:5000",
-    "v25_5000": "v25\ntrain simulations:50\nshutter:1\nfull boards:no\nsub model:5000",
-    "v26_5000": "v26\ntrain simulations:50\nshutter:0\nfull boards:no\nsub model:5000",
-    "v27_5000": "v27\ntrain simulations:25\nshutter:1\nfull boards:yes\nsub model:5000",
-    "v28_5000": "v28\ntrain simulations:25\nshutter:0\nfull boards:yes\nsub model:5000",
-    "v29_5000": "v29\ntrain simulations:25\nshutter:1\nfull boards:no\nsub model:5000",
-    "v30_5000": "v30\ntrain simulations:25\nshutter:0\nfull boards:no\nsub model:5000",
-    "v31_5000": "v31\ntrain simulations:100\nshutter:1\nfull boards:yes\nsub model:5000",
-    "v32_5000": "v32\ntrain simulations:100\nshutter:0\nfull boards:yes\nsub model:5000",
-    "v33_5000": "v33\ntrain simulations:100\nshutter:1\nfull boards:no\nsub model:5000",
-    "v34_5000": "v34\ntrain simulations:100\nshutter:0\nfull boards:no\nsub model:5000"
+    "v7_1500" : "v7_1500",
+    "v9_1500" : "v9_1500",
+    "v10_1500": "v10_1500",
+    "v10_1500_random" : "v10_1500_random",
+    "v23_5000": "v23\nsim:50\nshutter:1\nfull:yes\niter:5000",
+    "v24_5000": "v24\nsim:50\nshutter:0\nfull:yes\niter:5000",
+    "v25_5000": "v25\nsim:50\nshutter:1\nfull:no\niter:5000",
+    "v26_5000": "v26\nsim:50\nshutter:0\nfull:no\niter:5000",
+    "v27_5000": "v27\nsim:25\nshutter:1\nfull:yes\niter:5000",
+    "v28_5000": "v28\nsim:25\nshutter:0\nfull:yes\niter:5000",
+    "v29_5000": "v29\nsim:25\nshutter:1\nfull:no\niter:5000",
+    "v30_5000": "v30\nsim:25\nshutter:0\nfull:no\niter:5000",
+    "v31_5000": "v31\nsim:100\nshutter:1\nfull:yes\niter:5000",
+    "v32_5000": "v32\nsim:100\nshutter:0\nfull:yes\niter:5000",
+    "v33_5000": "v33\nsim:100\nshutter:1\nfull:no\niter:5000",
+    "v34_5000": "v34\nsim:100\nshutter:0\nfull:no\niter:5000"
 }
 
+old_models = (["v7_1500", "v9_1500", "v10_1500", "v10_1500_random"], "old_models")
+all_new_12_models = (["v27_5000", "v28_5000", "v29_5000", "v30_5000", "v23_5000", "v24_5000", "v25_5000", "v26_5000", "v31_5000", "v32_5000", "v33_5000", "v34_5000"], "all_new_12_models")
 
-def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=100):
+mcts_25_models = (["v27_5000", "v28_5000", "v29_5000", "v30_5000"], "mcts_25_models")
+mcts_50_models = (["v23_5000", "v24_5000", "v25_5000", "v26_5000"], "mcts_50_models")
+mcts_100_models = (["v31_5000", "v32_5000", "v33_5000", "v34_5000"], "mcts_100_models")
+
+full_boards_models = (["v27_5000", "v28_5000","v23_5000", "v24_5000","v31_5000", "v32_5000"], "full_boards_models")
+non_full_boards_models = (["v29_5000", "v30_5000","v25_5000", "v26_5000", "v33_5000", "v34_5000"], "non_full_boards_models")
+
+shutter_0_models = (["v28_5000", "v30_5000", "v24_5000", "v26_5000", "v32_5000", "v34_5000"], "shutter_0_models")
+shutter_1_models = (["v27_5000", "v29_5000", "v23_5000", "v25_5000", "v31_5000", "v33_5000"], "shutter_1_models")
 
 
-    for opponent_player in opponents:
-        for board in PAPER_6X6_TRUNCATED_BOARDS:
-            collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
-        for board in PAPER_FULL_6X6_BOARDS:
-            collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
+all_models_variations = [all_new_12_models, mcts_25_models, mcts_50_models, mcts_100_models, full_boards_models,
+                  non_full_boards_models, shutter_0_models, shutter_1_models]
 
-        collect_statistics_againts_opponent(players_list, opponent_player, EMPTY_BOARD, width, height, n, num_games, 1)
+
+
+def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000):
+
+
+    # for opponent_player in opponents:
+    #     for board in PAPER_6X6_TRUNCATED_BOARDS:
+    #         collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
+    #     for board in PAPER_FULL_6X6_BOARDS:
+    #         collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
+    #
+    #     collect_statistics_againts_opponent(players_list, opponent_player, EMPTY_BOARD, width, height, n, num_games, 1)
 
 
     jobs = []
@@ -54,7 +76,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games, 1))
 
 
-    with Pool(len(jobs) // 3) as pool:
+    with Pool(10) as pool:
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
         pool.starmap(statistics_of_games_to_df, jobs)
@@ -90,7 +112,7 @@ def collect_statistics_againts_opponent(players_list, opponent_player, board, wi
                  p2, start_player, num_games))
 
 
-    with Pool(len(jobs) // 3) as pool:
+    with Pool(len(jobs)) as pool:
 
         print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
         pool.starmap(save_games_statistics, jobs)
@@ -108,7 +130,6 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games, s
     if os.path.exists(f"{path}all models {num_games} games results.xlsx"):
         print(f"already saved {opponent_player.name} on {board_name} df")
         return
-
 
     columns = [
         f"no. games",
@@ -185,6 +206,7 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games, s
     print(result_df.to_string())
 
     result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
+
 
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
@@ -273,10 +295,10 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, s
         open(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
              f"{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
+    print(f"{cur_player.name} vs {opponent_player.name} on {board_name} ---->statistics<---- {cur_time()}")
 
     for i in range(num_games):
 
-        print(f"game {i + 1}: {cur_player.name} vs {opponent_player.name} on {board_name} ---->statistics<---- {cur_time()}")
 
         winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = games_history[i]
 
@@ -329,9 +351,9 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, s
     avg_shutter_size_wins = np.average(shutters_wins) if len(shutters_wins) > 0 else -1
     avg_shutter_size_losses = np.average(shutters_losses) if len(shutters_losses) > 0 else -1
 
-    plays_with_shutter_fraction = len(shutters_wins + shutters_losses + shutters_ties)/total_plays
-    plays_with_shutter_fraction_wins = len(shutters_wins)/total_plays_wins
-    plays_with_shutter_fraction_losses = len(shutters_losses)/total_plays_losses
+    plays_with_shutter_fraction = len(shutters_wins + shutters_losses + shutters_ties)/total_plays if total_plays > 0 else 0
+    plays_with_shutter_fraction_wins = len(shutters_wins)/total_plays_wins if total_plays_wins > 0 else 0
+    plays_with_shutter_fraction_losses = len(shutters_losses)/total_plays_losses if total_plays_losses > 0 else 0
 
 
     wins_losses_sample = [1 if x[0] == cur_player.name else 0 for x in wins]
@@ -395,10 +417,10 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, s
 
         plays_with_shutter_fraction_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
                                                      real_last_turn_shutters_cur_player_losses +
-                                                     real_last_turn_shutters_cur_player_ties) / total_plays
+                                                     real_last_turn_shutters_cur_player_ties) / total_plays if total_plays > 0 else 0
 
-        plays_with_shutter_fraction_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins) / total_plays_wins
-        plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses
+        plays_with_shutter_fraction_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins) / total_plays_wins if total_plays_wins > 0 else 0
+        plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses if total_plays_losses > 0 else 0
 
 
         CI_shutter_size_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins +
@@ -487,20 +509,20 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, s
 
 
 
-def plot_all_statistics_results(opponents, num_games=1000):
+def plot_all_statistics_results(opponents, num_games=1000, is_group_by=False):
 
     jobs = []
     for opponent_player in opponents:
         for board in PAPER_6X6_TRUNCATED_BOARDS:
             board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games))
+            jobs.append((opponent_player, board_name, num_games, is_group_by))
 
         for board in PAPER_FULL_6X6_BOARDS:
             board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games))
+            jobs.append((opponent_player, board_name, num_games, is_group_by))
 
         board_name = EMPTY_BOARD[1]
-        jobs.append((opponent_player, board_name, num_games))
+        jobs.append((opponent_player, board_name, num_games, is_group_by))
 
     with Pool(len(jobs)) as pool:
         pool.starmap(plot_statistics, jobs)
@@ -512,7 +534,7 @@ def plot_all_statistics_results(opponents, num_games=1000):
     BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD]
     for board in BOARDS:
         board_name = board[1]
-        jobs_collage.append((board_name, opponents))
+        jobs_collage.append((board_name, opponents, is_group_by))
 
     with Pool(len(jobs_collage)) as pool:
         pool.starmap(call_collage_statistics_results, jobs_collage)
@@ -520,29 +542,47 @@ def plot_all_statistics_results(opponents, num_games=1000):
         pool.join()
 
 
-def plot_statistics(opponent_player, board_name, num_games):
+def plot_statistics(opponent_player, board_name, num_games, is_group_by=False):
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    create_statistics_graphics(path, num_games, opponent_player.name)
+    create_statistics_graphics(path, num_games, opponent_player.name,  is_group_by=is_group_by)
 
 
-def create_statistics_graphics(path, num_games, opponent_name):
+def create_statistics_graphics(path, num_games, opponent_name, is_group_by = False):
 
     width = 40
     height = 10
     font_size = 27
 
-    save_plays_with_shutter_results(path, num_games, width,height, font_size, opponent_name)
-    save_shutter_size(path, num_games, width,height, font_size, opponent_name)
-    save_save_game_len(path, num_games, width,height, font_size, opponent_name)
-    save_game_results(path, num_games, width,height, font_size, opponent_name)
-    save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name)
-
-
-
-def save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name):
-    mpl.rcParams.update({'font.size': font_size})
-
     data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+    data = data.reindex([all_new_12_models + old_models])
+
+
+    save_plays_with_shutter_results(path, num_games, width,height, font_size, opponent_name, data)
+    save_shutter_size(path, num_games, width,height, font_size, opponent_name, data)
+    save_save_game_len(path, num_games, width,height, font_size, opponent_name, data)
+    save_game_results(path, num_games, width,height, font_size, opponent_name, data)
+    save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data)
+
+    if is_group_by != None:
+
+        for variation in all_models_variations:
+            models = variation[0]
+            group_by = variation[1]
+
+            data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+            data = data.reindex([models + old_models])
+
+            save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+            save_shutter_size(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+            save_save_game_len(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+            save_game_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+            save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+
+
+
+
+def save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
+    mpl.rcParams.update({'font.size': font_size})
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle(f"Fraction of plays with shutter results - {opponent_name}", y=1.05)
@@ -564,7 +604,10 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
         ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
 
     for index, ci in zip(ind, data["CI_plays_with_shutter_wins"][:-1]):
-        ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black', linewidth=4, mew=4, ms=20)
+        try:
+            ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black', linewidth=4, mew=4, ms=20)
+        except:
+            pass
 
     for index, ci in zip(ind + width, data["CI_plays_with_shutter_losses"][:-1]):
         ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
@@ -609,14 +652,17 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}Fraction of plays with shutter results.png", bbox_inches='tight')
+    if group_by == None:
+        plt.savefig(f"{path}Fraction of plays with shutter results.png", bbox_inches='tight')
+    else:
+
+        plt.savefig(f"{path}Fraction of plays with shutter results {group_by}.png", bbox_inches='tight')
+
     plt.close('all')
 
 
-def save_shutter_size(path, num_games, width, height, font_size, opponent_name):
+def save_shutter_size(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
-
-    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle(f"Shutter sizes results  - {opponent_name}", y=1.05)
@@ -678,14 +724,18 @@ def save_shutter_size(path, num_games, width, height, font_size, opponent_name):
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}Shutter sizes results.png", bbox_inches='tight')
+    if group_by == None:
+        plt.savefig(f"{path}Shutter sizes results.png", bbox_inches='tight')
+    else:
+
+        plt.savefig(f"{path}Shutter sizes results {group_by}.png", bbox_inches='tight')
+
     plt.close('all')
 
 
-def save_save_game_len(path, num_games, width, height, font_size, opponent_name):
+def save_save_game_len(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
 
-    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle(f"Games length results - {opponent_name}",  y=1.05)
@@ -727,14 +777,18 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name)
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}Games lengths results.png", bbox_inches='tight')
+    if group_by == None:
+        plt.savefig(f"{path}Games lengths results.png", bbox_inches='tight')
+    else:
+
+        plt.savefig(f"{path}Games lengths results {group_by}.png", bbox_inches='tight')
+
     plt.close('all')
 
 
-def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name):
+def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
 
-    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle(f"Win ratio ignoring ties - {opponent_name}", y=1.05)
@@ -771,14 +825,20 @@ def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_n
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}Win ratio ignoring ties.png", bbox_inches='tight')
+
+    if group_by == None:
+        plt.savefig(f"{path}Win ratio ignoring ties.png", bbox_inches='tight')
+    else:
+
+        plt.savefig(f"{path}Win ratio ignoring ties {group_by}.png", bbox_inches='tight')
+
+
     plt.close('all')
 
 
-def save_game_results(path, num_games, width, height, font_size, opponent_name):
+def save_game_results(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
 
-    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
 
     fig = plt.figure(constrained_layout=True)
     fig.suptitle(f"Games results - {opponent_name}", y=1.05)
@@ -812,12 +872,21 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name):
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    plt.savefig(f"{path}Games results.png", bbox_inches='tight')
+
+    if group_by == None:
+        plt.savefig(f"{path}Games results.png", bbox_inches='tight')
+    else:
+
+        plt.savefig(f"{path}Games results {group_by}.png", bbox_inches='tight')
+
+
     plt.close('all')
 
 
 
-def call_collage_statistics_results(board_name, opponents):
+
+
+def call_collage_statistics_results(board_name, opponents, is_group_by=None):
 
     opponents_names = [opp.name for opp in opponents]
 
@@ -825,6 +894,7 @@ def call_collage_statistics_results(board_name, opponents):
 
     if not os.path.exists(path_collage):
         os.makedirs(path_collage)
+
 
     listofimages1 = [f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results.png"
                     for opponent_name in opponents_names]
@@ -845,11 +915,46 @@ def call_collage_statistics_results(board_name, opponents):
         f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties.png"
         for opponent_name in opponents_names]
 
+
     create_collages_boards(listofimages1, "Fraction of plays with shutter results", path_collage)
     create_collages_boards(listofimages2, "Games lengths results", path_collage)
     create_collages_boards(listofimages3, "Games results", path_collage)
     create_collages_boards(listofimages4, "Shutter sizes results", path_collage)
     create_collages_boards(listofimages5, "Win ratio ignoring ties", path_collage)
+
+
+    if is_group_by != None:
+
+        for variation in all_models_variations:
+            models = variation[0]
+            group_by = variation[1]
+
+            listofimages1 = [
+                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results {group_by}.png"
+                for opponent_name in opponents_names]
+
+            listofimages2 = [
+                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games lengths results {group_by}.png"
+                for opponent_name in opponents_names]
+
+            listofimages3 = [
+                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games results {group_by}.png"
+                for opponent_name in opponents_names]
+
+            listofimages4 = [
+                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results {group_by}.png"
+                for opponent_name in opponents_names]
+
+            listofimages5 = [
+                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties {group_by}.png"
+                for opponent_name in opponents_names]
+
+            create_collages_boards(listofimages1, f"Fraction of plays with shutter results {group_by}", path_collage)
+            create_collages_boards(listofimages2, f"Games lengths results {group_by}", path_collage)
+            create_collages_boards(listofimages3, f"Games results {group_by}", path_collage)
+            create_collages_boards(listofimages4, f"Shutter sizes results {group_by}", path_collage)
+            create_collages_boards(listofimages5, f"Win ratio ignoring ties {group_by}", path_collage)
+
 
 
 def create_collages_boards(listofimages, fig_name, path):
@@ -1085,7 +1190,9 @@ if __name__ == '__main__':
 
 
 
-    players_list = [player_v23, player_v24, player_v25, player_v26,
+    players_list = [
+
+                    player_v23, player_v24, player_v25, player_v26,
                     player_v27, player_v28, player_v29, player_v30,
                     player_v31, player_v32, player_v33, player_v34,
 
@@ -1114,7 +1221,9 @@ if __name__ == '__main__':
 
     opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4, opponent_player_5]
 
+    is_group_by = True
+
     set_start_method("spawn")
     # compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000)
-    plot_all_statistics_results(opponents, num_games=1000)
+    plot_all_statistics_results(opponents, num_games=1000, is_group_by=is_group_by)
     # save_states_from_history_empty_board(opponent_player_1, players_list, 1000)

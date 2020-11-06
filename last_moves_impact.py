@@ -6,6 +6,23 @@ import io
 import PIL
 
 
+
+discription_dict_last_move = {
+    "pt_6_6_4_p4_v10" : "v10",
+    "pt_6_6_4_p4_v23": "v23\nsim:50\nshutter:1\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v24": "v24\nsim:50\nshutter:0\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v25": "v25\nsim:50\nshutter:1\nfull:no\niter:5000",
+    "pt_6_6_4_p4_v26": "v26\nsim:50\nshutter:0\nfull:no\niter:5000",
+    "pt_6_6_4_p4_v27": "v27\nsim:25\nshutter:1\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v28": "v28\nsim:25\nshutter:0\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v29": "v29\nsim:25\nshutter:1\nfull:no\niter:5000",
+    "pt_6_6_4_p4_v30": "v30\nsim:25\nshutter:0\nfull:no\niter:5000",
+    "pt_6_6_4_p4_v31": "v31\nsim:100\nshutter:1\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v32": "v32\nsim:100\nshutter:0\nfull:yes\niter:5000",
+    "pt_6_6_4_p4_v33": "v33\nsim:100\nshutter:1\nfull:no\niter:5000",
+    "pt_6_6_4_p4_v34": "v34\nsim:100\nshutter:0\nfull:no\niter:5000"
+}
+
 def model_stat_emd_board(model_name,
                         input_plains_num,
                         game_board,
@@ -62,9 +79,9 @@ def model_stat_emd_board(model_name,
     # save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name)
 
 
-def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim):
+def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, shutter_limit):
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/{board_name}/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/shutter {shutter_limit}/{stat_name}/{board_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -85,7 +102,7 @@ def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, sta
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sub model no.", fontsize=fontsize)
-    ax.set_title(f"{model_name}\n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
+    ax.set_title(f"{discription_dict_last_move[model_name]}\n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
                  fontdict={'fontsize': fontsize + 15})
 
     h, l = ax.get_legend_handles_labels()
@@ -104,9 +121,9 @@ def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, sta
     plt.close('all')
 
 
-def save_figs_stat(distances_list, y_top_lim):
+def save_figs_stat(distances_list, y_top_lim, shutter_limit):
 
-    fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
+    fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 4]}, figsize=(40, 12.5))
 
     fontsize = 17
     linewidth = 3
@@ -117,15 +134,18 @@ def save_figs_stat(distances_list, y_top_lim):
 
 
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
-        ax.plot(range(models_num), stat_list, linewidth=linewidth, color = next(colors), label=model_name[-3:])
-
+        ax.plot(range(models_num), stat_list, linewidth=linewidth, color = next(colors), label=discription_dict_last_move[model_name])
 
 
     ax.set_ylim([0, y_top_lim])
 
     _, models_num, model_list, _, board_name, stat_name = distances_list[0]
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/{board_name}/"
+    if shutter_limit != -1:
+        path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/shutter {shutter_limit}/{stat_name}/{board_name}/"
+    else:
+
+        path = f"/home/lirontyomkin/AlphaZero_Gomoku/last move impact/{stat_name}/{board_name}/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -135,7 +155,14 @@ def save_figs_stat(distances_list, y_top_lim):
     ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
     ax.set_xlabel("sub model no.", fontsize=fontsize)
-    ax.set_title(f"All models \n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
+
+    which_models = "All models"
+    if shutter_limit == 0:
+        which_models = "0 shutter models"
+    elif shutter_limit == 1:
+        which_models = "1 shutter models"
+
+    ax.set_title(f"{which_models}\n{stat_name} of distances between the policy with the correct last move to rest\n of the policies with all the other possible last moves on {board_name}",
                  fontdict={'fontsize': fontsize + 15})
 
 
@@ -155,7 +182,7 @@ def save_figs_stat(distances_list, y_top_lim):
     plt.close('all')
 
 
-def last_move_aux(board, stat_name, model_names):
+def last_move_aux(board, stat_name, model_names, shutter_limit):
 
     if stat_name == "Varience":
         stat = np.var
@@ -182,27 +209,96 @@ def last_move_aux(board, stat_name, model_names):
     y_top_lim = 1.1 * y_top_lim
 
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
-        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim)
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, shutter_limit)
 
-    save_figs_stat(distances_list, y_top_lim)
+    save_figs_stat(distances_list, y_top_lim, shutter_limit)
 
+
+def last_move_aux_shutter_separate(board, stat_name, models_0_names, models_1_names):
+
+    if stat_name == "Varience":
+        stat = np.var
+    elif stat_name == "Average":
+        stat = np.average
+    elif stat_name == "Coefficient of Variation":
+        stat = lambda np_array: np.std(np_array) / np.mean(np_array)
+
+
+    distances_list_0 = []
+    for model_name in models_0_names:
+        distances_list_0.append(model_stat_emd_board(model_name,
+                                                   4,
+                                                   board,
+                                                   curr_player=1,
+                                                   max_model_iter=5000,
+                                                   model_check_freq=50,
+                                                   width=6, height=6, n=4,
+                                                   stat=stat,
+                                                   stat_name=stat_name
+                                                   ))
+
+    distances_list_1 = []
+    for model_name in models_1_names:
+        distances_list_1.append(model_stat_emd_board(model_name,
+                                                   4,
+                                                   board,
+                                                   curr_player=1,
+                                                   max_model_iter=5000,
+                                                   model_check_freq=50,
+                                                   width=6, height=6, n=4,
+                                                   stat=stat,
+                                                   stat_name=stat_name
+                                                   ))
+
+
+
+    y_top_lim = max(max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list_0]),
+                    max([max(stat_list) for stat_list, _, _, _, _, _ in distances_list_1]))
+    y_top_lim = 1.1 * y_top_lim
+
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list_0:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, 0)
+
+    save_figs_stat(distances_list_0, y_top_lim, 0)
+
+
+    for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list_1:
+        save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, 1)
+
+    save_figs_stat(distances_list_0, y_top_lim, 1)
 
 
 if __name__ == '__main__':
 
-    model_names = ['pt_6_6_4_p4_v10', 'pt_6_6_4_p4_v23', 'pt_6_6_4_p4_v24', 'pt_6_6_4_p4_v25', 'pt_6_6_4_p4_v26']
+    # model_names = ['pt_6_6_4_p4_v10',
+    #                'pt_6_6_4_p4_v27', 'pt_6_6_4_p4_v28', 'pt_6_6_4_p4_v29', 'pt_6_6_4_p4_v30',
+    #                'pt_6_6_4_p4_v23', 'pt_6_6_4_p4_v24', 'pt_6_6_4_p4_v25', 'pt_6_6_4_p4_v26',
+    #                'pt_6_6_4_p4_v31', 'pt_6_6_4_p4_v32', 'pt_6_6_4_p4_v33', 'pt_6_6_4_p4_v34'
+    #                ]
 
-    # stats = ["Coefficient of Variation", "Varience", "Average"]
-    stats = ["Varience", "Average"]
+    models_1_names = ['pt_6_6_4_p4_v10',
+                   'pt_6_6_4_p4_v27', 'pt_6_6_4_p4_v29',
+                   'pt_6_6_4_p4_v23', 'pt_6_6_4_p4_v25',
+                   'pt_6_6_4_p4_v31', 'pt_6_6_4_p4_v33']
+
+    models_0_names = ['pt_6_6_4_p4_v10',
+                  'pt_6_6_4_p4_v28', 'pt_6_6_4_p4_v30',
+                  'pt_6_6_4_p4_v24', 'pt_6_6_4_p4_v26',
+                  'pt_6_6_4_p4_v32', 'pt_6_6_4_p4_v34'
+                  ]
+
+
+    stats = ["Coefficient of Variation", "Varience", "Average"]
 
     jobs = []
 
     with Pool() as pool:
         for stat_name in stats:
             for board in PAPER_6X6_TRUNCATED_BOARDS:
-                jobs.append((board, stat_name, model_names))
+                jobs.append((board, stat_name, models_0_names, models_1_names))
 
-        pool.starmap(last_move_aux, jobs)
+        pool.starmap(last_move_aux_shutter_separate, jobs)
         pool.close()
         pool.join()
 
