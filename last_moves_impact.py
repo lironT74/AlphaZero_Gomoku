@@ -266,7 +266,7 @@ def last_move_aux_shutter_separate(board, stat_name, models_0_names, models_1_na
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list_1:
         save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, 1)
 
-    save_figs_stat(distances_list_0, y_top_lim, 1)
+    save_figs_stat(distances_list_1, y_top_lim, 1)
 
 
 if __name__ == '__main__':

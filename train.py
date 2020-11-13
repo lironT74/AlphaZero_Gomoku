@@ -19,7 +19,7 @@ import copy
 from Game_boards_and_aux import *
 
 # MODEL_NAME="pt_6_6_4_p4_v34"
-MODEL_NAME="pt_10_10_5_p4_v0_3"
+MODEL_NAME="pt_10_10_5_p4_v0_5"
 
 INPUT_PLANES_NUM = 4
 
@@ -70,7 +70,7 @@ class TrainPipeline():
 
         self.c_puct = 5
         self.n_playout = 100  # num of simulations for each move
-        self.shutter_threshold_availables = 2
+        self.shutter_threshold_availables = 0
         self.full_boards_selfplay = True
 
 
