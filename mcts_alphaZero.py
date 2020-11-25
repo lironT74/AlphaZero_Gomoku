@@ -9,6 +9,8 @@ import string
 import numpy as np
 import copy
 import matplotlib as mpl
+mpl.use('agg')
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io

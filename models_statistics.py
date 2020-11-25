@@ -8,8 +8,8 @@ import pandas as pd
 import os
 from mcts_pure import MCTSPlayer as PUREMCTS
 import PIL
-
 import warnings
+
 warnings.simplefilter("error", np.VisibleDeprecationWarning)
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -56,55 +56,67 @@ all_models_variations = [all_new_12_models, mcts_25_models, mcts_50_models, mcts
 def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000):
 
 
-    for opponent_player in opponents:
-        for board in PAPER_6X6_TRUNCATED_BOARDS:
-            collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
-        for board in PAPER_FULL_6X6_BOARDS:
-            collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, 2)
-
-        collect_statistics_againts_opponent(players_list, opponent_player, EMPTY_BOARD, width, height, n, num_games, 1)
-
-
-
-    # jobs = []
-    # for opponent_player in opponents:
-    #     for board in PAPER_6X6_TRUNCATED_BOARDS:
-    #         jobs.append((players_list, opponent_player, board, num_games))
-    #
-    #     for board in PAPER_FULL_6X6_BOARDS:
-    #         jobs.append((players_list, opponent_player, board, num_games))
-    #
-    #     jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games))
-    #
-    #
-    # with Pool(10) as pool:
-    #
-    #     print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
-    #     pool.starmap(statistics_of_games_to_df, jobs)
-    #     pool.close()
-    #     pool.join()
-
-
-
-def collect_statistics_againts_opponent(players_list, opponent_player, board, width, height, n, num_games, start_player):
-
-    board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
+    print(f"Playing: ")
 
     jobs = []
-
-    for cur_player in players_list:
-
-        jobs.append((width, height, n, board_state, board_name, cur_player,
-                 opponent_player, p1, p2, p1,
-                 p2, start_player, num_games))
+    for opponent_player in opponents:
 
 
-    with Pool(len(jobs)) as pool:
+        for board in PAPER_6X6_TRUNCATED_BOARDS:
 
-        print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
+            board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
+
+            for cur_player in players_list:
+                jobs.append((width, height, n, board_state, board_name, cur_player,
+                             opponent_player, p1, p2, p1,
+                             p2, 2, num_games))
+
+        for board in PAPER_FULL_6X6_BOARDS:
+
+            board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
+
+            for cur_player in players_list:
+                jobs.append((width, height, n, board_state, board_name, cur_player,
+                             opponent_player, p1, p2, p1,
+                             p2, 2, num_games))
+
+        board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
+
+        for cur_player in players_list:
+            jobs.append((width, height, n, board_state, board_name, cur_player,
+                         opponent_player, p1, p2, p1,
+                         p2, 1, num_games))
+
+
+    with Pool(25) as pool:
+        print(f"Using {pool._processes} workers. There are {len(jobs)} X {num_games} games to play: \n")
         pool.starmap(save_games_statistics, jobs)
         pool.close()
         pool.join()
+
+
+
+    print(f"Statistics: ")
+
+    jobs = []
+    for opponent_player in opponents:
+        for board in PAPER_6X6_TRUNCATED_BOARDS:
+
+            jobs.append((players_list, opponent_player, board, num_games))
+
+        for board in PAPER_FULL_6X6_BOARDS:
+            jobs.append((players_list, opponent_player, board, num_games))
+
+        jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games))
+
+
+    with Pool() as pool:
+        # print(f"Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
+        pool.starmap(statistics_of_games_to_df, jobs)
+        pool.close()
+        pool.join()
+
+
 
 
 def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
@@ -114,9 +126,9 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
 
-    # if os.path.exists(f"{path}all models {num_games} games results.xlsx"):
-    #     print(f"already saved {opponent_player.name} on {board_name} df")
-    #     return
+    if os.path.exists(f"{path}all models {num_games} games results.xlsx"):
+        print(f"already saved {opponent_player.name} on {board_name} df")
+        return
 
     columns = [
         f"no. games",
@@ -186,13 +198,13 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
 
         result = get_statistics_from_saved_results(board_name, cur_player, opponent_player, num_games)
 
-    #     for i, col in enumerate(columns):
-    #         result_df.loc[cur_player.name, col] = result[i]
-    #
-    #
-    # print(result_df.to_string())
-    #
-    # result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
+        for i, col in enumerate(columns):
+            result_df.loc[cur_player.name, col] = result[i]
+
+
+    print(result_df.to_string())
+
+    result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
 
 
 
@@ -207,22 +219,21 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     all_games_history = []
 
 
-    # if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    #                   f"{cur_player.name}/full_{num_games}_games_stats"):
-    #     print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name}")
-    #     return
+    if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+                      f"{cur_player.name}/full_{num_games}_games_stats"):
+        print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name}")
+        return
 
+
+    print(f"Starting {num_games} games: {cur_player.name} vs {opponent_player.name} on {board_name} {cur_time()}")
 
     for i in range(num_games):
-
-        print(f"game {i+1}: {cur_player.name} vs {opponent_player.name} on {board_name} {cur_time()}")
-        print(f"player 1: {cur_player.name}, player 2: {opponent_player.name}")
 
         winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history = game1.start_play(
                                                              player1=cur_player,
                                                              player2=opponent_player,
                                                              start_player=start_player,
-                                                             is_shown=1,
+                                                             is_shown=0,
                                                              start_board=i_board1,
                                                              last_move_p1=last_move_p1,
                                                              last_move_p2=last_move_p2,
@@ -237,14 +248,14 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
         all_games_history.append((start_player, winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
 
 
-    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    #
-    # if not os.path.exists(f"{path}{cur_player.name}/"):
-    #     os.makedirs(f"{path}{cur_player.name}/")
-    #
-    # outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
-    # pickle.dump(all_games_history, outfile)
-    # outfile.close()
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+
+    if not os.path.exists(f"{path}{cur_player.name}/"):
+        os.makedirs(f"{path}{cur_player.name}/")
+
+    outfile = open(f"{path}{cur_player.name}/full_{num_games}_games_stats", 'wb')
+    pickle.dump(all_games_history, outfile)
+    outfile.close()
 
 
 
@@ -273,7 +284,6 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
         open(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
              f"{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
-    # print(f"{cur_player.name} vs {opponent_player.name} on {board_name} ---->statistics<---- {cur_time()}")
 
     for i in range(num_games):
 
@@ -322,191 +332,194 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
     no_ties = num_games - no_wins - no_losses
     win_ratio = 1.0*(no_wins + 0.5*no_ties) / no_games
 
+
     print(f"{cur_player.name} vs {opponent_player.name} on {board_name}: {no_games}, {no_wins}, {no_losses}, {no_ties}")
 
-    # average_game_length = np.average([x[1] for x in wins]) if len([x[1] for x in wins]) >0 else -1
-    # average_game_length_wins = np.average([x[1] for x in wins if x[0] == cur_player.name]) if len([x[1] for x in wins if x[0] == cur_player.name]) > 0 else -1
-    # average_game_length_losses = np.average([x[1] for x in wins if x[0] == opponent_player.name]) if len([x[1] for x in wins if x[0] == opponent_player.name]) > 0 else -1
-    #
-    #
-    # avg_shutter_size = np.average(shutters_wins + shutters_losses + shutters_ties) if len(shutters_wins + shutters_losses + shutters_ties) > 0 else -1
-    # avg_shutter_size_wins = np.average(shutters_wins) if len(shutters_wins) > 0 else -1
-    # avg_shutter_size_losses = np.average(shutters_losses) if len(shutters_losses) > 0 else -1
-    #
-    # plays_with_shutter_fraction = len(shutters_wins + shutters_losses + shutters_ties)/total_plays if total_plays > 0 else 0
-    # plays_with_shutter_fraction_wins = len(shutters_wins)/total_plays_wins if total_plays_wins > 0 else 0
-    # plays_with_shutter_fraction_losses = len(shutters_losses)/total_plays_losses if total_plays_losses > 0 else 0
-    #
-    #
-    # wins_losses_sample = [1 if x[0] == cur_player.name else 0 for x in wins]
-    # CI_wins_losses = bootstrap_mean(wins_losses_sample)
-    #
-    # CI_game_length = bootstrap_mean([x[1] for x in wins]) if len([x[1] for x in wins]) > 0 else [-1,-1]
-    # CI_game_length_wins = bootstrap_mean([x[1] for x in wins if x[0] == cur_player.name]) if len([x[1] for x in wins if x[0] == cur_player.name]) > 0 else [-1,-1]
-    # CI_game_length_losses = bootstrap_mean([x[1] for x in wins if x[0] == opponent_player.name]) if len([x[1] for x in wins if x[0] == opponent_player.name]) > 0 else [-1,-1]
-    #
-    # CI_shutter_size = bootstrap_mean(shutters_wins + shutters_losses + shutters_ties) if len(shutters_wins + shutters_losses + shutters_ties) > 0 else [-1,-1]
-    # CI_shutter_size_wins = bootstrap_mean(shutters_wins) if len(shutters_wins) > 0 else [-1,-1]
-    # CI_shutter_size_losses = bootstrap_mean(shutters_losses) if len(shutters_losses) > 0 else [-1,-1]
-    #
-    #
-    # plays_with_shutter_all = len(shutters_wins + shutters_losses + shutters_ties)
-    # plays_without_shutter_all = total_plays - plays_with_shutter_all
-    # plays_with_shutter_sample_all_plays = np.concatenate((np.ones(plays_with_shutter_all), np.zeros(plays_without_shutter_all)))
-    # CI_plays_with_shutter_all = bootstrap_mean(plays_with_shutter_sample_all_plays)
-    #
-    #
-    # plays_with_shutter_wins = len(shutters_wins)
-    # plays_without_shutter_wins = total_plays_wins - plays_with_shutter_wins
-    # plays_with_shutter_sample_wins_plays = np.concatenate((np.ones(plays_with_shutter_wins), np.zeros(plays_without_shutter_wins)))
-    # CI_plays_with_shutter_wins = bootstrap_mean(plays_with_shutter_sample_wins_plays)
-    #
-    #
-    # plays_with_shutter_losses = len(shutters_losses)
-    # plays_without_shutter_losses = total_plays_losses - plays_with_shutter_losses
-    # plays_with_shutter_sample_losses_plays = np.concatenate((np.ones(plays_with_shutter_losses), np.zeros(plays_without_shutter_losses)))
-    # CI_plays_with_shutter_losses = bootstrap_mean(plays_with_shutter_sample_losses_plays)
-    #
-    #
-    #
-    # avg_shutter_size_real_last_turn = -1
-    # avg_shutter_size_wins_real_last_turn = -1
-    # avg_shutter_size_losses_real_last_turn = -1
-    # plays_with_shutter_fraction_real_last_turn = -1
-    # plays_with_shutter_fraction_wins_real_last_turn = -1
-    # plays_with_shutter_fraction_losses_real_last_turn = -1
-    #
-    # CI_shutter_size_real_last_turn = [-1, -1]
-    # CI_shutter_size_wins_real_last_turn = [-1, -1]
-    # CI_shutter_size_losses_real_last_turn = [-1, -1]
-    # CI_plays_with_shutter_all_real_last_turn = [-1, -1]
-    # CI_plays_with_shutter_wins_real_last_turn = [-1, -1]
-    # CI_plays_with_shutter_losses_real_last_turn = [-1, -1]
-    #
-    #
-    # if cur_player.is_random_last_turn:
-    #
-    #     avg_shutter_size_real_last_turn = np.average(real_last_turn_shutters_cur_player_wins +
-    #                                                  real_last_turn_shutters_cur_player_losses +
-    #                                                  real_last_turn_shutters_cur_player_ties) if len(
-    #                                                 real_last_turn_shutters_cur_player_wins +
-    #                                                 real_last_turn_shutters_cur_player_losses +
-    #                                                 real_last_turn_shutters_cur_player_ties) > 0 else -1
-    #
-    #     avg_shutter_size_wins_real_last_turn = np.average(real_last_turn_shutters_cur_player_wins) if len(real_last_turn_shutters_cur_player_wins) > 0 else -1
-    #     avg_shutter_size_losses_real_last_turn = np.average(real_last_turn_shutters_cur_player_losses) if len(real_last_turn_shutters_cur_player_losses) > 0 else -1
-    #
-    #     plays_with_shutter_fraction_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
-    #                                                  real_last_turn_shutters_cur_player_losses +
-    #                                                  real_last_turn_shutters_cur_player_ties) / total_plays if total_plays > 0 else 0
-    #
-    #     plays_with_shutter_fraction_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins) / total_plays_wins if total_plays_wins > 0 else 0
-    #     plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses if total_plays_losses > 0 else 0
-    #
-    #
-    #     CI_shutter_size_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins +
-    #                                                  real_last_turn_shutters_cur_player_losses +
-    #                                                  real_last_turn_shutters_cur_player_ties) if len(
-    #                                                 real_last_turn_shutters_cur_player_wins +
-    #                                                 real_last_turn_shutters_cur_player_losses +
-    #                                                 real_last_turn_shutters_cur_player_ties) > 0 else [-1, -1]
-    #
-    #     CI_shutter_size_wins_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins) if len(real_last_turn_shutters_cur_player_wins) > 0 else [-1, -1]
-    #     CI_shutter_size_losses_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_losses) if len(real_last_turn_shutters_cur_player_losses) > 0 else [-1, -1]
-    #
-    #
-    #     plays_with_shutter_all_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
-    #                                                  real_last_turn_shutters_cur_player_losses +
-    #                                                  real_last_turn_shutters_cur_player_ties)
-    #     plays_without_shutter_all_real_last_turn = total_plays - plays_with_shutter_all_real_last_turn
-    #     plays_with_shutter_sample_all_plays_real_last_turn =  np.concatenate((np.ones(plays_with_shutter_all_real_last_turn), np.zeros(plays_without_shutter_all_real_last_turn)))
-    #     CI_plays_with_shutter_all_real_last_turn = bootstrap_mean(plays_with_shutter_sample_all_plays_real_last_turn)
-    #
-    #
-    #     plays_with_shutter_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins)
-    #     plays_without_shutter_wins_real_last_turn = total_plays_wins - plays_with_shutter_wins_real_last_turn
-    #     plays_with_shutter_sample_wins_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_wins_real_last_turn), np.zeros(plays_without_shutter_wins_real_last_turn)))
-    #     CI_plays_with_shutter_wins_real_last_turn = bootstrap_mean(plays_with_shutter_sample_wins_plays_real_last_turn)
-    #
-    #     plays_with_shutter_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses)
-    #     plays_without_shutter_losses_real_last_turn = total_plays_losses - plays_with_shutter_losses_real_last_turn
-    #     plays_with_shutter_sample_losses_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_losses_real_last_turn), np.zeros(plays_without_shutter_losses_real_last_turn)))
-    #     CI_plays_with_shutter_losses_real_last_turn = bootstrap_mean(plays_with_shutter_sample_losses_plays_real_last_turn)
-    #
-    #
-    #
-    # result =    [no_games,
-    #              no_wins,
-    #              no_losses,
-    #              no_ties,
-    #              win_ratio,
-    #
-    #              average_game_length,
-    #              average_game_length_wins,
-    #              average_game_length_losses,
-    #
-    #              avg_shutter_size,
-    #              avg_shutter_size_wins,
-    #              avg_shutter_size_losses,
-    #
-    #              plays_with_shutter_fraction,
-    #              plays_with_shutter_fraction_wins,
-    #              plays_with_shutter_fraction_losses,
-    #
-    #              avg_shutter_size_real_last_turn,
-    #              avg_shutter_size_wins_real_last_turn,
-    #              avg_shutter_size_losses_real_last_turn,
-    #
-    #              plays_with_shutter_fraction_real_last_turn,
-    #              plays_with_shutter_fraction_wins_real_last_turn,
-    #              plays_with_shutter_fraction_losses_real_last_turn,
-    #
-    #
-    #              np.array2string(np.array(CI_wins_losses)),
-    #
-    #              np.array2string(np.array(CI_game_length)),
-    #              np.array2string(np.array(CI_game_length_wins)),
-    #              np.array2string(np.array(CI_game_length_losses)),
-    #
-    #              np.array2string(np.array(CI_shutter_size)),
-    #              np.array2string(np.array(CI_shutter_size_wins)),
-    #              np.array2string(np.array(CI_shutter_size_losses)),
-    #
-    #              np.array2string(np.array(CI_plays_with_shutter_all)),
-    #              np.array2string(np.array(CI_plays_with_shutter_wins)),
-    #              np.array2string(np.array(CI_plays_with_shutter_losses)),
-    #
-    #              np.array2string(np.array(CI_shutter_size_real_last_turn)),
-    #              np.array2string(np.array(CI_shutter_size_wins_real_last_turn)),
-    #              np.array2string(np.array(CI_shutter_size_losses_real_last_turn)),
-    #
-    #              np.array2string(np.array(CI_plays_with_shutter_all_real_last_turn)),
-    #              np.array2string(np.array(CI_plays_with_shutter_wins_real_last_turn)),
-    #              np.array2string(np.array(CI_plays_with_shutter_losses_real_last_turn))
-    # ]
-    #
-    #
-    # return result
+    average_game_length = np.average([x[1] for x in wins]) if len([x[1] for x in wins]) >0 else -1
+    average_game_length_wins = np.average([x[1] for x in wins if x[0] == cur_player.name]) if len([x[1] for x in wins if x[0] == cur_player.name]) > 0 else -1
+    average_game_length_losses = np.average([x[1] for x in wins if x[0] == opponent_player.name]) if len([x[1] for x in wins if x[0] == opponent_player.name]) > 0 else -1
+
+
+    avg_shutter_size = np.average(shutters_wins + shutters_losses + shutters_ties) if len(shutters_wins + shutters_losses + shutters_ties) > 0 else -1
+    avg_shutter_size_wins = np.average(shutters_wins) if len(shutters_wins) > 0 else -1
+    avg_shutter_size_losses = np.average(shutters_losses) if len(shutters_losses) > 0 else -1
+
+    plays_with_shutter_fraction = len(shutters_wins + shutters_losses + shutters_ties)/total_plays if total_plays > 0 else 0
+    plays_with_shutter_fraction_wins = len(shutters_wins)/total_plays_wins if total_plays_wins > 0 else 0
+    plays_with_shutter_fraction_losses = len(shutters_losses)/total_plays_losses if total_plays_losses > 0 else 0
+
+
+    wins_losses_sample = [1 if x[0] == cur_player.name else 0 for x in wins]
+    CI_wins_losses = bootstrap_mean(wins_losses_sample)
+
+    CI_game_length = bootstrap_mean([x[1] for x in wins]) if len([x[1] for x in wins]) > 0 else [-1,-1]
+    CI_game_length_wins = bootstrap_mean([x[1] for x in wins if x[0] == cur_player.name]) if len([x[1] for x in wins if x[0] == cur_player.name]) > 0 else [-1,-1]
+    CI_game_length_losses = bootstrap_mean([x[1] for x in wins if x[0] == opponent_player.name]) if len([x[1] for x in wins if x[0] == opponent_player.name]) > 0 else [-1,-1]
+
+    CI_shutter_size = bootstrap_mean(shutters_wins + shutters_losses + shutters_ties) if len(shutters_wins + shutters_losses + shutters_ties) > 0 else [-1,-1]
+    CI_shutter_size_wins = bootstrap_mean(shutters_wins) if len(shutters_wins) > 0 else [-1,-1]
+    CI_shutter_size_losses = bootstrap_mean(shutters_losses) if len(shutters_losses) > 0 else [-1,-1]
+
+
+    plays_with_shutter_all = len(shutters_wins + shutters_losses + shutters_ties)
+    plays_without_shutter_all = total_plays - plays_with_shutter_all
+    plays_with_shutter_sample_all_plays = np.concatenate((np.ones(plays_with_shutter_all), np.zeros(plays_without_shutter_all)))
+    CI_plays_with_shutter_all = bootstrap_mean(plays_with_shutter_sample_all_plays)
+
+
+    plays_with_shutter_wins = len(shutters_wins)
+    plays_without_shutter_wins = total_plays_wins - plays_with_shutter_wins
+    plays_with_shutter_sample_wins_plays = np.concatenate((np.ones(plays_with_shutter_wins), np.zeros(plays_without_shutter_wins)))
+    CI_plays_with_shutter_wins = bootstrap_mean(plays_with_shutter_sample_wins_plays)
+
+
+    plays_with_shutter_losses = len(shutters_losses)
+    plays_without_shutter_losses = total_plays_losses - plays_with_shutter_losses
+    plays_with_shutter_sample_losses_plays = np.concatenate((np.ones(plays_with_shutter_losses), np.zeros(plays_without_shutter_losses)))
+    CI_plays_with_shutter_losses = bootstrap_mean(plays_with_shutter_sample_losses_plays)
 
 
 
-def plot_all_statistics_results(opponents, num_games=1000, is_group_by=False):
+    avg_shutter_size_real_last_turn = -1
+    avg_shutter_size_wins_real_last_turn = -1
+    avg_shutter_size_losses_real_last_turn = -1
+    plays_with_shutter_fraction_real_last_turn = -1
+    plays_with_shutter_fraction_wins_real_last_turn = -1
+    plays_with_shutter_fraction_losses_real_last_turn = -1
+
+    CI_shutter_size_real_last_turn = [-1, -1]
+    CI_shutter_size_wins_real_last_turn = [-1, -1]
+    CI_shutter_size_losses_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_all_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_wins_real_last_turn = [-1, -1]
+    CI_plays_with_shutter_losses_real_last_turn = [-1, -1]
+
+
+    if cur_player.is_random_last_turn:
+
+        avg_shutter_size_real_last_turn = np.average(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties) if len(
+                                                    real_last_turn_shutters_cur_player_wins +
+                                                    real_last_turn_shutters_cur_player_losses +
+                                                    real_last_turn_shutters_cur_player_ties) > 0 else -1
+
+        avg_shutter_size_wins_real_last_turn = np.average(real_last_turn_shutters_cur_player_wins) if len(real_last_turn_shutters_cur_player_wins) > 0 else -1
+        avg_shutter_size_losses_real_last_turn = np.average(real_last_turn_shutters_cur_player_losses) if len(real_last_turn_shutters_cur_player_losses) > 0 else -1
+
+        plays_with_shutter_fraction_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties) / total_plays if total_plays > 0 else 0
+
+        plays_with_shutter_fraction_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins) / total_plays_wins if total_plays_wins > 0 else 0
+        plays_with_shutter_fraction_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses) / total_plays_losses if total_plays_losses > 0 else 0
+
+
+        CI_shutter_size_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties) if len(
+                                                    real_last_turn_shutters_cur_player_wins +
+                                                    real_last_turn_shutters_cur_player_losses +
+                                                    real_last_turn_shutters_cur_player_ties) > 0 else [-1, -1]
+
+        CI_shutter_size_wins_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_wins) if len(real_last_turn_shutters_cur_player_wins) > 0 else [-1, -1]
+        CI_shutter_size_losses_real_last_turn = bootstrap_mean(real_last_turn_shutters_cur_player_losses) if len(real_last_turn_shutters_cur_player_losses) > 0 else [-1, -1]
+
+
+        plays_with_shutter_all_real_last_turn = len(real_last_turn_shutters_cur_player_wins +
+                                                     real_last_turn_shutters_cur_player_losses +
+                                                     real_last_turn_shutters_cur_player_ties)
+        plays_without_shutter_all_real_last_turn = total_plays - plays_with_shutter_all_real_last_turn
+        plays_with_shutter_sample_all_plays_real_last_turn =  np.concatenate((np.ones(plays_with_shutter_all_real_last_turn), np.zeros(plays_without_shutter_all_real_last_turn)))
+        CI_plays_with_shutter_all_real_last_turn = bootstrap_mean(plays_with_shutter_sample_all_plays_real_last_turn)
+
+
+        plays_with_shutter_wins_real_last_turn = len(real_last_turn_shutters_cur_player_wins)
+        plays_without_shutter_wins_real_last_turn = total_plays_wins - plays_with_shutter_wins_real_last_turn
+        plays_with_shutter_sample_wins_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_wins_real_last_turn), np.zeros(plays_without_shutter_wins_real_last_turn)))
+        CI_plays_with_shutter_wins_real_last_turn = bootstrap_mean(plays_with_shutter_sample_wins_plays_real_last_turn)
+
+        plays_with_shutter_losses_real_last_turn = len(real_last_turn_shutters_cur_player_losses)
+        plays_without_shutter_losses_real_last_turn = total_plays_losses - plays_with_shutter_losses_real_last_turn
+        plays_with_shutter_sample_losses_plays_real_last_turn = np.concatenate((np.ones(plays_with_shutter_losses_real_last_turn), np.zeros(plays_without_shutter_losses_real_last_turn)))
+        CI_plays_with_shutter_losses_real_last_turn = bootstrap_mean(plays_with_shutter_sample_losses_plays_real_last_turn)
+
+
+
+    result =    [no_games,
+                 no_wins,
+                 no_losses,
+                 no_ties,
+                 win_ratio,
+
+                 average_game_length,
+                 average_game_length_wins,
+                 average_game_length_losses,
+
+                 avg_shutter_size,
+                 avg_shutter_size_wins,
+                 avg_shutter_size_losses,
+
+                 plays_with_shutter_fraction,
+                 plays_with_shutter_fraction_wins,
+                 plays_with_shutter_fraction_losses,
+
+                 avg_shutter_size_real_last_turn,
+                 avg_shutter_size_wins_real_last_turn,
+                 avg_shutter_size_losses_real_last_turn,
+
+                 plays_with_shutter_fraction_real_last_turn,
+                 plays_with_shutter_fraction_wins_real_last_turn,
+                 plays_with_shutter_fraction_losses_real_last_turn,
+
+
+                 np.array2string(np.array(CI_wins_losses)),
+
+                 np.array2string(np.array(CI_game_length)),
+                 np.array2string(np.array(CI_game_length_wins)),
+                 np.array2string(np.array(CI_game_length_losses)),
+
+                 np.array2string(np.array(CI_shutter_size)),
+                 np.array2string(np.array(CI_shutter_size_wins)),
+                 np.array2string(np.array(CI_shutter_size_losses)),
+
+                 np.array2string(np.array(CI_plays_with_shutter_all)),
+                 np.array2string(np.array(CI_plays_with_shutter_wins)),
+                 np.array2string(np.array(CI_plays_with_shutter_losses)),
+
+                 np.array2string(np.array(CI_shutter_size_real_last_turn)),
+                 np.array2string(np.array(CI_shutter_size_wins_real_last_turn)),
+                 np.array2string(np.array(CI_shutter_size_losses_real_last_turn)),
+
+                 np.array2string(np.array(CI_plays_with_shutter_all_real_last_turn)),
+                 np.array2string(np.array(CI_plays_with_shutter_wins_real_last_turn)),
+                 np.array2string(np.array(CI_plays_with_shutter_losses_real_last_turn))
+    ]
+
+
+    return result
+
+
+
+
+def plot_all_statistics_results(opponents, num_games=1000):
 
     jobs = []
     for opponent_player in opponents:
         for board in PAPER_6X6_TRUNCATED_BOARDS:
             board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games, is_group_by))
+            jobs.append((num_games, opponent_player.name, board_name))
 
         for board in PAPER_FULL_6X6_BOARDS:
             board_name = board[1]
-            jobs.append((opponent_player, board_name, num_games, is_group_by))
+            jobs.append((num_games, opponent_player.name, board_name))
 
         board_name = EMPTY_BOARD[1]
-        jobs.append((opponent_player, board_name, num_games, is_group_by))
+        jobs.append((num_games, opponent_player.name, board_name))
 
     with Pool(len(jobs)) as pool:
-        pool.starmap(plot_statistics, jobs)
+    # with Pool(5) as pool:
+        pool.starmap(create_statistics_graphics, jobs)
         pool.close()
         pool.join()
 
@@ -515,7 +528,7 @@ def plot_all_statistics_results(opponents, num_games=1000, is_group_by=False):
     BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD]
     for board in BOARDS:
         board_name = board[1]
-        jobs_collage.append((board_name, opponents, is_group_by))
+        jobs_collage.append((board_name, opponents))
 
     with Pool(len(jobs_collage)) as pool:
         pool.starmap(call_collage_statistics_results, jobs_collage)
@@ -523,51 +536,36 @@ def plot_all_statistics_results(opponents, num_games=1000, is_group_by=False):
         pool.join()
 
 
-def plot_statistics(opponent_player, board_name, num_games, is_group_by=False):
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
-    create_statistics_graphics(path, num_games, opponent_player.name,  is_group_by=is_group_by)
 
+def create_statistics_graphics(num_games, opponent_name, board_name):
 
-def create_statistics_graphics(path, num_games, opponent_name, is_group_by = None):
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/"
 
     width = 40
     height = 10
     font_size = 27
 
-    data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
-    data = data.reindex(all_new_12_models[0] + old_models[0])
 
+    for variation in all_models_variations:
+        models = variation[0]
+        group_by = variation[1]
+        is_interchangeable_color = variation[2]
 
-    save_plays_with_shutter_results(path, num_games, width,height, font_size, opponent_name, data)
-    save_shutter_size(path, num_games, width,height, font_size, opponent_name, data)
-    save_save_game_len(path, num_games, width,height, font_size, opponent_name, data)
-    save_game_results(path, num_games, width,height, font_size, opponent_name, data)
-    save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data)
+        data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
+        data = data.reindex(models + old_models[0])
 
-    if is_group_by != None:
-
-        for variation in all_models_variations:
-            models = variation[0]
-            group_by = variation[1]
-            is_interchangable_color = variation[2]
-
-            data = pd.read_excel(f"{path}all models {num_games} games results.xlsx", index_col=0)
-            data = data.reindex(models + old_models[0])
-
-            save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
-            save_shutter_size(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
-            save_save_game_len(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
-            save_game_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
-            save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by, is_interchangable_color=is_interchangable_color)
-
-
+        save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+        save_shutter_size(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+        save_save_game_len(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+        save_game_results(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
+        save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=group_by, is_interchangeable_color=is_interchangeable_color)
 
 
 def save_plays_with_shutter_results(path, num_games, width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
 
     fig = plt.figure(constrained_layout=True)
-    fig.suptitle(f"Fraction of plays with shutter results - {opponent_name}", y=1.05)
+    fig.suptitle(f"Fraction of plays with shutter results - {opponent_name} - {group_by}", y=1.05)
 
     fig.set_size_inches(width, height)
     grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
@@ -591,8 +589,14 @@ def save_plays_with_shutter_results(path, num_games, width, height, font_size, o
         except:
             pass
 
+
     for index, ci in zip(ind + width, data["CI_plays_with_shutter_losses"][:-1]):
-        ax.plot((index, index), npstr2tuple(ci) , 'r_-', color='black',  linewidth=4, mew=4, ms=20)
+
+        try:
+            ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=20)
+        except:
+            pass
+
 
 
 
@@ -647,7 +651,7 @@ def save_shutter_size(path, num_games, width, height, font_size, opponent_name, 
     mpl.rcParams.update({'font.size': font_size})
 
     fig = plt.figure(constrained_layout=True)
-    fig.suptitle(f"Shutter sizes results  - {opponent_name}", y=1.05)
+    fig.suptitle(f"Shutter sizes results  - {opponent_name} - {group_by}", y=1.05)
 
     fig.set_size_inches(width, height)
     grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
@@ -720,7 +724,7 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name,
 
 
     fig = plt.figure(constrained_layout=True)
-    fig.suptitle(f"Games length results - {opponent_name}",  y=1.05)
+    fig.suptitle(f"Games length results - {opponent_name} - {group_by}",  y=1.05)
 
     fig.set_size_inches(width, height)
     grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
@@ -768,12 +772,12 @@ def save_save_game_len(path, num_games, width, height, font_size, opponent_name,
     plt.close('all')
 
 
-def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=None, is_interchangable_color=False):
+def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_name, data, group_by=None, is_interchangeable_color=False):
     mpl.rcParams.update({'font.size': font_size})
 
 
     fig = plt.figure(constrained_layout=True)
-    fig.suptitle(f"Win ratio ignoring ties - {opponent_name}", y=1.05)
+    fig.suptitle(f"Win ratio ignoring ties - {opponent_name} - {group_by}", y=1.05)
 
     fig.set_size_inches(width, height)
     grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20,1])
@@ -788,11 +792,21 @@ def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_n
     ax.set_ylim([0,1.1])
 
 
-    if is_interchangable_color:
+    if is_interchangeable_color:
         colors = ['blue', 'red'] * (len(data["no. wins"][:-4]) // 2) + ['grey'] * 4
     else:
+
         if len(data["no. wins"]) < 16:
-            colors = ['blue'] * len(data["no. wins"][:-4]) + ['grey'] * 4
+
+            if group_by == "mcts_25_models":
+                coloring = 'blue'
+            elif group_by == "mcts_50_models":
+                coloring = 'red'
+            else:
+                coloring = 'green'
+
+            colors = [coloring] * len(data["no. wins"][:-4]) + ['grey'] * 4
+
         else:
             colors = ['blue'] * 4 + ['red'] * 4 + ['green'] * 4 + ['grey'] * 4
 
@@ -802,6 +816,7 @@ def save_win_ratio_no_ties(path, num_games, width, height, font_size, opponent_n
 
     for index, ci in zip(ind, data["CI_wins_losses"]):
         ax.plot((index, index), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=40)
+
 
     ax.set_xticks(ind)
     # ax.set_xticklabels(data.index)
@@ -834,7 +849,7 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name, 
 
 
     fig = plt.figure(constrained_layout=True)
-    fig.suptitle(f"Games results - {opponent_name}", y=1.05)
+    fig.suptitle(f"Games results - {opponent_name} - {group_by}", y=1.05)
 
     fig.set_size_inches(width, height)
     grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20,1])
@@ -877,7 +892,7 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name, 
 
 
 
-def call_collage_statistics_results(board_name, opponents, is_group_by=None):
+def call_collage_statistics_results(board_name, opponents):
 
     opponents_names = [opp.name for opp in opponents]
 
@@ -886,66 +901,35 @@ def call_collage_statistics_results(board_name, opponents, is_group_by=None):
     if not os.path.exists(path_collage):
         os.makedirs(path_collage)
 
-    if is_group_by == None:
+    for variation in all_models_variations:
+        models = variation[0]
+        group_by = variation[1]
 
-        listofimages1 = [f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results.png"
-                        for opponent_name in opponents_names]
+        listofimages1 = [
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results {group_by}.png"
+            for opponent_name in opponents_names]
 
         listofimages2 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games lengths results.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games lengths results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages3 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games results.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages4 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages5 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties {group_by}.png"
             for opponent_name in opponents_names]
 
-
-        create_collages_boards(listofimages1, "Fraction of plays with shutter results", path_collage)
-        create_collages_boards(listofimages2, "Games lengths results", path_collage)
-        create_collages_boards(listofimages3, "Games results", path_collage)
-        create_collages_boards(listofimages4, "Shutter sizes results", path_collage)
-        create_collages_boards(listofimages5, "Win ratio ignoring ties", path_collage)
-
-
-    if is_group_by != None:
-
-        for variation in all_models_variations:
-            models = variation[0]
-            group_by = variation[1]
-
-            listofimages1 = [
-                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results {group_by}.png"
-                for opponent_name in opponents_names]
-
-            listofimages2 = [
-                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games lengths results {group_by}.png"
-                for opponent_name in opponents_names]
-
-            listofimages3 = [
-                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games results {group_by}.png"
-                for opponent_name in opponents_names]
-
-            listofimages4 = [
-                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results {group_by}.png"
-                for opponent_name in opponents_names]
-
-            listofimages5 = [
-                f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties {group_by}.png"
-                for opponent_name in opponents_names]
-
-            create_collages_boards(listofimages1, f"Fraction of plays with shutter results {group_by}", path_collage, group_by)
-            create_collages_boards(listofimages2, f"Games lengths results {group_by}", path_collage, group_by)
-            create_collages_boards(listofimages3, f"Games results {group_by}", path_collage, group_by)
-            create_collages_boards(listofimages4, f"Shutter sizes results {group_by}", path_collage, group_by)
-            create_collages_boards(listofimages5, f"Win ratio ignoring ties {group_by}", path_collage, group_by)
+        create_collages_boards(listofimages1, f"Fraction of plays with shutter results {group_by}", path_collage, group_by)
+        create_collages_boards(listofimages2, f"Games lengths results {group_by}", path_collage, group_by)
+        create_collages_boards(listofimages3, f"Games results {group_by}", path_collage, group_by)
+        create_collages_boards(listofimages4, f"Shutter sizes results {group_by}", path_collage, group_by)
+        create_collages_boards(listofimages5, f"Win ratio ignoring ties {group_by}", path_collage, group_by)
 
 
 
@@ -1010,7 +994,7 @@ def save_states_from_history_empty_board(opponent, players_list, num_games):
         chosen_games = np.random.choice(num_games, size=3)
 
         for chosen_game in chosen_games:
-            _, _, _, _, game_history = game_stats[chosen_game]
+            _, _, _, _, _, game_history = game_stats[chosen_game]
 
             board_state = copy.deepcopy(EMPTY_BOARD[0])
             print(board_state, "\n")
@@ -1220,13 +1204,11 @@ if __name__ == '__main__':
 
     opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4, opponent_player_5]
 
-    is_group_by = True
 
     set_start_method("spawn")
 
-    players_list = players_list[:1]
-    opponents = [opponent_player_3]
+    num_games = 1000
+    # compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games)
 
-    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1)
-    plot_all_statistics_results(opponents, num_games=1000, is_group_by=is_group_by)
+    plot_all_statistics_results(opponents, num_games=num_games)
     # save_states_from_history_empty_board(opponent_player_1, players_list, 1000)

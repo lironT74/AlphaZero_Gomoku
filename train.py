@@ -19,7 +19,7 @@ import copy
 from Game_boards_and_aux import *
 
 # MODEL_NAME="pt_6_6_4_p4_v34"
-MODEL_NAME="pt_10_10_5_p4_v0_5"
+MODEL_NAME="pt_10_10_5_p4_v0_8"
 
 INPUT_PLANES_NUM = 4
 
@@ -71,8 +71,7 @@ class TrainPipeline():
         self.c_puct = 5
         self.n_playout = 100  # num of simulations for each move
         self.shutter_threshold_availables = 0
-        self.full_boards_selfplay = True
-
+        self.full_boards_selfplay = False
 
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
