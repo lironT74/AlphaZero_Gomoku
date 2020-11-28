@@ -176,6 +176,9 @@ class PolicyValueNet():
 
         cur_playout_player = kwargs.get("cur_playout_player", -1)
 
+        if cur_playout_player != -1:
+            print(f"NOTICE: player {cur_playout_player} about to be limited to {self.shutter_threshold_availables} shutter size")
+
 
         if cur_playout_player == -1:
             legal_positions = board.availables

@@ -2,7 +2,10 @@ from multiprocessing import Pool
 from Game_boards_and_aux import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
+
 import matplotlib as mpl
+mpl.use('Agg')
+
 import matplotlib.pyplot as plt
 from policy_value_net_pytorch import PolicyValueNet
 import io
@@ -150,7 +153,9 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
 
     states_to_keep = []
     #remove beginning/ending states:
-    
+
+    counter_moves_num = {}
+
     for state_num, (board_state, last_move_p1, last_move_p2, start_player) in enumerate(states):
 
         unique, counts = np.unique(board_state, return_counts=True)
@@ -161,23 +166,23 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
 
         if less_or_more == 1:
 
-            if moves_X >= X_threshold and moves_O >=O_threshold:
-                states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
+            # if moves_X >= X_threshold and moves_O >=O_threshold:
 
+            if moves_X > X_threshold or moves_O > O_threshold:
+                states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
 
         elif less_or_more == -1:
 
-            if moves_X < X_threshold or moves_O < O_threshold:
+            if moves_X <= X_threshold and moves_O <= O_threshold:
                 states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
 
 
+        if (moves_X, moves_O) not in counter_moves_num:
+            counter_moves_num[(moves_X, moves_O)] = 1
+        else:
+            counter_moves_num[(moves_X, moves_O)] += 1
 
-    states = states_to_keep
 
-
-
-    #     counter_moves_num[(moves_X, moves_O)] += 1
-    #
     # counter_moves_num_by_value = Counter({v: [] for v in counter_moves_num.values()})
     #
     # for k, v in counter_moves_num.items():
@@ -189,9 +194,12 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
     #     print(f"{len(v)} counts appeared {k} times:\n{v}")
     #
     # print(num_states)
-    # print(sum(counter_moves_num_by_value.keys()))
 
 
+
+    states = states_to_keep
+
+    print(f"there are {len(states)} states! ")
 
     for state_num, (board_state, last_move_p1, last_move_p2, start_player) in enumerate(states):
 
@@ -242,13 +250,16 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
     max_distance = max([max([distance for distance in distances_base_models.values()]),
                         max([max(distances_lists[key]) for key in distances_lists.keys()])])
 
-    if X_threshold == 0 and O_threshold == 0:
-        opening_str = ""
-    else:
-        if less_or_more == 1:
-            opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
-        elif less_or_more == -1:
-            opening_str = f"_less_x_{X_threshold}_o_{O_threshold}"
+    # if X_threshold == 0 and O_threshold == 0:
+    #     opening_str = ""
+    # else:
+    #     if less_or_more == 1:
+    #         opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
+    #     elif less_or_more == -1:
+    #         opening_str = f"_less_or_equal_x_{X_threshold}_o_{O_threshold}"
+
+    opening_str = f"_more_x_{X_threshold}_o_{O_threshold}"
+
 
     outfile = open(f"{path}sampled states_distances_{opening_str}", 'wb')
     pickle.dump(distances_lists, outfile)
@@ -390,13 +401,18 @@ def make_plot_heuristics_comparison_sampled_states(path, model, sample_opponent_
     base_path = f"{path}base_model/"
     path = f"{path}{model_name}/"
 
-    if X_threshold == 0 and O_threshold == 0:
-        opening_str = ""
-    else:
-        if less_or_more == 1:
-            opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
-        elif less_or_more == -1:
-            opening_str = f"_less_x_{X_threshold}_o_{O_threshold}"
+
+    # if X_threshold == 0 and O_threshold == 0:
+    #     opening_str = ""
+    # else:
+    #     if less_or_more == 1:
+    #         opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
+    #     elif less_or_more == -1:
+    #         opening_str = f"_less_or_equal_x_{X_threshold}_o_{O_threshold}"
+
+    opening_str = f"_more_x_{X_threshold}_o_{O_threshold}"
+
+
 
     distances_lists = pickle.load(open(f"{path}sampled states_distances_{opening_str}", 'rb'))
     distances_base_models = pickle.load(open(f"{base_path}sampled states_distances_{opening_str}", 'rb'))
@@ -661,7 +677,7 @@ def create_collages_boards_2_cols(listofimages, fig_name, path):
 
         y += thumbnail_height
 
-    new_im.save(path + f"{fig_name}_2_cols.png")
+    new_im.save(path + f"{fig_name}.png")
 
 
 def call_collage_compare_to_heuristics(opponent_weight, cutoff_threshold, models, open_path_threshold,  X_threshold = -4, O_threshold = -7, less_or_more = 1):
@@ -670,13 +686,16 @@ def call_collage_compare_to_heuristics(opponent_weight, cutoff_threshold, models
     if abs(X_threshold - O_threshold) > 1:
         raise Exception(f"There cant be {X_threshold} X's and {O_threshold} O's")
 
-    if X_threshold == 0 and O_threshold == 0:
-        opening_str = ""
-    else:
-        if less_or_more == 1:
-            opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
-        elif less_or_more == -1:
-            opening_str = f"_less_x_{X_threshold}_o_{O_threshold}"
+
+    # if X_threshold == 0 and O_threshold == 0:
+    #     opening_str = ""
+    # else:
+    #     if less_or_more == 1:
+    #         opening_str = f"_more_or_equal_x_{X_threshold}_o_{O_threshold}"
+    #     elif less_or_more == -1:
+    #         opening_str = f"_less_or_equal_x_{X_threshold}_o_{O_threshold}"
+
+    opening_str = f"_more_x_{X_threshold}_o_{O_threshold}"
 
 
     if cutoff_threshold < 1:
@@ -686,12 +705,11 @@ def call_collage_compare_to_heuristics(opponent_weight, cutoff_threshold, models
         path = f"/home/lirontyomkin/AlphaZero_Gomoku/models to heuristics comparisons/shutter_models/open_path_threshold_{open_path_threshold}/o_weight_{opponent_weight}/keep_{cutoff_threshold}_squares/"
 
 
-
-    listofimages_empty = [f"{path}{model[1]}/empty board.png" for model in models]
-    listofimages_full_1 = [f"{path}{model[1]}/board 1 full.png" for model in models]
-    listofimages_full_2 = [f"{path}{model[1]}/board 2 full.png" for model in models]
-    listofimages_truncated_1 = [f"{path}{model[1]}/board 1 truncated.png" for model in models]
-    listofimages_truncated_2 = [f"{path}{model[1]}/board 2 truncated.png" for model in models]
+    # listofimages_empty = [f"{path}{model[1]}/empty board.png" for model in models]
+    # listofimages_full_1 = [f"{path}{model[1]}/board 1 full.png" for model in models]
+    # listofimages_full_2 = [f"{path}{model[1]}/board 2 full.png" for model in models]
+    # listofimages_truncated_1 = [f"{path}{model[1]}/board 1 truncated.png" for model in models]
+    # listofimages_truncated_2 = [f"{path}{model[1]}/board 2 truncated.png" for model in models]
     listofimages_sampled = [f"{path}{model[1]}/sampled_states_{opening_str}.png" for model in models]
 
 
@@ -702,11 +720,11 @@ def call_collage_compare_to_heuristics(opponent_weight, cutoff_threshold, models
     # create_collages_boards(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
     # create_collages_boards(listofimages=listofimages_sampled, fig_name=f"sampled_states_{opening_str}", path=path)
 
-    create_collages_boards_2_cols(listofimages=listofimages_empty, fig_name="empty board all models", path=path)
-    create_collages_boards_2_cols(listofimages=listofimages_full_1, fig_name="board 1 full all models", path=path)
-    create_collages_boards_2_cols(listofimages=listofimages_full_2, fig_name="board 2 full all models", path=path)
-    create_collages_boards_2_cols(listofimages=listofimages_truncated_1, fig_name="board 1 truncated all models", path=path)
-    create_collages_boards_2_cols(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
+    # create_collages_boards_2_cols(listofimages=listofimages_empty, fig_name="empty board all models", path=path)
+    # create_collages_boards_2_cols(listofimages=listofimages_full_1, fig_name="board 1 full all models", path=path)
+    # create_collages_boards_2_cols(listofimages=listofimages_full_2, fig_name="board 2 full all models", path=path)
+    # create_collages_boards_2_cols(listofimages=listofimages_truncated_1, fig_name="board 1 truncated all models", path=path)
+    # create_collages_boards_2_cols(listofimages=listofimages_truncated_2, fig_name="board 2 truncated all models", path=path)
     create_collages_boards_2_cols(listofimages=listofimages_sampled, fig_name=f"sampled_states_{opening_str}", path=path)
 
 
@@ -957,7 +975,6 @@ def run_heuristics_for_threshold_and_weight_regular_boards(opponent_weight, cuto
 
         y_top_lim = 1.1 * y_top_lim
 
-        # mpl.use('Agg')
 
         for model in models:
             make_plot_heuristics_comparison(path=path,
@@ -1064,31 +1081,32 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 
 
     less_or_more = 1
-    X_threshold = 5
-    O_threshold = 5
+    X_threshold = 3
+    O_threshold = 3
+
 
     for open_path_threshold in open_path_thresholds:
         for cutoff_threshold in cutoff_thresholds:
             for opponent_weight in o_weights:
                 jobs.append((opponent_weight, cutoff_threshold, models, open_path_threshold, X_threshold, O_threshold, less_or_more))
 
-    
-    #SAMPLED BOARDS
-    pool_number = min(16, len(open_path_thresholds * len(cutoff_thresholds) * len(o_weights)))
-    with Pool(pool_number) as pool:
-        print(f"Now Sampled Boards. Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
-        pool.starmap(run_heuristics_for_threshold_and_weight_sampled_boards, jobs)
-        pool.close()
-        pool.join()
-
 
     # #REGULAR BOARDS
-    # pool_number = min(20, len(open_path_thresholds*len(cutoff_thresholds)*len(o_weights)))
+    # pool_number = min(15, len(open_path_thresholds*len(cutoff_thresholds)*len(o_weights)))
     # with Pool(pool_number) as pool:
     #     print(f"Now regular boards. Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
     #     pool.starmap(run_heuristics_for_threshold_and_weight_regular_boards, jobs)
     #     pool.close()
     #     pool.join()
+
+
+    #SAMPLED BOARDS
+    pool_number = min(30, len(open_path_thresholds * len(cutoff_thresholds) * len(o_weights)))
+    with Pool(pool_number) as pool:
+        print(f"Now Sampled Boards. Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
+        pool.starmap(run_heuristics_for_threshold_and_weight_sampled_boards, jobs)
+        pool.close()
+        pool.join()
 
 
     #COLLAGE MAKING

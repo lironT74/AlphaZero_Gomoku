@@ -53,14 +53,13 @@ all_models_variations = [all_new_12_models, mcts_25_models, mcts_50_models, mcts
 
 
 
-def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000):
+def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000, sub_dir = "statistics"):
 
 
     print(f"Playing: ")
 
     jobs = []
     for opponent_player in opponents:
-
 
         for board in PAPER_6X6_TRUNCATED_BOARDS:
 
@@ -69,7 +68,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
             for cur_player in players_list:
                 jobs.append((width, height, n, board_state, board_name, cur_player,
                              opponent_player, p1, p2, p1,
-                             p2, 2, num_games))
+                             p2, 2, num_games, sub_dir))
 
         for board in PAPER_FULL_6X6_BOARDS:
 
@@ -78,17 +77,17 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
             for cur_player in players_list:
                 jobs.append((width, height, n, board_state, board_name, cur_player,
                              opponent_player, p1, p2, p1,
-                             p2, 2, num_games))
+                             p2, 2, num_games, sub_dir))
 
         board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
 
         for cur_player in players_list:
             jobs.append((width, height, n, board_state, board_name, cur_player,
                          opponent_player, p1, p2, p1,
-                         p2, 1, num_games))
+                         p2, 1, num_games, sub_dir))
 
 
-    with Pool(25) as pool:
+    with Pool(30) as pool:
         print(f"Using {pool._processes} workers. There are {len(jobs)} X {num_games} games to play: \n")
         pool.starmap(save_games_statistics, jobs)
         pool.close()
@@ -210,7 +209,7 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                           opponent_player, last_move_p1, last_move_p2, correct_move_p1,
-                          correct_move_p2, start_player, num_games):
+                          correct_move_p2, start_player, num_games, sub_dir = "statistics"):
 
     i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state)
     game1 = Game(board1)
@@ -219,7 +218,7 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
     all_games_history = []
 
 
-    if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
                       f"{cur_player.name}/full_{num_games}_games_stats"):
         print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name}")
         return
@@ -502,20 +501,20 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
 
 
 
-def plot_all_statistics_results(opponents, num_games=1000):
+def plot_all_statistics_results(opponents, num_games=1000, sub_dir="statistics"):
 
     jobs = []
     for opponent_player in opponents:
         for board in PAPER_6X6_TRUNCATED_BOARDS:
             board_name = board[1]
-            jobs.append((num_games, opponent_player.name, board_name))
+            jobs.append((num_games, opponent_player.name, board_name, sub_dir))
 
         for board in PAPER_FULL_6X6_BOARDS:
             board_name = board[1]
-            jobs.append((num_games, opponent_player.name, board_name))
+            jobs.append((num_games, opponent_player.name, board_name, sub_dir))
 
         board_name = EMPTY_BOARD[1]
-        jobs.append((num_games, opponent_player.name, board_name))
+        jobs.append((num_games, opponent_player.name, board_name, sub_dir))
 
     with Pool(len(jobs)) as pool:
     # with Pool(5) as pool:
@@ -528,7 +527,7 @@ def plot_all_statistics_results(opponents, num_games=1000):
     BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD]
     for board in BOARDS:
         board_name = board[1]
-        jobs_collage.append((board_name, opponents))
+        jobs_collage.append((board_name, opponents, sub_dir))
 
     with Pool(len(jobs_collage)) as pool:
         pool.starmap(call_collage_statistics_results, jobs_collage)
@@ -537,9 +536,9 @@ def plot_all_statistics_results(opponents, num_games=1000):
 
 
 
-def create_statistics_graphics(num_games, opponent_name, board_name):
+def create_statistics_graphics(num_games, opponent_name, board_name, sub_dir = "statistics"):
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/"
 
     width = 40
     height = 10
@@ -892,11 +891,11 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name, 
 
 
 
-def call_collage_statistics_results(board_name, opponents):
+def call_collage_statistics_results(board_name, opponents, sub_dir="statistics"):
 
     opponents_names = [opp.name for opp in opponents]
 
-    path_collage = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/{board_name} summery/"
+    path_collage = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/{board_name} summery/"
 
     if not os.path.exists(path_collage):
         os.makedirs(path_collage)
@@ -906,23 +905,23 @@ def call_collage_statistics_results(board_name, opponents):
         group_by = variation[1]
 
         listofimages1 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Fraction of plays with shutter results {group_by}.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/Fraction of plays with shutter results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages2 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games lengths results {group_by}.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/Games lengths results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages3 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Games results {group_by}.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/Games results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages4 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Shutter sizes results {group_by}.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/Shutter sizes results {group_by}.png"
             for opponent_name in opponents_names]
 
         listofimages5 = [
-            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_name}/{board_name}/Win ratio ignoring ties {group_by}.png"
+            f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/Win ratio ignoring ties {group_by}.png"
             for opponent_name in opponents_names]
 
         create_collages_boards(listofimages1, f"Fraction of plays with shutter results {group_by}", path_collage, group_by)
@@ -978,9 +977,9 @@ def create_collages_boards(listofimages, fig_name, path, group_by=None):
 
 
 
-def save_states_from_history_empty_board(opponent, players_list, num_games):
+def save_states_from_history_empty_board(opponent, players_list, num_games, sub_dir = "statistics"):
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent.name}/empty board/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent.name}/empty board/"
     start_player = 1
 
     states = []
@@ -1208,7 +1207,9 @@ if __name__ == '__main__':
     set_start_method("spawn")
 
     num_games = 1000
-    # compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games)
+    sub_dir = "statistics_all_shutter_0"
 
-    plot_all_statistics_results(opponents, num_games=num_games)
-    # save_states_from_history_empty_board(opponent_player_1, players_list, 1000)
+    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games, sub_dir = sub_dir)
+    plot_all_statistics_results(opponents, num_games=num_games, sub_dir = sub_dir)
+
+    save_states_from_history_empty_board(opponent_player_1, players_list, 1000, sub_dir = sub_dir)

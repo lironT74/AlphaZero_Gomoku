@@ -1513,15 +1513,22 @@ class Game(object):
 
         start_player = kwargs.get('start_player', 2)
 
+
+
+
+
         self.board.init_board(initial_state, start_player=start_player)
         p1, p2 = self.board.players
         states, mcts_probs, current_players = [], [], []
+
+
 
         while True:
             move, move_probs = player.get_action(self.board,
                                                  temp=temp,
                                                  return_prob=1,
                                                  cur_playout_player=self.board.current_player)
+
 
             # store the data
             states.append(self.board.current_state(is_last_move))

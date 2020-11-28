@@ -68,15 +68,19 @@ class TrainPipeline():
 
         self.input_plains_num = INPUT_PLANES_NUM
 
+
         self.c_puct = 5
         self.n_playout = 100  # num of simulations for each move
         self.shutter_threshold_availables = 0
         self.full_boards_selfplay = False
 
+
         # num of simulations used for the pure mcts, which is used as
         # the opponent to evaluate the trained policy
         self.pure_mcts_playout_num = 200
         self.pure_mcts_playout_num_step = 200
+
+
 
 
         if init_model:
