@@ -87,7 +87,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
                          p2, 1, num_games, sub_dir))
 
 
-    with Pool(30) as pool:
+    with Pool(20) as pool:
         print(f"Using {pool._processes} workers. There are {len(jobs)} X {num_games} games to play: \n")
         pool.starmap(save_games_statistics, jobs)
         pool.close()
@@ -101,12 +101,12 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
     for opponent_player in opponents:
         for board in PAPER_6X6_TRUNCATED_BOARDS:
 
-            jobs.append((players_list, opponent_player, board, num_games))
+            jobs.append((players_list, opponent_player, board, num_games, sub_dir))
 
         for board in PAPER_FULL_6X6_BOARDS:
-            jobs.append((players_list, opponent_player, board, num_games))
+            jobs.append((players_list, opponent_player, board, num_games, sub_dir))
 
-        jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games))
+        jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games, sub_dir))
 
 
     with Pool() as pool:
@@ -118,12 +118,12 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
 
 
 
-def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
+def statistics_of_games_to_df(players_list, opponent_player, board, num_games, sub_dir):
 
 
     board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
 
     if os.path.exists(f"{path}all models {num_games} games results.xlsx"):
         print(f"already saved {opponent_player.name} on {board_name} df")
@@ -195,7 +195,7 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
 
     for cur_player in players_list:
 
-        result = get_statistics_from_saved_results(board_name, cur_player, opponent_player, num_games)
+        result = get_statistics_from_saved_results(board_name, cur_player, opponent_player, num_games, sub_dir = sub_dir)
 
         for i, col in enumerate(columns):
             result_df.loc[cur_player.name, col] = result[i]
@@ -209,20 +209,18 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games):
 
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                           opponent_player, last_move_p1, last_move_p2, correct_move_p1,
-                          correct_move_p2, start_player, num_games, sub_dir = "statistics"):
+                          correct_move_p2, start_player, num_games, sub_dir):
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
+    if os.path.exists(f"{path}/{cur_player.name}/full_{num_games}_games_stats"):
+        print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name}")
+        return
+
 
     i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state)
     game1 = Game(board1)
 
-
     all_games_history = []
-
-
-    if os.path.exists(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
-                      f"{cur_player.name}/full_{num_games}_games_stats"):
-        print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name}")
-        return
-
 
     print(f"Starting {num_games} games: {cur_player.name} vs {opponent_player.name} on {board_name} {cur_time()}")
 
@@ -247,7 +245,9 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
         all_games_history.append((start_player, winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history))
 
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+    print(f"Done {num_games} games: {cur_player.name} vs {opponent_player.name} on {board_name} {cur_time()}")
+
+    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
 
     if not os.path.exists(f"{path}{cur_player.name}/"):
         os.makedirs(f"{path}{cur_player.name}/")
@@ -258,7 +258,7 @@ def save_games_statistics(width, height, n, board_state, board_name, cur_player,
 
 
 
-def get_statistics_from_saved_results(board_name, cur_player, opponent_player, num_games):
+def get_statistics_from_saved_results(board_name, cur_player, opponent_player, num_games, sub_dir):
 
     wins = []
 
@@ -280,7 +280,7 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
 
 
     games_history = pickle.load(
-        open(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {opponent_player.name}/{board_name}/"
+        open(f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
              f"{cur_player.name}/full_{num_games}_games_stats", 'rb'))
 
 
@@ -501,7 +501,7 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
 
 
 
-def plot_all_statistics_results(opponents, num_games=1000, sub_dir="statistics"):
+def plot_all_statistics_results(opponents, num_games, sub_dir):
 
     jobs = []
     for opponent_player in opponents:
@@ -536,7 +536,7 @@ def plot_all_statistics_results(opponents, num_games=1000, sub_dir="statistics")
 
 
 
-def create_statistics_graphics(num_games, opponent_name, board_name, sub_dir = "statistics"):
+def create_statistics_graphics(num_games, opponent_name, board_name, sub_dir):
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_name}/{board_name}/"
 
@@ -891,7 +891,7 @@ def save_game_results(path, num_games, width, height, font_size, opponent_name, 
 
 
 
-def call_collage_statistics_results(board_name, opponents, sub_dir="statistics"):
+def call_collage_statistics_results(board_name, opponents, sub_dir):
 
     opponents_names = [opp.name for opp in opponents]
 
@@ -976,8 +976,7 @@ def create_collages_boards(listofimages, fig_name, path, group_by=None):
 
 
 
-
-def save_states_from_history_empty_board(opponent, players_list, num_games, sub_dir = "statistics"):
+def save_states_from_history_empty_board(opponent, players_list, num_games, sub_dir):
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent.name}/empty board/"
     start_player = 1
@@ -1083,90 +1082,91 @@ if __name__ == '__main__':
            'v34_5000', 4, True, False)
 
 
+    limit_shutter = 0
 
-
-    policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2])
+    policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2], shutter_threshold_availables=limit_shutter)
     player_v7 = MCTSPlayer(policy_v7.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v7[3],
                            name=v7[1], input_plains_num=v7[2], is_random_last_turn=v7[4])
-    policy_v9 = PolicyValueNet(6, 6, model_file=v9[0], input_plains_num=v9[2])
+    policy_v9 = PolicyValueNet(6, 6, model_file=v9[0], input_plains_num=v9[2], shutter_threshold_availables=limit_shutter)
     player_v9 = MCTSPlayer(policy_v9.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v9[3],
                                name=v9[1], input_plains_num=v9[2], is_random_last_turn=v9[4])
-    policy_v10 = PolicyValueNet(6, 6, model_file=v10[0], input_plains_num=v10[2])
+    policy_v10 = PolicyValueNet(6, 6, model_file=v10[0], input_plains_num=v10[2], shutter_threshold_availables=limit_shutter)
     player_v10 = MCTSPlayer(policy_v10.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10[3],
                                name=v10[1], input_plains_num=v10[2], is_random_last_turn=v10[4])
-    policy_v10_random = PolicyValueNet(6, 6, model_file=v10_random[0], input_plains_num=v10_random[2])
+    policy_v10_random = PolicyValueNet(6, 6, model_file=v10_random[0], input_plains_num=v10_random[2], shutter_threshold_availables=limit_shutter)
     player_v10_random = MCTSPlayer(policy_v10_random.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_random[3],
                                name=v10_random[1], input_plains_num=v10_random[2], is_random_last_turn=v10_random[4])
 
-    policy_v12 = PolicyValueNet(6, 6, model_file=v12[0], input_plains_num=v12[2])
-    player_v12 = MCTSPlayer(policy_v12.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v12[3],
-                            name=v12[1], input_plains_num=v12[2], is_random_last_turn=v12[4])
+    # policy_v12 = PolicyValueNet(6, 6, model_file=v12[0], input_plains_num=v12[2])
+    # player_v12 = MCTSPlayer(policy_v12.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v12[3],
+    #                         name=v12[1], input_plains_num=v12[2], is_random_last_turn=v12[4])
+    #
+    # policy_v14 = PolicyValueNet(6, 6, model_file=v14[0], input_plains_num=v14[2])
+    # player_v14 = MCTSPlayer(policy_v14.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v14[3],
+    #                         name=v14[1], input_plains_num=v14[2], is_random_last_turn=v14[4])
+    #
+    # policy_v16 = PolicyValueNet(6, 6, model_file=v16[0], input_plains_num=v16[2])
+    # player_v16 = MCTSPlayer(policy_v16.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v16[3],
+    #                         name=v16[1], input_plains_num=v16[2], is_random_last_turn=v16[4])
+    #
+    # policy_v18 = PolicyValueNet(6, 6, model_file=v18[0], input_plains_num=v18[2])
+    # player_v18 = MCTSPlayer(policy_v18.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v18[3],
+    #                         name=v18[1], input_plains_num=v18[2], is_random_last_turn=v18[4])
+    #
+    # policy_v20 = PolicyValueNet(6, 6, model_file=v20[0], input_plains_num=v20[2])
+    # player_v20 = MCTSPlayer(policy_v20.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v20[3],
+    #                         name=v20[1], input_plains_num=v20[2], is_random_last_turn=v20[4])
+    #
+    # policy_v22 = PolicyValueNet(6, 6, model_file=v22[0], input_plains_num=v22[2])
+    # player_v22 = MCTSPlayer(policy_v22.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v22[3],
+    #                         name=v22[1], input_plains_num=v22[2], is_random_last_turn=v22[4])
 
-    policy_v14 = PolicyValueNet(6, 6, model_file=v14[0], input_plains_num=v14[2])
-    player_v14 = MCTSPlayer(policy_v14.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v14[3],
-                            name=v14[1], input_plains_num=v14[2], is_random_last_turn=v14[4])
 
-    policy_v16 = PolicyValueNet(6, 6, model_file=v16[0], input_plains_num=v16[2])
-    player_v16 = MCTSPlayer(policy_v16.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v16[3],
-                            name=v16[1], input_plains_num=v16[2], is_random_last_turn=v16[4])
-
-    policy_v18 = PolicyValueNet(6, 6, model_file=v18[0], input_plains_num=v18[2])
-    player_v18 = MCTSPlayer(policy_v18.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v18[3],
-                            name=v18[1], input_plains_num=v18[2], is_random_last_turn=v18[4])
-
-    policy_v20 = PolicyValueNet(6, 6, model_file=v20[0], input_plains_num=v20[2])
-    player_v20 = MCTSPlayer(policy_v20.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v20[3],
-                            name=v20[1], input_plains_num=v20[2], is_random_last_turn=v20[4])
-
-    policy_v22 = PolicyValueNet(6, 6, model_file=v22[0], input_plains_num=v22[2])
-    player_v22 = MCTSPlayer(policy_v22.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v22[3],
-                            name=v22[1], input_plains_num=v22[2], is_random_last_turn=v22[4])
-
-    policy_v23 = PolicyValueNet(6, 6, model_file=v23[0], input_plains_num=v23[2])
+    policy_v23 = PolicyValueNet(6, 6, model_file=v23[0], input_plains_num=v23[2], shutter_threshold_availables=limit_shutter)
     player_v23 = MCTSPlayer(policy_v23.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v23[3],
                             name=v23[1], input_plains_num=v23[2], is_random_last_turn=v23[4])
 
-    policy_v24 = PolicyValueNet(6, 6, model_file=v24[0], input_plains_num=v24[2])
+    policy_v24 = PolicyValueNet(6, 6, model_file=v24[0], input_plains_num=v24[2], shutter_threshold_availables=limit_shutter)
     player_v24 = MCTSPlayer(policy_v24.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v24[3],
                             name=v24[1], input_plains_num=v24[2], is_random_last_turn=v24[4])
 
-    policy_v25 = PolicyValueNet(6, 6, model_file=v25[0], input_plains_num=v25[2])
+    policy_v25 = PolicyValueNet(6, 6, model_file=v25[0], input_plains_num=v25[2], shutter_threshold_availables=limit_shutter)
     player_v25 = MCTSPlayer(policy_v25.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v25[3],
                             name=v25[1], input_plains_num=v25[2], is_random_last_turn=v25[4])
 
-    policy_v26 = PolicyValueNet(6, 6, model_file=v26[0], input_plains_num=v26[2])
+    policy_v26 = PolicyValueNet(6, 6, model_file=v26[0], input_plains_num=v26[2], shutter_threshold_availables=limit_shutter)
     player_v26 = MCTSPlayer(policy_v26.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v26[3],
                             name=v26[1], input_plains_num=v26[2], is_random_last_turn=v26[4])
 
-    policy_v27 = PolicyValueNet(6, 6, model_file=v27[0], input_plains_num=v27[2])
+    policy_v27 = PolicyValueNet(6, 6, model_file=v27[0], input_plains_num=v27[2], shutter_threshold_availables=limit_shutter)
     player_v27 = MCTSPlayer(policy_v27.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v27[3],
                             name=v27[1], input_plains_num=v27[2], is_random_last_turn=v27[4])
 
-    policy_v28 = PolicyValueNet(6, 6, model_file=v28[0], input_plains_num=v28[2])
+    policy_v28 = PolicyValueNet(6, 6, model_file=v28[0], input_plains_num=v28[2], shutter_threshold_availables=limit_shutter)
     player_v28 = MCTSPlayer(policy_v28.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v28[3],
                             name=v28[1], input_plains_num=v28[2], is_random_last_turn=v28[4])
 
-    policy_v29 = PolicyValueNet(6, 6, model_file=v29[0], input_plains_num=v29[2])
+    policy_v29 = PolicyValueNet(6, 6, model_file=v29[0], input_plains_num=v29[2], shutter_threshold_availables=limit_shutter)
     player_v29 = MCTSPlayer(policy_v29.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v29[3],
                             name=v29[1], input_plains_num=v29[2], is_random_last_turn=v29[4])
 
-    policy_v30 = PolicyValueNet(6, 6, model_file=v30[0], input_plains_num=v30[2])
+    policy_v30 = PolicyValueNet(6, 6, model_file=v30[0], input_plains_num=v30[2], shutter_threshold_availables=limit_shutter)
     player_v30 = MCTSPlayer(policy_v30.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v30[3],
                             name=v30[1], input_plains_num=v30[2], is_random_last_turn=v30[4])
 
-    policy_v31 = PolicyValueNet(6, 6, model_file=v31[0], input_plains_num=v31[2])
+    policy_v31 = PolicyValueNet(6, 6, model_file=v31[0], input_plains_num=v31[2], shutter_threshold_availables=limit_shutter)
     player_v31 = MCTSPlayer(policy_v31.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v31[3],
                             name=v31[1], input_plains_num=v31[2], is_random_last_turn=v31[4])
 
-    policy_v32 = PolicyValueNet(6, 6, model_file=v32[0], input_plains_num=v32[2])
+    policy_v32 = PolicyValueNet(6, 6, model_file=v32[0], input_plains_num=v32[2], shutter_threshold_availables=limit_shutter)
     player_v32 = MCTSPlayer(policy_v32.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v32[3],
                             name=v32[1], input_plains_num=v32[2], is_random_last_turn=v32[4])
 
-    policy_v33 = PolicyValueNet(6, 6, model_file=v33[0], input_plains_num=v33[2])
+    policy_v33 = PolicyValueNet(6, 6, model_file=v33[0], input_plains_num=v33[2], shutter_threshold_availables=limit_shutter)
     player_v33 = MCTSPlayer(policy_v33.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v33[3],
                             name=v33[1], input_plains_num=v33[2], is_random_last_turn=v33[4])
 
-    policy_v34 = PolicyValueNet(6, 6, model_file=v34[0], input_plains_num=v34[2])
+    policy_v34 = PolicyValueNet(6, 6, model_file=v34[0], input_plains_num=v34[2], shutter_threshold_availables=limit_shutter)
     player_v34 = MCTSPlayer(policy_v34.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v34[3],
                             name=v34[1], input_plains_num=v34[2], is_random_last_turn=v34[4])
 
@@ -1207,9 +1207,8 @@ if __name__ == '__main__':
     set_start_method("spawn")
 
     num_games = 1000
-    sub_dir = "statistics_all_shutter_0"
+    sub_dir = f"statistics_limit_all_to_shutter_{limit_shutter}"
 
     compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games, sub_dir = sub_dir)
     plot_all_statistics_results(opponents, num_games=num_games, sub_dir = sub_dir)
-
     save_states_from_history_empty_board(opponent_player_1, players_list, 1000, sub_dir = sub_dir)
