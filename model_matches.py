@@ -110,7 +110,7 @@ def compare_two_models(player1, player2, width, height, n, open_path_threshold):
                       open_path_threshold=open_path_threshold,
                       main_dir=main_dir)
 
-    board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
+    board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD_6X6
 
     save_game_res(width=width,
                   height=height,

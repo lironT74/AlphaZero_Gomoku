@@ -44,19 +44,19 @@ BOARD_2_TRUNCATED = (np.array([[0, 2, 0, 1, 1, 0],
                     [0, 2, 0, 0, 2, 0]]), "board 2 truncated", [5, 3], [2, 0], [1, 1], [4, 3])
 
 
-EMPTY_BOARD = (np.array([[0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0]]), "empty board", None, None, None, None)
+EMPTY_BOARD_6X6 = (np.array([[0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0]]), "empty board", None, None, None, None)
 
 
 PAPER_FULL_6X6_BOARDS = [BOARD_1_FULL, BOARD_2_FULL]
 
 PAPER_6X6_TRUNCATED_BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
 
-ALL_PAPER_6X6_BOARD = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+ALL_PAPER_6X6_BOARD = [BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, EMPTY_BOARD_6X6]
 
 
 
@@ -73,19 +73,19 @@ for key, value in PEOPLE_DISTRIBUTIONS_6X6.items():
 
 
 
-EMPTY_BIG_BOARD = (np.array([[[0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0],
-                               [0,0,0,0,0,0,0,0,0,0]]]), "empty board", None, None, None, None)
+EMPTY_BOARD_10X10 = (np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0],
+                                [0,0,0,0,0,0,0,0,0,0]]), "empty board", None, None, None, None)
 
 
-BOARD_3_FULL = (np.array([
+BOARD_3_FULL = (np.array(
                         [[0, 0, 0, 0, 1, 0, 2, 0, 0, 0],
                          [0, 0, 0, 0, 2, 1, 1, 1, 0, 0],
                          [0, 0, 0, 1, 2, 2, 2, 1, 0, 0],
@@ -95,10 +95,10 @@ BOARD_3_FULL = (np.array([
                          [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                          [2, 2, 0, 0, 0, 0, 1, 0, 0, 0],
                          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                         [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]]), "board 3 full", None, None, None, None)
+                         [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]), "board 3 full", None, None, None, None)
 
 
-BOARD_3_TRUNCATED = (np.array([[[0, 0, 0, 0, 1, 2, 2, 0, 0, 0],
+BOARD_3_TRUNCATED = (np.array([[0, 0, 0, 0, 1, 2, 2, 0, 0, 0],
                                [0, 0, 0, 0, 2, 1, 1, 1, 0, 0],
                                [0, 0, 0, 1, 2, 2, 2, 1, 0, 0],
                                [0, 0, 0, 2, 2, 1, 1, 2, 1, 1],
@@ -107,10 +107,10 @@ BOARD_3_TRUNCATED = (np.array([[[0, 0, 0, 0, 1, 2, 2, 0, 0, 0],
                                [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                                [2, 2, 0, 0, 0, 0, 1, 0, 0, 0],
                                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                               [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]]), "board 3 truncated", [5, 9], [9, 5], None, None)
+                               [0, 0, 0, 0, 0, 2, 2, 2, 0, 0]]), "board 3 truncated", [5, 9], [9, 5], None, None)
 
 
-BOARD_4_FULL = (np.array([
+BOARD_4_FULL = (np.array(
                             [[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
                              [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
                              [0, 2, 2, 0, 0, 1, 1, 0, 2, 0],
@@ -120,10 +120,10 @@ BOARD_4_FULL = (np.array([
                              [0, 0, 1, 0, 2, 0, 0, 0, 0, 0],
                              [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                              [0, 0, 2, 0, 0, 2, 2, 0, 0, 0],
-                             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]]), "board 4 full", None, None, None, None)
+                             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]), "board 4 full", None, None, None, None)
 
 
-BOARD_4_TRUNCATED = (np.array([[[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+BOARD_4_TRUNCATED = (np.array([[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
                               [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
                               [0, 2, 2, 0, 1, 1, 1, 0, 2, 0],
                               [0, 0, 2, 1, 2, 0, 0, 0, 0, 0],
@@ -132,10 +132,10 @@ BOARD_4_TRUNCATED = (np.array([[[0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
                               [2, 0, 1, 0, 2, 0, 0, 0, 0, 0],
                               [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
                               [0, 0, 2, 0, 0, 2, 2, 0, 0, 0],
-                              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]]), "board 4 truncated", [7, 4], [3, 0], None, None)
+                              [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]]), "board 4 truncated", [7, 4], [3, 0], None, None)
 
 
-BOARD_5_FULL = (np.array([
+BOARD_5_FULL = (np.array(
                             [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                              [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                              [0, 0, 1, 0, 0, 2, 0, 0, 0, 0],
@@ -145,10 +145,10 @@ BOARD_5_FULL = (np.array([
                              [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
                              [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
                              [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]]), "board 5 full", None, None, None, None)
+                             [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]), "board 5 full", None, None, None, None)
 
 
-BOARD_5_TRUNCATED = (np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+BOARD_5_TRUNCATED = (np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                   [0, 0, 1, 0, 0, 2, 0, 0, 0, 0],
                                   [0, 0, 1, 1, 1, 2, 0, 0, 0, 0],
@@ -157,7 +157,7 @@ BOARD_5_TRUNCATED = (np.array([[[0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                   [0, 0, 0, 1, 0, 2, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                                  [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]]), "board 5 truncated", [6, 2], [6, 5], None, None)
+                                  [0, 0, 0, 0, 0, 0, 2, 0, 0, 0]]), "board 5 truncated", [6, 2], [6, 5], None, None)
 
 
 PAPER_FULL_10X10_BOARDS = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL]
@@ -165,7 +165,8 @@ PAPER_FULL_10X10_BOARDS = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL]
 PAPER_10X10_TRUNCATED_BOARDS = [BOARD_3_TRUNCATED, BOARD_4_TRUNCATED, BOARD_5_TRUNCATED]
 
 ALL_PAPER_10X10_BOARD = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL, BOARD_3_TRUNCATED,
-                         BOARD_4_TRUNCATED, BOARD_5_TRUNCATED, EMPTY_BIG_BOARD]
+                         BOARD_4_TRUNCATED, BOARD_5_TRUNCATED, EMPTY_BOARD_10X10]
+
 
 
 
@@ -344,4 +345,11 @@ def npstr2tuple(s):
 
 
 if __name__ == '__main__':
-    print(bootstrap_mean(np.random.binomial(1, 0.5, 10)))
+
+    print(f"6X6 boards: ")
+    for board in ALL_PAPER_6X6_BOARD:
+        print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
+
+    print(f"\n10x10 boards: ")
+    for board in ALL_PAPER_10X10_BOARD:
+        print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")

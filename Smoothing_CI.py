@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.patches as mpatches
 from scipy import stats
-
+from datetime import datetime
+from dateutil.relativedelta import relativedelta as rd
 from collections import defaultdict
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
@@ -27,6 +28,28 @@ discription_dict = {
     "pt_6_6_4_p4_v33_training": "v33    100       1        no",
     "pt_6_6_4_p4_v34_training": "v34    100       0        no"
 }
+
+colors_dict = {
+    "pt_6_6_4_p4_v27_training": 0,
+    "pt_6_6_4_p4_v28_training": 2,
+    "pt_6_6_4_p4_v29_training": 0,
+    "pt_6_6_4_p4_v30_training": 2,
+    "pt_6_6_4_p4_v23_training": 4,
+    "pt_6_6_4_p4_v24_training": 6,
+    "pt_6_6_4_p4_v25_training": 4,
+    "pt_6_6_4_p4_v26_training": 6,
+    "pt_6_6_4_p4_v31_training": 8,
+    "pt_6_6_4_p4_v32_training": 10,
+    "pt_6_6_4_p4_v33_training": 8,
+    "pt_6_6_4_p4_v34_training": 10
+}
+
+
+
+def cur_time():
+    now = datetime.now()
+    cur_time = now.strftime("%d/%m/%Y %H:%M:%S")
+    return cur_time
 
 
 
@@ -80,21 +103,22 @@ def rolling_window(a, window):
     return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
 
-def plot_smoothing_with_ci_aux(model, n_steps, model_loss_values, path):
+def plot_smoothing_with_ci_aux_BS(model, n_step, model_loss_values, path):
 
-    if not os.path.exists(f"{path}smoothing_data/{model}/steps_{n_steps}/"):
-        os.makedirs(f"{path}smoothing_data/{model}/steps_{n_steps}/")
+    if not os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/"):
+        os.makedirs(f"{path}smoothing_data/{model}/steps_{n_step}/")
 
-    if os.path.exists(f"{path}smoothing_data/{model}/steps_{n_steps}/under_line") and \
-        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_steps}/over_line")  and \
-        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_steps}/smooth_path"):
+    if os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_BS") and \
+        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_BS")  and \
+        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_BS"):
+
 
         return
 
 
-    print(f"Starting model: {model}, n_steps = {n_steps}")
+    print(f"Starting model: {model}, n_steps = {n_step} ({cur_time()})")
 
-    windows = rolling_window(np.array(model_loss_values), n_steps)
+    windows = rolling_window(np.array(model_loss_values), n_step)
 
     smooth_path = windows.mean(axis=1)
 
@@ -107,74 +131,168 @@ def plot_smoothing_with_ci_aux(model, n_steps, model_loss_values, path):
         over_line.append(h)
 
 
-    pickle.dump(under_line, open(f"{path}smoothing_data/{model}/steps_{n_steps}/under_line", "wb"))
-    pickle.dump(over_line, open(f"{path}smoothing_data/{model}/steps_{n_steps}/over_line", "wb"))
-    pickle.dump(smooth_path, open(f"{path}smoothing_data/{model}/steps_{n_steps}/smooth_path", "wb"))
+    pickle.dump(under_line, open(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_BS", "wb"))
+    pickle.dump(over_line, open(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_BS", "wb"))
+    pickle.dump(smooth_path, open(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_BS", "wb"))
 
-    print(f"Done model: {model}, n_steps = {n_steps}")
+    print(f"Done model: {model}, n_steps = {n_step} ({cur_time()})")
 
 
-def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models"):
-    n_steps = range(5, 505, 5)
+
+def plot_smoothing_with_ci_aux_NORM(model, n_step, model_loss_values, path):
+
+    if not os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/"):
+        os.makedirs(f"{path}smoothing_data/{model}/steps_{n_step}/")
+
+    if os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_NORM") and \
+        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_NORM")  and \
+        os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_NORM"):
+
+        return
+
+
+    print(f"Starting model: {model}, n_steps = {n_step} ({cur_time()})")
+
+    windows = rolling_window(np.array(model_loss_values), n_step)
+
+    smooth_path = windows.mean(axis=1)
+
+    under_line = []
+    over_line = []
+
+    for window in range(windows.shape[0]):
+        std = np.std(windows[window, :])
+        mean = np.mean(windows[window, :])
+
+        l = mean - 1.96 * std
+        h = mean + 1.96 * std
+
+        under_line.append(l)
+        over_line.append(h)
+
+
+    pickle.dump(under_line, open(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_NORM", "wb"))
+    pickle.dump(over_line, open(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_NORM", "wb"))
+    pickle.dump(smooth_path, open(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_NORM", "wb"))
+
+    print(f"Done model: {model}, n_steps = {n_step} ({cur_time()})")
+
+
+
+def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS"):
+
+    n_steps = range(5, 1005, 5)
 
     jobs = []
 
-    for n_steps in n_steps:
+    for n_step in n_steps:
         # Compute curves of interest:
 
         for index, (model, model_loss_values) in enumerate(models_dfs.items()):
-            jobs.append((model, n_steps, model_loss_values, path))
+            jobs.append((model, n_step, model_loss_values, path))
+
 
     with Pool() as pool:
-        pool.starmap(plot_smoothing_with_ci_aux, jobs)
-        pool.close()
-        pool.join()
+        print(f"There are {len(jobs)} jobs")
+
+        if method == "BS":
+            pool.starmap(plot_smoothing_with_ci_aux_BS, jobs)
+            pool.close()
+            pool.join()
+        # elif method == "NORM":
+        #     pool.starmap(plot_smoothing_with_ci_aux_NORM, jobs)
+        #     pool.close()
+        #     pool.join()
 
 
+    print(f"plotting {method}")
 
-    for n_steps in n_steps:
+    colors_full = plt.cm.get_cmap("spring", len(models_dfs.keys()))
+    colors_non_full = plt.cm.get_cmap("winter", len(models_dfs.keys()))
+
+
+    for n_step in n_steps:
         # Compute curves of interest:
-
-        colors_full = plt.cm.get_cmap("Blues", len(models_dfs.keys()))
-        colors_non_full = plt.cm.get_cmap("Reds", len(models_dfs.keys()))
 
         for index, (model, model_loss_values) in enumerate(models_dfs.items()):
 
-            under_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_steps}/under_line", "rb"))
-            over_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_steps}/over_line", "rb"))
-            smooth_path = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_steps}/smooth_path", "rb"))
+            under_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_{method}", "rb"))
+            over_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_{method}", "rb"))
+            smooth_path = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_{method}", "rb"))
 
             if discription_dict[model].endswith('yes'):
-                color = colors_full(index)
+                color = colors_full(colors_dict[model])
             else:
-                color = colors_non_full(index)
+                color = colors_non_full(colors_dict[model])
 
 
-            plt.plot(smooth_path, linewidth=2, color=color)
+            plt.plot(smooth_path, linewidth=0.3, color=color)
 
             plt.fill_between(range(len(under_line)), under_line, over_line, color=color, alpha=.2)
 
 
         handles = []
+
         handles.append(mpatches.Patch(label="name simulations shutter full", color='none'))
 
-        for index, value in enumerate(discription_dict.values()):
 
-            if value.endswith('yes'):
-                color = colors_full(index)
+        for index, (model, label) in enumerate(discription_dict.items()):
+
+            if label.endswith('yes'):
+                color = colors_full(colors_dict[model])
             else:
-                color = colors_non_full(index)
+                color = colors_non_full(colors_dict[model])
 
-            patch = mpatches.Patch(color=color, label=value)
+            patch = mpatches.Patch(color=color, label=label)
             handles.append(patch)
 
-        plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
-        plt.title(f"{save_name} {n_steps} steps smoothing")
 
-        plt.savefig(f"{path}results/{save_name}_{n_steps}_steps_smoothing.png", bbox_inches='tight')
+        plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
+        plt.title(f"{save_name} Loss functions {n_step} steps smoothing")
+
+
+        if not os.path.exists(f"{path}results/{method}/"):
+            os.makedirs(f"{path}results/{method}/")
+
+        plt.savefig(f"{path}results/{method}/{save_name}_{n_step}_steps_smoothing.png", bbox_inches='tight')
+
         # plt.show()
         plt.close('all')
 
+
+
+    # for index, (model, model_loss_values) in enumerate(models_dfs.items()):
+    #     if discription_dict[model].endswith('yes'):
+    #         color = colors_full(colors_dict[model])
+    #     else:
+    #         color = colors_non_full(colors_dict[model])
+    #
+    #     plt.plot(model_loss_values, linewidth=0.3, color=color)
+    #
+    # handles = []
+    #
+    # handles.append(mpatches.Patch(label="name simulations shutter full", color='none'))
+    #
+    # for index, (model, label) in enumerate(discription_dict.items()):
+    #
+    #     if label.endswith('yes'):
+    #         color = colors_full(colors_dict[model])
+    #     else:
+    #         color = colors_non_full(colors_dict[model])
+    #
+    #     patch = mpatches.Patch(color=color, label=label)
+    #     handles.append(patch)
+    #
+    # plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
+    # plt.title(f"{save_name} Loss functions no smoothing")
+    #
+    # if not os.path.exists(f"{path}results/{method}/"):
+    #     os.makedirs(f"{path}results/{method}/")
+    #
+    # plt.savefig(f"{path}results/{method}_NO_smoothing.png", bbox_inches='tight')
+    #
+    # # plt.show()
+    # plt.close('all')
 
 
 def tabulate_events(dpath, path):
@@ -220,6 +338,8 @@ def tabulate_events(dpath, path):
 
 if __name__ == '__main__':
 
+    matplotlib.use('Agg')
+
     runs_path = "/home/lirontyomkin/AlphaZero_Gomoku/runs/"
     save_name = "12_6x6_models"
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/smoothing_CI/"
@@ -228,8 +348,8 @@ if __name__ == '__main__':
 
     steps = pickle.load(open(f"{path}{save_name}_df_dict", "rb"))
 
-    plot_smoothing_with_ci(steps, save_name=save_name)
+    plot_smoothing_with_ci(steps, save_name=save_name, method="NORM")
+    plot_smoothing_with_ci(steps, save_name=save_name, method="BS")
 
-    # all_result = pd.concat(steps.values(),keys=steps.keys())
 
 

@@ -1123,7 +1123,7 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 
 if __name__ == "__main__":
 
-    BOARDS = [EMPTY_BOARD, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+    BOARDS = [EMPTY_BOARD_6X6, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
     cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
     o_weights = [0, 0.2, 0.5, 0.7, 1]
     open_path_thresholds = [0, -1]

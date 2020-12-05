@@ -34,6 +34,9 @@ discription_dict = {
     "v34_5000": "v34\nsim:100\nshutter:0\nfull:no\niter:5000"
 }
 
+
+
+
 old_models = (["v7_1500", "v9_1500", "v10_1500", "v10_1500_random"], "old_models")
 all_new_12_models = (["v27_5000", "v28_5000", "v29_5000", "v30_5000", "v23_5000", "v24_5000", "v25_5000", "v26_5000", "v31_5000", "v32_5000", "v33_5000", "v34_5000"], "all_new_12_models", False)
 
@@ -59,32 +62,68 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
     print(f"Playing: ")
 
     jobs = []
+
+    truncated = {6: PAPER_6X6_TRUNCATED_BOARDS, 10: PAPER_10X10_TRUNCATED_BOARDS}
+    full = {6: PAPER_FULL_6X6_BOARDS, 10: PAPER_FULL_10X10_BOARDS}
+    empty = {6: EMPTY_BOARD_6X6, 10: EMPTY_BOARD_10X10}
+
+
+    def who_started_dict(board_name):
+
+        X_boards = [
+                    "board 3 full",
+                    "board 5 full",
+                    "board 3 truncated",
+                    "board 5 truncated",
+                    "empty board"
+                   ]
+
+        O_boards = [
+                    "board 1 full",
+                    "board 2 full",
+                    "board 1 truncated",
+                    "board 2 truncated",
+                    "board 4 full",
+                    "board 4 truncated",
+                   ]
+
+        if board_name in X_boards:
+            return 1
+        elif board_name in O_boards:
+            return 2
+        else:
+            raise Exception(f"{board_name} is not a valid board")
+
+
+
+
     for opponent_player in opponents:
 
-        for board in PAPER_6X6_TRUNCATED_BOARDS:
+        for board in truncated[width]:
 
             board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
 
             for cur_player in players_list:
                 jobs.append((width, height, n, board_state, board_name, cur_player,
                              opponent_player, p1, p2, p1,
-                             p2, 2, num_games, sub_dir))
+                             p2, who_started_dict(board_name), num_games, sub_dir))
 
-        for board in PAPER_FULL_6X6_BOARDS:
+        for board in full[width]:
 
             board_state, board_name, p1, p2, alternative_p1, alternative_p2 = board
 
             for cur_player in players_list:
                 jobs.append((width, height, n, board_state, board_name, cur_player,
                              opponent_player, p1, p2, p1,
-                             p2, 2, num_games, sub_dir))
+                             p2, who_started_dict(board_name), num_games, sub_dir))
 
-        board_state, board_name, p1, p2, alternative_p1, alternative_p2 = EMPTY_BOARD
+
+        board_state, board_name, p1, p2, alternative_p1, alternative_p2 = empty[width]
 
         for cur_player in players_list:
             jobs.append((width, height, n, board_state, board_name, cur_player,
                          opponent_player, p1, p2, p1,
-                         p2, 1, num_games, sub_dir))
+                         p2, who_started_dict(board_name), num_games, sub_dir))
 
 
     with Pool(20) as pool:
@@ -106,7 +145,7 @@ def compare_all_models_statistics(players_list, opponents, width=6, height=6, n=
         for board in PAPER_FULL_6X6_BOARDS:
             jobs.append((players_list, opponent_player, board, num_games, sub_dir))
 
-        jobs.append((players_list, opponent_player, EMPTY_BOARD, num_games, sub_dir))
+        jobs.append((players_list, opponent_player, EMPTY_BOARD_6X6, num_games, sub_dir))
 
 
     with Pool() as pool:
@@ -513,7 +552,7 @@ def plot_all_statistics_results(opponents, num_games, sub_dir):
             board_name = board[1]
             jobs.append((num_games, opponent_player.name, board_name, sub_dir))
 
-        board_name = EMPTY_BOARD[1]
+        board_name = EMPTY_BOARD_6X6[1]
         jobs.append((num_games, opponent_player.name, board_name, sub_dir))
 
     with Pool(len(jobs)) as pool:
@@ -524,7 +563,7 @@ def plot_all_statistics_results(opponents, num_games, sub_dir):
 
 
     jobs_collage = []
-    BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD]
+    BOARDS = [BOARD_1_TRUNCATED, BOARD_2_TRUNCATED, BOARD_1_FULL, BOARD_2_FULL, EMPTY_BOARD_6X6]
     for board in BOARDS:
         board_name = board[1]
         jobs_collage.append((board_name, opponents, sub_dir))
@@ -994,7 +1033,7 @@ def save_states_from_history_empty_board(opponent, players_list, num_games, sub_
         for chosen_game in chosen_games:
             _, _, _, _, _, game_history = game_stats[chosen_game]
 
-            board_state = copy.deepcopy(EMPTY_BOARD[0])
+            board_state = copy.deepcopy(EMPTY_BOARD_6X6[0])
             print(board_state, "\n")
 
             cur_player = 1
@@ -1029,18 +1068,18 @@ def save_states_from_history_empty_board(opponent, players_list, num_games, sub_
 
 
 
-if __name__ == '__main__':
+
+def the_twelve_6_X_6():
     n_playout = 400
 
     v7 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v7/current_policy_1500.model',
           'v7_1500', 3, True, False)
-    v9 = ( '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1500.model',
-           'v9_1500', 3,True, False)
+    v9 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_1500.model',
+          'v9_1500', 3, True, False)
     v10 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
            'v10_1500', 4, True, False)
     v10_random = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_1500.model',
-           'v10_1500_random', 4, True, True)
-
+                  'v10_1500_random', 4, True, True)
 
     v12 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v12/current_policy_5000.model',
            'v12_5000', 4, True, False)
@@ -1054,7 +1093,6 @@ if __name__ == '__main__':
            'v20_5000', 4, True, False)
     v22 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v22/current_policy_5000.model',
            'v22_5000', 4, True, False)
-
 
     v23 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v23/current_policy_5000.model',
            'v23_5000', 4, True, False)
@@ -1081,21 +1119,26 @@ if __name__ == '__main__':
     v34 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v34/current_policy_5000.model',
            'v34_5000', 4, True, False)
 
-
     limit_shutter = 0
 
-    policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2], shutter_threshold_availables=limit_shutter)
+    policy_v7 = PolicyValueNet(6, 6, model_file=v7[0], input_plains_num=v7[2],
+                               shutter_threshold_availables=limit_shutter)
     player_v7 = MCTSPlayer(policy_v7.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v7[3],
                            name=v7[1], input_plains_num=v7[2], is_random_last_turn=v7[4])
-    policy_v9 = PolicyValueNet(6, 6, model_file=v9[0], input_plains_num=v9[2], shutter_threshold_availables=limit_shutter)
+    policy_v9 = PolicyValueNet(6, 6, model_file=v9[0], input_plains_num=v9[2],
+                               shutter_threshold_availables=limit_shutter)
     player_v9 = MCTSPlayer(policy_v9.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v9[3],
-                               name=v9[1], input_plains_num=v9[2], is_random_last_turn=v9[4])
-    policy_v10 = PolicyValueNet(6, 6, model_file=v10[0], input_plains_num=v10[2], shutter_threshold_availables=limit_shutter)
+                           name=v9[1], input_plains_num=v9[2], is_random_last_turn=v9[4])
+    policy_v10 = PolicyValueNet(6, 6, model_file=v10[0], input_plains_num=v10[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v10 = MCTSPlayer(policy_v10.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10[3],
-                               name=v10[1], input_plains_num=v10[2], is_random_last_turn=v10[4])
-    policy_v10_random = PolicyValueNet(6, 6, model_file=v10_random[0], input_plains_num=v10_random[2], shutter_threshold_availables=limit_shutter)
-    player_v10_random = MCTSPlayer(policy_v10_random.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_random[3],
-                               name=v10_random[1], input_plains_num=v10_random[2], is_random_last_turn=v10_random[4])
+                            name=v10[1], input_plains_num=v10[2], is_random_last_turn=v10[4])
+    policy_v10_random = PolicyValueNet(6, 6, model_file=v10_random[0], input_plains_num=v10_random[2],
+                                       shutter_threshold_availables=limit_shutter)
+    player_v10_random = MCTSPlayer(policy_v10_random.policy_value_fn, c_puct=5, n_playout=n_playout,
+                                   no_playouts=v10_random[3],
+                                   name=v10_random[1], input_plains_num=v10_random[2],
+                                   is_random_last_turn=v10_random[4])
 
     # policy_v12 = PolicyValueNet(6, 6, model_file=v12[0], input_plains_num=v12[2])
     # player_v12 = MCTSPlayer(policy_v12.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v12[3],
@@ -1121,64 +1164,161 @@ if __name__ == '__main__':
     # player_v22 = MCTSPlayer(policy_v22.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v22[3],
     #                         name=v22[1], input_plains_num=v22[2], is_random_last_turn=v22[4])
 
-
-    policy_v23 = PolicyValueNet(6, 6, model_file=v23[0], input_plains_num=v23[2], shutter_threshold_availables=limit_shutter)
+    policy_v23 = PolicyValueNet(6, 6, model_file=v23[0], input_plains_num=v23[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v23 = MCTSPlayer(policy_v23.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v23[3],
                             name=v23[1], input_plains_num=v23[2], is_random_last_turn=v23[4])
 
-    policy_v24 = PolicyValueNet(6, 6, model_file=v24[0], input_plains_num=v24[2], shutter_threshold_availables=limit_shutter)
+    policy_v24 = PolicyValueNet(6, 6, model_file=v24[0], input_plains_num=v24[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v24 = MCTSPlayer(policy_v24.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v24[3],
                             name=v24[1], input_plains_num=v24[2], is_random_last_turn=v24[4])
 
-    policy_v25 = PolicyValueNet(6, 6, model_file=v25[0], input_plains_num=v25[2], shutter_threshold_availables=limit_shutter)
+    policy_v25 = PolicyValueNet(6, 6, model_file=v25[0], input_plains_num=v25[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v25 = MCTSPlayer(policy_v25.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v25[3],
                             name=v25[1], input_plains_num=v25[2], is_random_last_turn=v25[4])
 
-    policy_v26 = PolicyValueNet(6, 6, model_file=v26[0], input_plains_num=v26[2], shutter_threshold_availables=limit_shutter)
+    policy_v26 = PolicyValueNet(6, 6, model_file=v26[0], input_plains_num=v26[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v26 = MCTSPlayer(policy_v26.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v26[3],
                             name=v26[1], input_plains_num=v26[2], is_random_last_turn=v26[4])
 
-    policy_v27 = PolicyValueNet(6, 6, model_file=v27[0], input_plains_num=v27[2], shutter_threshold_availables=limit_shutter)
+    policy_v27 = PolicyValueNet(6, 6, model_file=v27[0], input_plains_num=v27[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v27 = MCTSPlayer(policy_v27.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v27[3],
                             name=v27[1], input_plains_num=v27[2], is_random_last_turn=v27[4])
 
-    policy_v28 = PolicyValueNet(6, 6, model_file=v28[0], input_plains_num=v28[2], shutter_threshold_availables=limit_shutter)
+    policy_v28 = PolicyValueNet(6, 6, model_file=v28[0], input_plains_num=v28[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v28 = MCTSPlayer(policy_v28.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v28[3],
                             name=v28[1], input_plains_num=v28[2], is_random_last_turn=v28[4])
 
-    policy_v29 = PolicyValueNet(6, 6, model_file=v29[0], input_plains_num=v29[2], shutter_threshold_availables=limit_shutter)
+    policy_v29 = PolicyValueNet(6, 6, model_file=v29[0], input_plains_num=v29[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v29 = MCTSPlayer(policy_v29.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v29[3],
                             name=v29[1], input_plains_num=v29[2], is_random_last_turn=v29[4])
 
-    policy_v30 = PolicyValueNet(6, 6, model_file=v30[0], input_plains_num=v30[2], shutter_threshold_availables=limit_shutter)
+    policy_v30 = PolicyValueNet(6, 6, model_file=v30[0], input_plains_num=v30[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v30 = MCTSPlayer(policy_v30.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v30[3],
                             name=v30[1], input_plains_num=v30[2], is_random_last_turn=v30[4])
 
-    policy_v31 = PolicyValueNet(6, 6, model_file=v31[0], input_plains_num=v31[2], shutter_threshold_availables=limit_shutter)
+    policy_v31 = PolicyValueNet(6, 6, model_file=v31[0], input_plains_num=v31[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v31 = MCTSPlayer(policy_v31.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v31[3],
                             name=v31[1], input_plains_num=v31[2], is_random_last_turn=v31[4])
 
-    policy_v32 = PolicyValueNet(6, 6, model_file=v32[0], input_plains_num=v32[2], shutter_threshold_availables=limit_shutter)
+    policy_v32 = PolicyValueNet(6, 6, model_file=v32[0], input_plains_num=v32[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v32 = MCTSPlayer(policy_v32.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v32[3],
                             name=v32[1], input_plains_num=v32[2], is_random_last_turn=v32[4])
 
-    policy_v33 = PolicyValueNet(6, 6, model_file=v33[0], input_plains_num=v33[2], shutter_threshold_availables=limit_shutter)
+    policy_v33 = PolicyValueNet(6, 6, model_file=v33[0], input_plains_num=v33[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v33 = MCTSPlayer(policy_v33.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v33[3],
                             name=v33[1], input_plains_num=v33[2], is_random_last_turn=v33[4])
 
-    policy_v34 = PolicyValueNet(6, 6, model_file=v34[0], input_plains_num=v34[2], shutter_threshold_availables=limit_shutter)
+    policy_v34 = PolicyValueNet(6, 6, model_file=v34[0], input_plains_num=v34[2],
+                                shutter_threshold_availables=limit_shutter)
     player_v34 = MCTSPlayer(policy_v34.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v34[3],
                             name=v34[1], input_plains_num=v34[2], is_random_last_turn=v34[4])
 
-
-
     players_list = [
 
-                    player_v23, player_v24, player_v25, player_v26,
-                    player_v27, player_v28, player_v29, player_v30,
-                    player_v31, player_v32, player_v33, player_v34,
+        player_v23, player_v24, player_v25, player_v26,
+        player_v27, player_v28, player_v29, player_v30,
+        player_v31, player_v32, player_v33, player_v34,
 
-                    player_v7, player_v9, player_v10, player_v10_random]
+        player_v7, player_v9, player_v10, player_v10_random]
+
+    opponent_player_1 = Heuristic_player(name="forcing heuristic", heuristic="interaction with forcing")
+    opponent_player_2 = PUREMCTS(c_puct=5, n_playout=500, name="pure MCTS 500")
+    opponent_player_3 = PUREMCTS(c_puct=5, n_playout=1000, name="pure MCTS 1000")
+
+    v9_5000 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_5000.model',
+               'v9_5000_no_MCTS', 3, True, False)
+    policy_opponent_4 = PolicyValueNet(6, 6, model_file=v9_5000[0], input_plains_num=v9_5000[2])
+    opponent_player_4 = MCTSPlayer(policy_opponent_4.policy_value_fn, c_puct=5, n_playout=n_playout,
+                                   no_playouts=v9_5000[3],
+                                   name=v9_5000[1], input_plains_num=v9_5000[2], is_random_last_turn=v9_5000[4])
+
+    v10_5000 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model',
+                f'v10_5000_no_MCTS', 4, True, False)
+    policy_opponent_5 = PolicyValueNet(6, 6, model_file=v10_5000[0], input_plains_num=v10_5000[2])
+    opponent_player_5 = MCTSPlayer(policy_opponent_5.policy_value_fn, c_puct=5, n_playout=n_playout,
+                                   no_playouts=v10_5000[3],
+                                   name=v10_5000[1], input_plains_num=v10_5000[2], is_random_last_turn=v10_5000[4])
+
+    opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4, opponent_player_5]
+
+    set_start_method("spawn")
+
+    num_games = 1000
+    sub_dir = f"statistics_limit_all_to_shutter_{limit_shutter}"
+
+    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games, sub_dir=sub_dir)
+    plot_all_statistics_results(opponents, num_games=num_games, sub_dir=sub_dir)
+    save_states_from_history_empty_board(opponent_player_1, players_list, 1000, sub_dir=sub_dir)
+
+
+
+
+def the_six_10X10():
+
+    n_playout = 400
+    limit_shutter = None
+
+
+    v_03 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_3/current_policy_5000.model',
+           'v_03_5000', 4, True, False)
+    v_04 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_4/current_policy_5000.model',
+           'v_04_5000', 4, True, False)
+    v_05 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_5/current_policy_5000.model',
+           'v_05_5000', 4, True, False)
+    v_06 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_6/current_policy_5000.model',
+           'v_06_5000', 4, True, False)
+    v_07 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_1/current_policy_5000.model',
+            'v_07_5000', 4, True, False)
+    v_08 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_2/current_policy_5000.model',
+            'v_08_5000', 4, True, False)
+
+
+
+    policy_v_03 = PolicyValueNet(10, 10, model_file=v_03[0], input_plains_num=v_03[2],
+                                shutter_threshold_availables=limit_shutter)
+    player_v_03 = MCTSPlayer(policy_v_03.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_03[3],
+                            name=v_03[1], input_plains_num=v_03[2], is_random_last_turn=v_03[4])
+
+    policy_v_04 = PolicyValueNet(10, 10, model_file=v_04[0], input_plains_num=v_04[2],
+                                shutter_threshold_availables=limit_shutter)
+    player_v_04 = MCTSPlayer(policy_v_04.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_04[3],
+                            name=v_04[1], input_plains_num=v_04[2], is_random_last_turn=v_04[4])
+
+    policy_v_05 = PolicyValueNet(10, 10, model_file=v_05[0], input_plains_num=v_05[2],
+                                shutter_threshold_availables=limit_shutter)
+    player_v_05 = MCTSPlayer(policy_v_05.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_05[3],
+                            name=v_05[1], input_plains_num=v_05[2], is_random_last_turn=v_05[4])
+
+    policy_v_06 = PolicyValueNet(10, 10, model_file=v_06[0], input_plains_num=v_06[2],
+                                shutter_threshold_availables=limit_shutter)
+    player_v_06 = MCTSPlayer(policy_v_06.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_06[3],
+                            name=v_06[1], input_plains_num=v_06[2], is_random_last_turn=v_06[4])
+
+    policy_v_07 = PolicyValueNet(10, 10, model_file=v_07[0], input_plains_num=v_07[2],
+                                 shutter_threshold_availables=limit_shutter)
+    player_v_07 = MCTSPlayer(policy_v_07.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_07[3],
+                             name=v_07[1], input_plains_num=v_07[2], is_random_last_turn=v_07[4])
+
+    policy_v_08 = PolicyValueNet(10, 10, model_file=v_08[0], input_plains_num=v_08[2],
+                                 shutter_threshold_availables=limit_shutter)
+    player_v_08 = MCTSPlayer(policy_v_08.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v_08[3],
+                             name=v_08[1], input_plains_num=v_08[2], is_random_last_turn=v_08[4])
+
+
+
+    players_list = [player_v_03, player_v_04, player_v_05, player_v_06, player_v_07, player_v_08]
+
 
 
 
@@ -1186,20 +1326,19 @@ if __name__ == '__main__':
     opponent_player_2 = PUREMCTS(c_puct=5, n_playout=500, name="pure MCTS 500")
     opponent_player_3 = PUREMCTS(c_puct=5, n_playout=1000, name="pure MCTS 1000")
 
+    v_01 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_1/current_policy_5000.model',
+               'v_01_5000_no_MCTS', 3, True, False)
+    policy_opponent_4 = PolicyValueNet(10, 10, model_file=v_01[0], input_plains_num=v_01[2])
+    opponent_player_4 = MCTSPlayer(policy_opponent_4.policy_value_fn, c_puct=5, n_playout=n_playout,
+                                   no_playouts=v_01[3],
+                                   name=v_01[1], input_plains_num=v_01[2], is_random_last_turn=v_01[4])
 
-    v9_5000 = ( '/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p3_v9/current_policy_5000.model',
-           'v9_5000_no_MCTS', 3, True, False)
-    policy_opponent_4 = PolicyValueNet(6, 6, model_file=v9_5000[0], input_plains_num=v9_5000[2])
-    opponent_player_4 = MCTSPlayer(policy_opponent_4.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v9_5000[3],
-                               name=v9_5000[1], input_plains_num=v9_5000[2], is_random_last_turn=v9_5000[4])
-
-    v10_5000 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_6_6_4_p4_v10/current_policy_5000.model',
-           f'v10_5000_no_MCTS', 4, True, False)
-    policy_opponent_5 = PolicyValueNet(6, 6, model_file=v10_5000[0], input_plains_num=v10_5000[2])
-    opponent_player_5 = MCTSPlayer(policy_opponent_5.policy_value_fn, c_puct=5, n_playout=n_playout, no_playouts=v10_5000[3],
-                               name=v10_5000[1], input_plains_num=v10_5000[2], is_random_last_turn=v10_5000[4])
-
-
+    v_02 = ('/home/lirontyomkin/AlphaZero_Gomoku/models/pt_10_10_5_p3_v0_2/current_policy_5000.model',
+                f'v_02_5000_no_MCTS', 4, True, False)
+    policy_opponent_5 = PolicyValueNet(10, 10, model_file=v_02[0], input_plains_num=v_02[2])
+    opponent_player_5 = MCTSPlayer(policy_opponent_5.policy_value_fn, c_puct=5, n_playout=n_playout,
+                                   no_playouts=v_02[3],
+                                   name=v_02[1], input_plains_num=v_02[2], is_random_last_turn=v_02[4])
 
     opponents = [opponent_player_1, opponent_player_2, opponent_player_3, opponent_player_4, opponent_player_5]
 
@@ -1207,8 +1346,13 @@ if __name__ == '__main__':
     set_start_method("spawn")
 
     num_games = 1000
-    sub_dir = f"statistics_limit_all_to_shutter_{limit_shutter}"
+    sub_dir = f"10X10_statistics"
 
-    compare_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=num_games, sub_dir = sub_dir)
-    plot_all_statistics_results(opponents, num_games=num_games, sub_dir = sub_dir)
-    save_states_from_history_empty_board(opponent_player_1, players_list, 1000, sub_dir = sub_dir)
+    compare_all_models_statistics(players_list, opponents, width=10, height=10, n=5, num_games=num_games, sub_dir=sub_dir)
+    plot_all_statistics_results(opponents, num_games=num_games, sub_dir=sub_dir)
+    save_states_from_history_empty_board(opponent_player_1, players_list, 1000, sub_dir=sub_dir)
+
+
+
+if __name__ == '__main__':
+    pass
