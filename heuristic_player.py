@@ -6,7 +6,10 @@ class Heuristic_player(object):
     """AI player based on MCTS"""
 
 
-    def __init__(self, name="", heuristic="forcing", o_weight=0.5, open_path_threshold=-1, exp = 1, last_move=True, normalized_density_scores=False, density='reg', sig=3, max_radius_density=-1):
+    def __init__(self, name="", heuristic="forcing", o_weight=0.5,
+                 open_path_threshold=-1, exp = 1, last_move=True,
+                 normalized_density_scores=False, density='reg', sig=3, max_radius_density=-1):
+
         self.name = name
 
         self.is_random_last_turn = False
@@ -26,7 +29,7 @@ class Heuristic_player(object):
         self.player = p
 
 
-    def get_action(self, board):
+    def get_action(self, board, *args, **kwargs):
 
         board_copy = copy.deepcopy(board)
 
@@ -69,6 +72,8 @@ class Heuristic_player(object):
 
             heuristic_scores = np.array(np.flipud(heuristic_scores[self.heuristic])).flatten()
 
+
+
             move = np.random.choice(range(0, board.width*board.height), p=heuristic_scores)
 
             # print(move)
@@ -81,5 +86,3 @@ class Heuristic_player(object):
             print("WARNING: the board is full")
 
 
-    def __str__(self):
-        return "MCTS {}".format(self.player)

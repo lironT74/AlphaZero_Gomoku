@@ -2,7 +2,7 @@ from scipy import stats
 from pyemd import emd
 import numpy as np
 import math
-from game import Board, Game, get_shutter_size, get_last_cur_shutter, get_last_cur_shutter_aux, get_printable_move
+from game import Board, Game, get_shutter_size, get_printable_move
 import copy
 import json
 from policy_value_net_pytorch import PolicyValueNet
@@ -168,6 +168,9 @@ ALL_PAPER_10X10_BOARD = [BOARD_3_FULL, BOARD_4_FULL, BOARD_5_FULL, BOARD_3_TRUNC
                          BOARD_4_TRUNCATED, BOARD_5_TRUNCATED, EMPTY_BOARD_10X10]
 
 
+TRUNCATED_BOARDS_DICT = {6: PAPER_6X6_TRUNCATED_BOARDS, 10: PAPER_10X10_TRUNCATED_BOARDS}
+FULL_BOARDS_DICT = {6: PAPER_FULL_6X6_BOARDS, 10: PAPER_FULL_10X10_BOARDS}
+EMPTY_BOARDS_DICT = {6: EMPTY_BOARD_6X6, 10: EMPTY_BOARD_10X10}
 
 
 

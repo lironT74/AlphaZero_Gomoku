@@ -2,7 +2,7 @@ from multiprocessing import Pool
 from Game_boards_and_aux import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
-
+import matplotlib.ticker as mticker
 import matplotlib as mpl
 mpl.use('Agg')
 
@@ -163,24 +163,26 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
         moves_X = counts_of_moves[1]
         moves_O = counts_of_moves[2]
 
-
-        if less_or_more == 1:
-
-            # if moves_X >= X_threshold and moves_O >=O_threshold:
-
-            if moves_X > X_threshold or moves_O > O_threshold:
-                states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
-
-        elif less_or_more == -1:
-
-            if moves_X <= X_threshold and moves_O <= O_threshold:
-                states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
+        states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
 
 
-        if (moves_X, moves_O) not in counter_moves_num:
-            counter_moves_num[(moves_X, moves_O)] = 1
-        else:
-            counter_moves_num[(moves_X, moves_O)] += 1
+        # if less_or_more == 1:
+        #
+        #     # if moves_X >= X_threshold and moves_O >=O_threshold:
+        #
+        #     if moves_X > X_threshold or moves_O > O_threshold:
+        #         states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
+        #
+        # elif less_or_more == -1:
+        #
+        #     if moves_X <= X_threshold and moves_O <= O_threshold:
+        #         states_to_keep.append((board_state, last_move_p1, last_move_p2, start_player))
+        #
+        #
+        # if (moves_X, moves_O) not in counter_moves_num:
+        #     counter_moves_num[(moves_X, moves_O)] = 1
+        # else:
+        #     counter_moves_num[(moves_X, moves_O)] += 1
 
 
     # counter_moves_num_by_value = Counter({v: [] for v in counter_moves_num.values()})
@@ -258,6 +260,7 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
     #     elif less_or_more == -1:
     #         opening_str = f"_less_or_equal_x_{X_threshold}_o_{O_threshold}"
 
+
     opening_str = f"_more_x_{X_threshold}_o_{O_threshold}"
 
 
@@ -278,6 +281,7 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
 def make_plot_heuristics_comparison(path, model, game_board, y_top_lim, n=4,
                                     width=6, height=6, opponent_weight=0.5, cut_off_threshold=0.05,  **kwargs):
 
+    print("asdadsa")
 
     model_full_name, model_name, input_plains_num, is_random_last_turn = model
 
@@ -327,16 +331,31 @@ def make_plot_heuristics_comparison(path, model, game_board, y_top_lim, n=4,
 
         ax.plot(range(models_num), distances_lists[key], label=f"{key}", color=colors[key], linewidth=linewidth)
 
-        ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
-                   color=colors[key], linewidth=2 * linewidth)
+        # ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
+        #            color=colors[key], linewidth=2 * linewidth)
+
+
 
 
     ax.set_ylim([0, y_top_lim])
 
     ax.set_xticks(range(models_num))
-    ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax.set_xlabel("sub model no.", fontsize=fontsize)
+
+    new_names = [model_list[0]]
+    for i in model_list[1:]:
+        if i % 500 == 0:
+            new_names.append(i)
+
+        else:
+            new_names.append('')
+
+
+    ax.set_xticklabels(new_names, fontsize=30)
+    ax.tick_params(axis='both', which='major', labelsize=30)
+
+    ax.set_xlabel("Training iteration", fontsize=30)
+    ax.set_ylabel("Earth mover distance", fontsize=30)
+
 
     board_current_state = board.current_state(last_move=True, is_random_last_turn=False)
 
@@ -360,13 +379,20 @@ def make_plot_heuristics_comparison(path, model, game_board, y_top_lim, n=4,
 
     h, l = ax.get_legend_handles_labels()
 
-    if len(distances_lists.keys()) == 6:
-        ord = [0,6,1,7,2,8,3,9,4,10,5,11]
-    elif len(distances_lists.keys()) == 5:
-        ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True,
+               shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize + 5)
 
-    lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize+5)
     lax.axis("off")
+
+    # h, l = ax.get_legend_handles_labels()
+    #
+    # if len(distances_lists.keys()) == 6:
+    #     ord = [0,6,1,7,2,8,3,9,4,10,5,11]
+    # elif len(distances_lists.keys()) == 5:
+    #     ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+    #
+    # lax.legend([h[idx] for idx in ord],[l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True, shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize+5)
+    # lax.axis("off")
 
     fig.tight_layout()
 
@@ -423,7 +449,7 @@ def make_plot_heuristics_comparison_sampled_states(path, model, sample_opponent_
 
     fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 1]}, figsize=(30, 10))
 
-    fontsize = 16
+    fontsize = 20
     linewidth = 3
 
     colors = {"density": "blue",
@@ -437,31 +463,51 @@ def make_plot_heuristics_comparison_sampled_states(path, model, sample_opponent_
     for index, key in enumerate(distances_lists.keys()):
         ax.plot(range(models_num), distances_lists[key], label=f"{key}", color=colors[key], linewidth=linewidth)
 
-        ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
-                   color=colors[key], linewidth=2 * linewidth)
+        # ax.scatter(models_num + index + 1, distances_base_models[key], marker='o', label=f"(base model)",
+        #            color=colors[key], linewidth=2 * linewidth)
+
 
     ax.set_ylim([0, y_top_lim])
 
     ax.set_xticks(range(models_num))
-    ax.set_xticklabels(model_list, rotation=90, fontsize=fontsize)
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    ax.set_xlabel("sub model no.", fontsize=fontsize)
 
-    cut_off_threshold_str = f"cutoff threshold={cut_off_threshold} " if cut_off_threshold < 1 else f"keep {cut_off_threshold} squares "
+    new_names = [model_list[0]]
+    for i in model_list[1:]:
+        if i % 500 == 0:
+            new_names.append(i)
+
+        else:
+            new_names.append('')
+
+    ax.set_xticklabels(new_names, fontsize=30)
+    ax.tick_params(axis='both', which='major', labelsize=30)
+
+    ax.set_xlabel("Training iteration", fontsize=30)
+    ax.set_ylabel("Earth mover distance", fontsize=30)
+
+
+    cut_off_threshold_str = f"cutoff threshold={cut_off_threshold} " if cut_off_threshold < 1 else f"keep {cut_off_threshold} squares"
 
     ax.set_title(f"{model_name} EMD distances from heuristics \no_weight={opponent_weight}, "
-                 f"{cut_off_threshold_str} on sampled states against {sample_opponent_name}", fontdict={'fontsize': fontsize + 15})
+                 f"{cut_off_threshold_str} on sampled states against {sample_opponent_name}", fontdict={'fontsize': fontsize + 10})
 
 
     h, l = ax.get_legend_handles_labels()
 
-    if len(distances_lists.keys()) == 6:
-        ord = [0, 6, 1, 7, 2, 8, 3, 9, 4, 10, 5, 11]
-    elif len(distances_lists.keys()) == 5:
-        ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+    # if len(distances_lists.keys()) == 6:
+    #     ord = [0, 6, 1, 7, 2, 8, 3, 9, 4, 10, 5, 11]
+    # elif len(distances_lists.keys()) == 5:
+    #     ord = [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]
+    #
+    # lax.legend([h[idx] for idx in ord], [l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True,
+    #            shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize + 5)
 
-    lax.legend([h[idx] for idx in ord], [l[idx] for idx in ord], borderaxespad=0, loc="center", fancybox=True,
+
+    h, l = ax.get_legend_handles_labels()
+
+    lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True,
                shadow=True, ncol=len(distances_lists.keys()), fontsize=fontsize + 5)
+
     lax.axis("off")
 
     fig.tight_layout()
@@ -1003,9 +1049,7 @@ def run_heuristics_for_threshold_and_weight_sampled_boards(opponent_weight, cuto
 
 
     sample_opponent_name = "forcing heuristic"
-    sample_states_name = "sampled_states_v23_5000_v24_5000_v25_5000_v26_5000_v27_5000_v28_5000_v29_5000_v30_5000_v31_5000_v32_5000_v33_5000_v34_5000_v7_1500_v9_1500_v10_1500_v10_1500_random"
-
-    states_path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/statistics/vs {sample_opponent_name}/empty board/{sample_states_name}"
+    states_path = "/data/home/lirontyomkin/AlphaZero_Gomoku/matches/6X6_statistics_limit_all_to_shutter_None/vs forcing heuristic/empty board/sampled_states_v23_5000_v24_5000_v25_5000_v26_5000_v27_5000_v28_5000_v29_5000_v30_5000_v31_5000_v32_5000_v33_5000_v34_5000_v7_1500_v9_1500_v10_1500_v10_1500_random"
 
 
 
@@ -1068,21 +1112,23 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
     v_34 = ('pt_6_6_4_p4_v34', 'v34', 4, False)
 
 
-    models = [v7, v9, v10, v10_random,
+    # models = [v7, v9, v10, v10_random,
+    #
+    #           v_27, v_28, v_29, v_30,
+    #
+    #           v_23, v_24, v_25, v_26,
+    #
+    #           v_31, v_32, v_33, v_34]
 
-              v_27, v_28, v_29, v_30,
 
-              v_23, v_24, v_25, v_26,
-
-              v_31, v_32, v_33, v_34]
-
+    models = [v10]
 
     jobs = []
 
 
     less_or_more = 1
-    X_threshold = 3
-    O_threshold = 3
+    X_threshold = 0
+    O_threshold = 0
 
 
     for open_path_threshold in open_path_thresholds:
@@ -1092,12 +1138,12 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 
 
     # #REGULAR BOARDS
-    # pool_number = min(15, len(open_path_thresholds*len(cutoff_thresholds)*len(o_weights)))
-    # with Pool(pool_number) as pool:
-    #     print(f"Now regular boards. Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
-    #     pool.starmap(run_heuristics_for_threshold_and_weight_regular_boards, jobs)
-    #     pool.close()
-    #     pool.join()
+    pool_number = min(15, len(open_path_thresholds*len(cutoff_thresholds)*len(o_weights)))
+    with Pool(pool_number) as pool:
+        print(f"Now regular boards. Using {pool._processes} workers. There are {len(jobs)} jobs: \n")
+        pool.starmap(run_heuristics_for_threshold_and_weight_regular_boards, jobs)
+        pool.close()
+        pool.join()
 
 
     #SAMPLED BOARDS
@@ -1123,14 +1169,16 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 
 if __name__ == "__main__":
 
-    BOARDS = [EMPTY_BOARD_6X6, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
-    o_weights = [0, 0.2, 0.5, 0.7, 1]
-    open_path_thresholds = [0, -1]
+    # BOARDS = [EMPTY_BOARD_6X6, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+    # cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
+    # o_weights = [0, 0.2, 0.5, 0.7, 1]
+    # open_path_thresholds = [0, -1]
 
-    # cutoff_thresholds = [3]
-    # o_weights = [0.5]
-    # open_path_thresholds = [-1]
+    BOARDS = [BOARD_1_FULL]
+
+    cutoff_thresholds = [0]
+    o_weights = [0]
+    open_path_thresholds = [-1]
 
     run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds=cutoff_thresholds, 
                                                 o_weights=o_weights, open_path_thresholds=open_path_thresholds)

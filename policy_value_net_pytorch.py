@@ -6,12 +6,14 @@ Tested in PyTorch 0.2.0 and 0.3.0
 @author: Junxiao Song
 """
 
+import copy
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 import numpy as np
+import time
 
 # from torch.utils.tensorboard import SummaryWriter
 # from tensorboardX import SummaryWriter
@@ -89,22 +91,20 @@ class PolicyValueNet():
                  use_gpu=True,
                  shutter_threshold_availables=None):
 
+        self.shutter_threshold_availables = shutter_threshold_availables
+
         self.use_gpu = use_gpu
 
+
         if self.use_gpu:
-            self.cuda_to_use = torch.device('cuda:1')
+            self.cuda = 'cuda:0'
+            self.cuda_to_use = torch.device(self.cuda)
 
 
         self.board_width = board_width
         self.board_height = board_height
         self.l2_const = 1e-4  # coef of l2 penalty
         self.input_plains_num = input_plains_num
-
-
-        if shutter_threshold_availables is None:
-            self.shutter_threshold_availables = 3 * board_width
-        else:
-            self.shutter_threshold_availables = shutter_threshold_availables
 
 
 
@@ -119,32 +119,52 @@ class PolicyValueNet():
 
         if model_file:
 
-            # net_params = torch.load(model_file)
-            # self.policy_value_net.load_state_dict(net_params)
+            if self.use_gpu:
+                self.policy_value_net.load_state_dict(torch.load(model_file, map_location=self.cuda_to_use))
+            else:
+                self.policy_value_net.load_state_dict(torch.load(model_file))
 
-            try:
-                net_params = torch.load(model_file)
-                self.policy_value_net.load_state_dict(net_params)
+            # try:
+            #
+            #     net_params = torch.load(model_file)
+            #     self.policy_value_net.load_state_dict(net_params)
+            #
+            #
+            # except:
+            #
+            #     import pickle
+            #     from collections import OrderedDict
+            #     param_theano = pickle.load(open(model_file, 'rb'), encoding='bytes')
+            #     keys = ['conv1.weight', 'conv1.bias', 'conv2.weight', 'conv2.bias', 'conv3.weight', 'conv3.bias'
+            #         , 'act_conv1.weight', 'act_conv1.bias', 'act_fc1.weight', 'act_fc1.bias'
+            #         , 'val_conv1.weight', 'val_conv1.bias', 'val_fc1.weight', 'val_fc1.bias', 'val_fc2.weight',
+            #             'val_fc2.bias']
+            #
+            #     param_pytorch = OrderedDict()
+            #
+            #     if self.use_gpu:
+            #
+            #         for key, value in zip(keys, param_theano):
+            #             if 'fc' in key and 'weight' in key:
+            #                 param_pytorch[key] = torch.FloatTensor(value.T).cuda(device=self.cuda_to_use)
+            #             elif 'conv' in key and 'weight' in key:
+            #                 param_pytorch[key] = torch.FloatTensor(value[:, :, ::-1, ::-1].copy()).cuda(device=self.cuda_to_use)
+            #             else:
+            #                 param_pytorch[key] = torch.FloatTensor(value).cuda(device=self.cuda_to_use)
+            #
+            #         self.policy_value_net.load_state_dict(param_pytorch)
+            #
+            #     else:
+            #         for key, value in zip(keys, param_theano):
+            #             if 'fc' in key and 'weight' in key:
+            #                 param_pytorch[key] = torch.FloatTensor(value.T)
+            #             elif 'conv' in key and 'weight' in key:
+            #                 param_pytorch[key] = torch.FloatTensor(value[:, :, ::-1, ::-1].copy())
+            #             else:
+            #                 param_pytorch[key] = torch.FloatTensor(value)
+            #
+            #         self.policy_value_net.load_state_dict(param_pytorch)
 
-            except:
-
-                import pickle
-                from collections import OrderedDict
-                param_theano = pickle.load(open(model_file, 'rb'), encoding='bytes')
-                keys = ['conv1.weight', 'conv1.bias', 'conv2.weight', 'conv2.bias', 'conv3.weight', 'conv3.bias'
-                    , 'act_conv1.weight', 'act_conv1.bias', 'act_fc1.weight', 'act_fc1.bias'
-                    , 'val_conv1.weight', 'val_conv1.bias', 'val_fc1.weight', 'val_fc1.bias', 'val_fc2.weight',
-                        'val_fc2.bias']
-                param_pytorch = OrderedDict()
-                for key, value in zip(keys, param_theano):
-                    if 'fc' in key and 'weight' in key:
-                        param_pytorch[key] = torch.FloatTensor(value.T)
-                    elif 'conv' in key and 'weight' in key:
-                        param_pytorch[key] = torch.FloatTensor(value[:, :, ::-1, ::-1].copy())
-                    else:
-                        param_pytorch[key] = torch.FloatTensor(value)
-
-                self.policy_value_net.load_state_dict(param_pytorch)
     """policy-value network """
 
 
@@ -176,21 +196,13 @@ class PolicyValueNet():
 
         cur_playout_player = kwargs.get("cur_playout_player", -1)
 
-        if cur_playout_player != -1:
-            print(f"NOTICE: player {cur_playout_player} about to be limited to {self.shutter_threshold_availables} shutter size")
+
+        board_copy = copy.deepcopy(board)
 
 
-        if cur_playout_player == -1:
-            legal_positions = board.availables
-
-        else:
-            assert (cur_playout_player == board.players[0] or cur_playout_player == board.players[1])
-            legal_positions = board.keep_only_close_enough_squares(self.shutter_threshold_availables, cur_playout_player)
-
-
-
+        # get state and choose random move and update
         current_state = np.ascontiguousarray(board.current_state(self.input_plains_num == 4).reshape(
-                -1, self.input_plains_num , self.board_width, self.board_height))
+            -1, self.input_plains_num, self.board_width, self.board_height))
 
 
         if self.use_gpu:
@@ -201,6 +213,24 @@ class PolicyValueNet():
             log_act_probs, value = self.policy_value_net(
                     Variable(torch.from_numpy(current_state)).float())
             act_probs = np.exp(log_act_probs.data.numpy().flatten())
+
+
+
+
+        # if limit and random last move - should limit to real last turn
+
+        if cur_playout_player == -1 or self.shutter_threshold_availables == None or self.shutter_threshold_availables > board_copy.width * board_copy.height:
+
+            legal_positions = board_copy.availables
+
+        else:
+
+            # print(f"NOTICE: player {cur_playout_player} about to be limited to {self.shutter_threshold_availables} shutter size")
+
+            assert (cur_playout_player == board_copy.players[0] or cur_playout_player == board_copy.players[1])
+
+            legal_positions = board_copy.keep_only_close_enough_squares(self.shutter_threshold_availables, cur_playout_player)
+
 
 
 
@@ -237,6 +267,7 @@ class PolicyValueNet():
         value_loss = F.mse_loss(value.view(-1), winner_batch)
         policy_loss = -torch.mean(torch.sum(mcts_probs*log_act_probs, 1))
         loss = value_loss + policy_loss
+
         # backward and optimize
         loss.backward()
         self.optimizer.step()
@@ -257,3 +288,42 @@ class PolicyValueNet():
         """ save model params to file """
         net_params = self.get_policy_param()  # get model params
         torch.save(net_params, model_file)
+
+
+    def train_step_just_loss(self, state_batch, mcts_probs, winner_batch):
+        """perform a training step"""
+        # wrap in Variable
+        if self.use_gpu:
+            state_batch = Variable(torch.FloatTensor(state_batch).cuda(device=self.cuda_to_use))
+            mcts_probs = Variable(torch.FloatTensor(mcts_probs).cuda(device=self.cuda_to_use))
+            winner_batch = Variable(torch.FloatTensor(winner_batch).cuda(device=self.cuda_to_use))
+        else:
+            state_batch = Variable(torch.FloatTensor(state_batch))
+            mcts_probs = Variable(torch.FloatTensor(mcts_probs))
+            winner_batch = Variable(torch.FloatTensor(winner_batch))
+
+        # zero the parameter gradients
+        self.optimizer.zero_grad()
+
+        # set learning rate
+        # set_learning_rate(self.optimizer, lr)
+
+        # forward
+        log_act_probs, value = self.policy_value_net(state_batch)
+        # define the loss = (z - v)^2 - pi^T * log(p) + c||theta||^2
+        # Note: the L2 penalty is incorporated in optimizer
+        value_loss = F.mse_loss(value.view(-1), winner_batch)
+        policy_loss = -torch.mean(torch.sum(mcts_probs*log_act_probs, 1))
+        loss = value_loss + policy_loss
+
+        # backward and optimize
+        # loss.backward()
+        # self.optimizer.step()
+        # calc policy entropy, for monitoring only
+        entropy = -torch.mean(
+                torch.sum(torch.exp(log_act_probs) * log_act_probs, 1)
+                )
+
+        # return loss.data[0], entropy.data[0]
+        #for pytorch version >= 0.5 please use the following line instead.
+        return loss.item(), entropy.item()

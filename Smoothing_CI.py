@@ -13,6 +13,8 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta as rd
 from collections import defaultdict
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from config_models_statistics import *
+
 
 discription_dict = {
     "pt_6_6_4_p4_v27_training": "v27    25        1        yes",
@@ -112,7 +114,6 @@ def plot_smoothing_with_ci_aux_BS(model, n_step, model_loss_values, path):
         os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_BS")  and \
         os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_BS"):
 
-
         return
 
 
@@ -179,33 +180,61 @@ def plot_smoothing_with_ci_aux_NORM(model, n_step, model_loss_values, path):
 
 
 
-def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS"):
+def group_by_action(label, group_by):
+
+    if group_by == 'full':
+        return label.endswith('yes')
+
+    elif group_by == 'shutter':
+        return label.find('    1    ') != -1
+
+    else:
+        raise Exception(f'group by {group_by} is not valid')
+
+
+def plot_smoothing_with_ci(path, models_dfs, save_name="12_6x6_models", method = "BS", group_by='shutter'):
 
     n_steps = range(5, 1005, 5)
 
-    jobs = []
-
-    for n_step in n_steps:
-        # Compute curves of interest:
-
-        for index, (model, model_loss_values) in enumerate(models_dfs.items()):
-            jobs.append((model, n_step, model_loss_values, path))
-
-
-    with Pool() as pool:
-        print(f"There are {len(jobs)} jobs")
-
-        if method == "BS":
-            pool.starmap(plot_smoothing_with_ci_aux_BS, jobs)
-            pool.close()
-            pool.join()
-        # elif method == "NORM":
-        #     pool.starmap(plot_smoothing_with_ci_aux_NORM, jobs)
-        #     pool.close()
-        #     pool.join()
-
-
-    print(f"plotting {method}")
+    # jobs = []
+    #
+    # is_all_exists = True
+    #
+    # for n_step in n_steps:
+    #     # Compute curves of interest:
+    #
+    #     for index, (model, model_loss_values) in enumerate(models_dfs.items()):
+    #
+    #         jobs.append((model, n_step, model_loss_values, path))
+    #
+    #         if not (os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_{method}") and \
+    #                 os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_{method}") and \
+    #                 os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_{method}")):
+    #
+    #             is_all_exists = False
+    #
+    #
+    # if is_all_exists:
+    #     print(f"{method}: all models data saved!")
+    #
+    #
+    # else:
+    #
+    #     with Pool() as pool:
+    #         print(f"There are {len(jobs)} jobs")
+    #
+    #         if method == "BS":
+    #             pool.starmap(plot_smoothing_with_ci_aux_BS, jobs)
+    #             pool.close()
+    #             pool.join()
+    #         elif method == "NORM":
+    #             pool.starmap(plot_smoothing_with_ci_aux_NORM, jobs)
+    #             pool.close()
+    #             pool.join()
+    #
+    #
+    #
+    # print(f"plotting {method}")
 
     colors_full = plt.cm.get_cmap("spring", len(models_dfs.keys()))
     colors_non_full = plt.cm.get_cmap("winter", len(models_dfs.keys()))
@@ -216,13 +245,19 @@ def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS")
 
         for index, (model, model_loss_values) in enumerate(models_dfs.items()):
 
+            if model not in [f"pt_6_6_4_p4_v{i}_training" for i in [23, 24, 27, 28, 31, 32]]:
+                continue
+
             under_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/under_line_{method}", "rb"))
             over_line = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/over_line_{method}", "rb"))
             smooth_path = pickle.load(open(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_{method}", "rb"))
 
-            if discription_dict[model].endswith('yes'):
+            if group_by_action(discription_dict[model], group_by):
+
                 color = colors_full(colors_dict[model])
+
             else:
+
                 color = colors_non_full(colors_dict[model])
 
 
@@ -238,7 +273,11 @@ def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS")
 
         for index, (model, label) in enumerate(discription_dict.items()):
 
-            if label.endswith('yes'):
+            if model not in [f"pt_6_6_4_p4_v{i}_training" for i in [23, 24, 27, 28, 31, 32]]:
+                continue
+
+
+            if group_by_action(label, group_by):
                 color = colors_full(colors_dict[model])
             else:
                 color = colors_non_full(colors_dict[model])
@@ -247,14 +286,22 @@ def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS")
             handles.append(patch)
 
 
+        plt.ylabel('Loss function')
+        plt.xlabel('Training epoch')
+
         plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
-        plt.title(f"{save_name} Loss functions {n_step} steps smoothing")
+        # plt.title(f"{save_name} Loss functions {n_step} steps smoothing")
+        plt.title(f"Full boards trained models loss functions {n_step} steps smoothing")
 
 
-        if not os.path.exists(f"{path}results/{method}/"):
-            os.makedirs(f"{path}results/{method}/")
+        # image_path = f'{path}{save_name}/group_by_{group_by}/{method}/'
+        image_path = f'{path}{save_name}/group_by_{group_by}/{method}_only_full_models/'
 
-        plt.savefig(f"{path}results/{method}/{save_name}_{n_step}_steps_smoothing.png", bbox_inches='tight')
+        if not os.path.exists(image_path):
+            os.makedirs(image_path)
+
+        plt.savefig(f"{image_path}{n_step}_steps_smoothing.png", bbox_inches='tight')
+
 
         # plt.show()
         plt.close('all')
@@ -275,7 +322,7 @@ def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS")
     #
     # for index, (model, label) in enumerate(discription_dict.items()):
     #
-    #     if label.endswith('yes'):
+    #     if group_by_action(label, group_by):
     #         color = colors_full(colors_dict[model])
     #     else:
     #         color = colors_non_full(colors_dict[model])
@@ -286,13 +333,70 @@ def plot_smoothing_with_ci(models_dfs, save_name="12_6x6_models", method = "BS")
     # plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
     # plt.title(f"{save_name} Loss functions no smoothing")
     #
-    # if not os.path.exists(f"{path}results/{method}/"):
-    #     os.makedirs(f"{path}results/{method}/")
+    # plt.ylabel('Loss function')
+    # plt.xlabel('Training epoch')
     #
-    # plt.savefig(f"{path}results/{method}_NO_smoothing.png", bbox_inches='tight')
+    # if not os.path.exists(f"{path}{save_name}/group_by_{group_by}/"):
+    #     os.makedirs(f"{path}{save_name}/group_by_{group_by}/")
+    #
+    # plt.savefig(f"{path}{save_name}/group_by_{group_by}/{method}_NO_smoothing_groupby_{group_by}.png", bbox_inches='tight')
     #
     # # plt.show()
     # plt.close('all')
+
+
+
+
+def plot_loss_only_empty(group_by='shutter', n_playout=50):
+    models_dfs = {}
+
+    for path_5000, short_name, input_plains_num, _, _, limit_shutter in all_new_12_models_6_policies:
+        path = path_5000.split('/')
+        model_full_name = path[5]
+        short_name = short_name.split("_")[0]
+
+        with open(f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_full_name}/loss_only_empty_playout_{n_playout}', 'rb') as f:
+            models_dfs[short_name] = pickle.load(f)
+
+
+    colors_full = plt.cm.get_cmap("spring", len(models_dfs.keys()))
+    colors_non_full = plt.cm.get_cmap("winter", len(models_dfs.keys()))
+
+
+    for index, (model, model_loss_values) in enumerate(models_dfs.items()):
+        if discription_dict[model].endswith('yes'):
+            color = colors_full(colors_dict[model])
+        else:
+            color = colors_non_full(colors_dict[model])
+
+        plt.plot(model_loss_values, linewidth=0.3, color=color)
+
+    handles = []
+
+    handles.append(mpatches.Patch(label="name simulations shutter full", color='none'))
+
+    for index, (model, label) in enumerate(discription_dict.items()):
+
+        if group_by_action(label, group_by):
+            color = colors_full(colors_dict[model])
+        else:
+            color = colors_non_full(colors_dict[model])
+
+        patch = mpatches.Patch(color=color, label=label)
+        handles.append(patch)
+
+    plt.legend(handles=handles, prop={'family': 'DejaVu Sans Mono', 'size': 8})
+    plt.title(f"{save_name} Loss functions only empty board, no smoothing")
+
+    plt.ylabel('Loss function')
+    plt.xlabel('Training epoch')
+
+    if not os.path.exists(f"{path}{save_name}/group_by_{group_by}/"):
+        os.makedirs(f"{path}{save_name}/group_by_{group_by}/")
+
+    plt.savefig(f"{path}{save_name}/group_by_{group_by}/Loss only on empry board.png", bbox_inches='tight')
+    plt.close('all')
+
 
 
 def tabulate_events(dpath, path):
@@ -336,20 +440,28 @@ def tabulate_events(dpath, path):
 
 
 
+
+
+
 if __name__ == '__main__':
 
     matplotlib.use('Agg')
 
-    runs_path = "/home/lirontyomkin/AlphaZero_Gomoku/runs/"
-    save_name = "12_6x6_models"
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/smoothing_CI/"
 
-    # steps = tabulate_events(runs_path, path)
+    # runs_path = "/home/lirontyomkin/AlphaZero_Gomoku/runs/"
+    # save_name = "12_6x6_models"
+    #
+    # path = f"/home/lirontyomkin/AlphaZero_Gomoku/smoothing_CI/"
+    #
+    # # steps = tabulate_events(runs_path, path)
+    #
+    # steps = pickle.load(open(f"{path}{save_name}_df_dict", "rb"))
+    #
+    #
+    # group_by='shutter'
+    #
+    # plot_smoothing_with_ci(path, steps, save_name=save_name, method="BS", group_by=group_by)
+    # # plot_smoothing_with_ci(path, steps, save_name=save_name, method="BS", group_by=group_by)
 
-    steps = pickle.load(open(f"{path}{save_name}_df_dict", "rb"))
 
-    plot_smoothing_with_ci(steps, save_name=save_name, method="NORM")
-    plot_smoothing_with_ci(steps, save_name=save_name, method="BS")
-
-
-
+    plot_loss_only_empty(group_by='shutter', n_playout=50)

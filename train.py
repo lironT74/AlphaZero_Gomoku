@@ -17,9 +17,13 @@ import os
 from tensorboardX import SummaryWriter
 import copy
 from Game_boards_and_aux import *
+import matplotlib.pyplot as plt
+import pickle
+from config_models_statistics import *
+from multiprocessing import Pool, set_start_method
 
-# MODEL_NAME="pt_6_6_4_p4_v34"
-MODEL_NAME="pt_10_10_5_p4_v0_8"
+
+MODEL_NAME="pt_6_6_4_p4_v23"
 
 INPUT_PLANES_NUM = 4
 
@@ -34,9 +38,9 @@ class TrainPipeline():
         self.writer = SummaryWriter(WRITER_DIR)
 
         # params of the board and the game
-        self.board_width = 10
-        self.board_height = 10
-        self.n_in_row = 5
+        self.board_width = 6
+        self.board_height = 6
+        self.n_in_row = 4
 
         self.board = Board(width=self.board_width,
                            height=self.board_height,
@@ -70,8 +74,8 @@ class TrainPipeline():
 
 
         self.c_puct = 5
-        self.n_playout = 100  # num of simulations for each move
-        self.shutter_threshold_availables = 0
+        self.n_playout = 50  # num of simulations for each move
+        self.shutter_threshold_availables = 1
         self.full_boards_selfplay = False
 
 
@@ -292,14 +296,20 @@ class TrainPipeline():
                 mcts_probs_batch,
                 winner_batch,
                 self.learn_rate * self.lr_multiplier)
+
+
             new_probs, new_v = self.policy_value_net.policy_value(state_batch)
+
+
             kl = np.mean(np.sum(old_probs * (
                     np.log(old_probs + 1e-10) - np.log(new_probs + 1e-10)),
                                 axis=1)
                          )
+
             if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
                 break
             # adaptively adjust the learning rate
+
         if kl > self.kl_targ * 2 and self.lr_multiplier > 0.1:
             self.lr_multiplier /= 1.5
         elif kl < self.kl_targ / 2 and self.lr_multiplier < 10:
@@ -465,6 +475,139 @@ class TrainPipeline():
             print('\n\rquit')
 
 
-if __name__ == '__main__':
+
+
+
+    def compute_loss_only_empty_board_one_model(self, model_full_name, input_plains_num, limit_shutter, board_size, n_in_row, n_games=3):
+
+        loss_list = []
+        data_buffer = []
+
+
+        for model_num in range(50, 5050, 50):
+
+            print(f"{model_full_name}/current_policy_{model_num}.model")
+
+            file = f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_full_name}/current_policy_{model_num}.model'
+            policy = PolicyValueNet(board_size, board_size, model_file=file, input_plains_num=input_plains_num,
+                                        shutter_threshold_availables=limit_shutter)
+
+            policy.policy_value_net.train(False)
+
+            mcts_player = MCTSPlayer(policy.policy_value_fn,
+                                          c_puct=self.c_puct,
+                                          n_playout=self.n_playout,
+                                          is_selfplay=1)
+
+
+            for i in range(n_games):
+                # EMPTY BOARD:
+                winner, play_data = self.game.start_self_play(mcts_player,
+                                                              temp=self.temp,
+                                                              is_last_move=(input_plains_num == 4),
+                                                              start_player=i % 2 + 1)
+
+
+                play_data = list(play_data)[:]
+                # augment the data
+                play_data = self.get_equi_data(play_data)
+                data_buffer.extend(play_data)
+
+
+            # TODO: is this good?
+            j = 0
+            while len(data_buffer) < 2 * self.batch_size:
+
+                j = 1 - j
+
+                # EMPTY BOARD:
+                winner, play_data = self.game.start_self_play(mcts_player,
+                                                              temp=self.temp,
+                                                              is_last_move=(input_plains_num == 4),
+                                                              start_player=j)
+
+                play_data = list(play_data)[:]
+                # augment the data
+                play_data = self.get_equi_data(play_data)
+                data_buffer.extend(play_data)
+
+
+            mini_batch = random.sample(data_buffer, self.batch_size)
+            state_batch = [data[0] for data in mini_batch]
+            mcts_probs_batch = [data[1] for data in mini_batch]
+            winner_batch = [data[2] for data in mini_batch]
+
+
+            loss, entropy = policy.train_step_just_loss(state_batch, mcts_probs_batch, winner_batch)
+
+            loss_list.append(loss)
+
+        return loss_list
+
+
+
+def collect_loss_only_empty(input_plains_num, model_full_name, limit_shutter, board_size, n_in_row):
+
+
     training_pipeline = TrainPipeline()
-    training_pipeline.run()
+
+    training_pipeline.board_width = board_size
+    training_pipeline.board_height = board_size
+    training_pipeline.shutter_threshold_availables = limit_shutter
+    training_pipeline.n_in_row = n_in_row
+    training_pipeline.board = Board(width=training_pipeline.board_width,
+                       height=training_pipeline.board_height,
+                       n_in_row=training_pipeline.n_in_row)
+    training_pipeline.game = Game(training_pipeline.board)
+    training_pipeline.n_playout = 50
+
+
+    # input_plains_num = 4
+    # model_full_num = "pt_6_6_4_p4_v23"
+    # limit_shutter = 1
+    # board_size = 6
+    # n_in_row = 4
+
+
+    loss_list = training_pipeline.compute_loss_only_empty_board_one_model(model_full_name, input_plains_num,
+                                                                          limit_shutter,
+                                                                          board_size, n_in_row, n_games=5)
+
+
+    print(f"{model_full_name}: {loss_list}")
+
+    with open(f'/home/lirontyomkin/AlphaZero_Gomoku/models/{model_full_name}/loss_only_empty_playout_{n_playout}', 'wb') as f:
+        pickle.dump(loss_list, f)
+
+
+
+if __name__ == '__main__':
+    # training_pipeline = TrainPipeline()
+    # training_pipeline.run()
+
+    # input_plains_num = 4
+    # model_full_num = "pt_6_6_4_p4_v23"
+    # limit_shutter = 1
+    # board_size = 6
+    # n_in_row= 4
+    # loss_list = training_pipeline.compute_loss_only_empty_board_one_model(model_full_num, input_plains_num, limit_shutter,
+    #                                                                       board_size, n_in_row,n_games=5)
+    # plt.plot(loss_list)
+    # plt.show()
+
+
+    board_size = 6
+    n_in_row = 4
+    jobs = []
+    for path_5000, short_name, input_plains_num, _, _ , limit_shutter in all_new_12_models_6_policies:
+        path = path_5000.split('/')
+        model_full_name = path[5]
+        jobs.append((input_plains_num, model_full_name, limit_shutter, board_size, n_in_row))
+
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    set_start_method("spawn")
+    with Pool(24) as pool:
+        pool.starmap(collect_loss_only_empty, jobs)
+        pool.close()
+        pool.join()

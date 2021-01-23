@@ -14,7 +14,7 @@ class PolicyPlayer(object):
     def reset_player(self):
         pass
 
-    def get_action(self, board, temp=1e-3, return_prob=0):
+    def get_action(self, board, temp=1e-3, return_prob=0, *args, **kwargs):
         sensible_moves = board.availables
         # the pi vector returned by MCTS as in the alphaGo Zero paper
         move_probs = np.zeros(board.width*board.height)

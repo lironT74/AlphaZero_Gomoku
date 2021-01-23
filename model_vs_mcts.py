@@ -61,6 +61,8 @@
 #     save_csv_results_againts_mcts(model_name, model_list, np_results, mcts_playout_num, board_name, n_games, n_playout, path)
 #
 #
+#
+#
 # def policy_evaluate_againts_mcts(all_arguments, results, iteration):
 #
 #     (model_name, input_plains_num, width, height, n, game_board, n_games, mcts_playout_num, c_puct, n_playout) = all_arguments

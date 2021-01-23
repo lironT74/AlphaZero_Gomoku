@@ -217,10 +217,7 @@ class MCTSPlayer(object):
         self.mcts.update_with_move(-1)
 
 
-    def get_action(self, board, temp=1e-3, return_prob=False, **kwargs):
-
-
-        board_current_state = board.current_state(last_move=(self.input_plains_num == 4))
+    def get_action(self, board, temp=1e-3, return_prob=False, *args, **kwargs):
 
 
         sensible_moves = board.availables
@@ -234,7 +231,7 @@ class MCTSPlayer(object):
 
         if len(sensible_moves) > 0:
 
-            acts_policy, probas_policy = zip(*self.mcts._policy(board)[0])
+            acts_policy, probas_policy = zip(*self.mcts._policy(board, **kwargs)[0])
 
             # AlphaZero gives some probability to locations that are not available for some reason
             if np.sum(probas_policy) != 0:
@@ -256,6 +253,9 @@ class MCTSPlayer(object):
             # game there is no last move.
 
             if self._is_selfplay:
+
+                # print("LO TOV for statistics! ")
+
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
                 move = np.random.choice(
@@ -284,10 +284,20 @@ class MCTSPlayer(object):
 
 
 
-            last_move, cur_move, shutter_size = get_last_cur_shutter(board, move)
+            last_move = board.last_move_p1 if board.get_current_player() == board.players[0] else board.last_move_p2
+            last_move_printable = get_printable_move(last_move, board.width, board.height)
+            cur_move_printable = get_printable_move(move, board.width, board.height)
+
+
+            shutter_size = get_shutter_size(last_move, board, move)
+
+            # print(f"random (?) last move: {last_move_printable}")
+
+            board_current_state = board.current_state(last_move=(self.input_plains_num == 4), dont_randomize=True)
 
 
             if display:
+
                 self.create_probas_heatmap(acts_policy=acts_policy,
                                            probas_policy=probas_policy,
                                            acts_mcts=acts_mcts,
@@ -295,9 +305,9 @@ class MCTSPlayer(object):
                                            visits_mcts=visits_mcts,
                                            width=board.width,
                                            height=board.height,
-                                           last_move=last_move,
+                                           last_move_printable=last_move_printable,
                                            shutter_size=shutter_size,
-                                           cur_move=cur_move,
+                                           cur_move_printable=cur_move_printable,
                                            display=True,
                                            board_current_state=board_current_state)
 
@@ -309,8 +319,8 @@ class MCTSPlayer(object):
                                                  visits_mcts=visits_mcts,
                                                  width=board.width,
                                                  height=board.height,
-                                                 last_move=last_move,
-                                                 cur_move=cur_move,
+                                                 last_move_printable=last_move_printable,
+                                                 cur_move_printable=cur_move_printable,
                                                  shutter_size=shutter_size,
                                                  board_current_state=board_current_state)
 
@@ -351,7 +361,7 @@ class MCTSPlayer(object):
 
 
     def create_probas_heatmap(self, acts_policy, probas_policy, acts_mcts, probas_mcts, visits_mcts, width, height,
-                              last_move, cur_move, board_current_state, shutter_size=-1, display=False):
+                              last_move_printable, cur_move_printable, board_current_state, shutter_size=-1, display=False):
 
         if not display:
             mpl.use('Agg')
@@ -413,7 +423,7 @@ class MCTSPlayer(object):
 
 
             titles = ["Probas of the policy value fn", "Normalized visit counts of MCTS",
-                      f"Probas of the MCTS.{cur_move}"]
+                      f"Probas of the MCTS.{cur_move_printable}"]
 
             distributions = [move_probs_policy, normalized_visits, move_probs_mcts]
 
@@ -426,7 +436,7 @@ class MCTSPlayer(object):
 
             sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
             fig.suptitle(f"\nModel: {self.name} (plays: {my_marker}, "
-                         f"{last_move}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}\n", fontsize=fontsize + 10)
+                         f"{last_move_printable}{shutter_str})\nMCTS playouts: {self.mcts._n_playout}\n", fontsize=fontsize + 10)
 
             for i, (title, dist) in enumerate(zip(titles, distributions)):
 
@@ -461,7 +471,7 @@ class MCTSPlayer(object):
 
             # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
             fig.suptitle(f"Model: {self.name}, using the policy value function.\nPlays: {my_marker}, "
-                         f"{last_move}{shutter_str}\n{cur_move}", fontsize=fontsize + 10)
+                         f"{last_move_printable}{shutter_str}\n{cur_move_printable}", fontsize=fontsize + 10)
 
 
             im = ax.imshow(move_probs_policy, cmap=cmap, norm=plt.Normalize(vmin=0, vmax=1))
