@@ -1,10 +1,16 @@
+"""
+Producing graphs that show how much the policies vary with different last moves.
+y axis: STD, mean, COT of emd between the policies with given all possible last moves and the policy with the real last move.
+x axis: training iterations of the model/s.
+
+"""
+
 from multiprocessing import Pool
 from Game_boards_and_aux import *
 import os
 import matplotlib.pyplot as plt
 import io
 import PIL
-
 
 
 discription_dict_last_move = {
@@ -22,6 +28,7 @@ discription_dict_last_move = {
     "pt_6_6_4_p4_v33": "v33\nsim:100\nshutter:1\nfull:no\niter:5000",
     "pt_6_6_4_p4_v34": "v34\nsim:100\nshutter:0\nfull:no\niter:5000"
 }
+
 
 def model_stat_emd_board(model_name,
                         input_plains_num,
@@ -121,7 +128,7 @@ def save_fig_stat(stat_list, models_num, model_list, model_name, board_name, sta
     plt.close('all')
 
 
-def save_figs_stat(distances_list, y_top_lim, shutter_limit):
+def save_figs_stat_all_models(distances_list, y_top_lim, shutter_limit):
 
     fig, (ax, lax) = plt.subplots(nrows=2, gridspec_kw={"height_ratios": [20, 4]}, figsize=(40, 12.5))
 
@@ -211,7 +218,7 @@ def last_move_aux(board, stat_name, model_names, shutter_limit):
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list:
         save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, shutter_limit)
 
-    save_figs_stat(distances_list, y_top_lim, shutter_limit)
+    save_figs_stat_all_models(distances_list, y_top_lim, shutter_limit)
 
 
 def last_move_aux_shutter_separate(board, stat_name, models_0_names, models_1_names):
@@ -260,13 +267,13 @@ def last_move_aux_shutter_separate(board, stat_name, models_0_names, models_1_na
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list_0:
         save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, 0)
 
-    save_figs_stat(distances_list_0, y_top_lim, 0)
+    save_figs_stat_all_models(distances_list_0, y_top_lim, 0)
 
 
     for stat_list, models_num, model_list, model_name, board_name, stat_name in distances_list_1:
         save_fig_stat(stat_list, models_num, model_list, model_name, board_name, stat_name, y_top_lim, 1)
 
-    save_figs_stat(distances_list_1, y_top_lim, 1)
+    save_figs_stat_all_models(distances_list_1, y_top_lim, 1)
 
 
 if __name__ == '__main__':

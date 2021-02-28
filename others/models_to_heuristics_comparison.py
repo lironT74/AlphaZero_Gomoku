@@ -1,3 +1,9 @@
+""""
+This script was used to generate the models to heuristics plots.
+
+"""
+
+
 from multiprocessing import Pool
 from Game_boards_and_aux import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -198,8 +204,9 @@ def compare_model_to_heuristics_sampled_boards(model, path, states_path, n=4, wi
     # print(num_states)
 
 
-
     states = states_to_keep
+
+
 
     print(f"there are {len(states)} states! ")
 
@@ -1112,20 +1119,20 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
     v_34 = ('pt_6_6_4_p4_v34', 'v34', 4, False)
 
 
-    # models = [v7, v9, v10, v10_random,
-    #
-    #           v_27, v_28, v_29, v_30,
-    #
-    #           v_23, v_24, v_25, v_26,
-    #
-    #           v_31, v_32, v_33, v_34]
+    models = [v7, v9, v10, v10_random,
 
+              v_27, v_28, v_29, v_30,
 
-    models = [v10]
+              v_23, v_24, v_25, v_26,
+
+              v_31, v_32, v_33, v_34]
+
 
     jobs = []
 
 
+    #parameters used to determine which boards to use when aggregating over many boards.
+    # Sometimes you might want to check only "final" boards, and then you can limit to only more then 5 X's and O's, for example.
     less_or_more = 1
     X_threshold = 0
     O_threshold = 0
@@ -1169,16 +1176,11 @@ def run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds, o_weights, op
 
 if __name__ == "__main__":
 
-    # BOARDS = [EMPTY_BOARD_6X6, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
-    # cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
-    # o_weights = [0, 0.2, 0.5, 0.7, 1]
-    # open_path_thresholds = [0, -1]
+    BOARDS = [EMPTY_BOARD_6X6, BOARD_1_FULL, BOARD_2_FULL, BOARD_1_TRUNCATED, BOARD_2_TRUNCATED]
+    cutoff_thresholds = [0, 0.01, 0.05, 0.1, 0.15, 0.2, 1, 2, 3, 4]
+    o_weights = [0, 0.2, 0.5, 0.7, 1]
+    open_path_thresholds = [0, -1]
 
-    BOARDS = [BOARD_1_FULL]
-
-    cutoff_thresholds = [0]
-    o_weights = [0]
-    open_path_thresholds = [-1]
 
     run_heuristics_for_thresholds_and_o_weights(cutoff_thresholds=cutoff_thresholds, 
                                                 o_weights=o_weights, open_path_thresholds=open_path_thresholds)

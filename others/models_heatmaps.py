@@ -1,3 +1,9 @@
+"""
+A script meant to save heatmaps of the policies on different boards.
+Useful if you want to compare different policies and their decisions.
+
+"""
+
 from datetime import datetime
 from mcts_alphaZero import MCTSPlayer
 from tensorboardX import SummaryWriter

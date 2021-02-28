@@ -1,11 +1,8 @@
 from __future__ import print_function
-from multiprocessing import Pool, set_start_method
+from multiprocessing import Pool
 from mcts_alphaZero import *
-from heuristic_player import Heuristic_player
 from scipy.special import comb
-import pandas as pd
-import os
-from mcts_pure import MCTSPlayer as PUREMCTS
+
 
 def compare_all_players(playerss_list, width=6, height=6, n=4, open_path_threshold=-1):
 

@@ -254,8 +254,6 @@ class MCTSPlayer(object):
 
             if self._is_selfplay:
 
-                # print("LO TOV for statistics! ")
-
                 # add Dirichlet Noise for exploration (needed for
                 # self-play training)
                 move = np.random.choice(
@@ -269,18 +267,9 @@ class MCTSPlayer(object):
                 # to choosing the move with the highest prob
                 move = np.random.choice(acts_mcts, p=probas_mcts)
 
-                # for act, prob in zip(acts_mcts, probas_mcts):
-                #     y_cur_act = act // board.width + 1
-                #     x_cur_act = string.ascii_lowercase[act % board.width]
-                #     cur_move = f"{x_cur_act}{y_cur_act}"
-                #     print(f"{(cur_move, prob)}")
-
-
 
                 # reset the root node
                 self.mcts.update_with_move(-1)
-            #                location = board.move_to_location(move)
-            #                print("AI move: %d,%d\n" % (location[0], location[1]))
 
 
 
@@ -288,10 +277,8 @@ class MCTSPlayer(object):
             last_move_printable = get_printable_move(last_move, board.width, board.height)
             cur_move_printable = get_printable_move(move, board.width, board.height)
 
-
             shutter_size = get_shutter_size(last_move, board, move)
 
-            # print(f"random (?) last move: {last_move_printable}")
 
             board_current_state = board.current_state(last_move=(self.input_plains_num == 4), dont_randomize=True)
 

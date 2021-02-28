@@ -1,6 +1,6 @@
 from __future__ import print_function
 from mcts_alphaZero import *
-from heuristic_player import Heuristic_player
+from players import Heuristic_player
 from mcts_pure import MCTSPlayer as PUREMCTS
 
 

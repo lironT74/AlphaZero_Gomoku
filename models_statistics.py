@@ -1,3 +1,12 @@
+"""
+Main script used to make statistics of models against other players.
+
+A very unfortunate deficiency: players.py was not used here.
+Instead, a "no_playouts" parameter was passed to MCTS.
+
+"""
+
+
 from __future__ import print_function
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
@@ -16,11 +25,9 @@ MAX_POOL = 28
 
 def collect_all_models_statistics(players_list, opponents, width=6, height=6, n=4, num_games=1000, sub_dir ="statistics", **kwargs):
 
-    print(f"Playing:  ({cur_time()}), players: {[p.name for p in players_list]}")
-
+    print(f"Playing: ({cur_time()}), players: {[p.name for p in players_list]}")
 
     jobs = []
-
 
     for opponent_player in opponents:
 
@@ -206,17 +213,15 @@ def statistics_of_games_to_df(players_list, opponent_player, board, num_games, s
     result_df.to_excel(f"{path}all models {num_games} games results.xlsx")
 
 
-
 def save_games_statistics(width, height, n, board_state, board_name, cur_player,
                           opponent_player, last_move_p1, last_move_p2, correct_move_p1,
                           correct_move_p2, start_player, num_games, sub_dir, kwargs):
 
     path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{sub_dir}/vs {opponent_player.name}/{board_name}/"
 
-
-    # if os.path.exists(f"{path}/{cur_player.name}/full_{num_games}_games_stats"):
-    #     print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name} ({cur_time()})")
-    #     return
+    if os.path.exists(f"{path}/{cur_player.name}/full_{num_games}_games_stats"):
+        print(f"already saved {opponent_player.name} vs {cur_player.name} on {board_name} ({cur_time()})")
+        return
 
 
     i_board1, board1 = initialize_board_without_init_call(width, height, n, input_board=board_state, open_path_threshold=-1)
@@ -504,7 +509,6 @@ def get_statistics_from_saved_results(board_name, cur_player, opponent_player, n
 
 
 
-
 def plot_all_statistics_results(opponents, num_games, sub_dir, width):
 
     jobs = []
@@ -564,8 +568,6 @@ def create_statistics_graphics(num_games, opponent_name, board_name, sub_dir, bo
         save_save_game_len(board_name, path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
         save_game_results(board_name, path, num_games, width, height, font_size, opponent_name, data, group_by=group_by)
         save_win_ratio_no_ties(board_name, path, num_games, width, height, font_size, opponent_name, data, group_by=group_by, is_interchangeable_color=is_interchangeable_color)
-
-
 
 
 
@@ -655,6 +657,7 @@ def save_plays_with_shutter_results(board_name, path, num_games, fig_width, heig
     plt.close('all')
 
 
+
 def save_shutter_size(board_name, path, num_games, fig_width, height, font_size, opponent_name, data, group_by=None):
     mpl.rcParams.update({'font.size': font_size})
 
@@ -726,6 +729,7 @@ def save_shutter_size(board_name, path, num_games, fig_width, height, font_size,
         plt.savefig(f"{path}Shutter sizes results {group_by}.png", bbox_inches='tight')
 
     plt.close('all')
+
 
 
 def save_save_game_len(board_name, path, num_games, fig_width, height, font_size, opponent_name, data, group_by=None):
@@ -902,8 +906,6 @@ def save_game_results(board_name, path, num_games, fig_width, height, font_size,
     plt.close('all')
 
 
-
-
 def call_collage_statistics_results(board_name, opponents, sub_dir, board_width):
 
     opponents_names = [opp for opp in opponents]
@@ -942,7 +944,6 @@ def call_collage_statistics_results(board_name, opponents, sub_dir, board_width)
         create_collages_boards(listofimages3, f"Games results {group_by}", path_collage, group_by)
         create_collages_boards(listofimages4, f"Shutter sizes results {group_by}", path_collage, group_by)
         create_collages_boards(listofimages5, f"Win ratio ignoring ties {group_by}", path_collage, group_by)
-
 
 
 def create_collages_boards(listofimages, fig_name, path, group_by=None):
@@ -986,9 +987,6 @@ def create_collages_boards(listofimages, fig_name, path, group_by=None):
             os.makedirs(path + f"{group_by}/")
 
         new_im.save(path + f"{group_by}/{fig_name}.png")
-
-
-
 
 
 def save_states_from_history_empty_board(opponent, players_list, num_games, sub_dir, board_width):
@@ -1043,9 +1041,6 @@ def save_states_from_history_empty_board(opponent, players_list, num_games, sub_
     names = "_".join([player.name for player in players_list])
 
     pickle.dump(states, open(f"{path}sampled_states_{names}", "wb"))
-
-
-
 
 
 def win_ratio_comparison_plot(board_size, num_games, fig_width, height, font_size, opponent_name, limits_shutter, board_name, variation):
@@ -1166,7 +1161,6 @@ def win_ratio_comparison_plot(board_size, num_games, fig_width, height, font_siz
     plt.close('all')
 
 
-
 def win_ratio_comparison_plot_collage(board_name, opponents, board_size, variation, limits_shutter = [None, 0] ):
 
     opponents_names = [opp for opp in opponents]
@@ -1194,6 +1188,7 @@ def win_ratio_comparison_plot_collage(board_name, opponents, board_size, variati
             for opponent_name in opponents_names]
 
         create_collages_boards(listofimages, f"Win ratio ignoring ties shutter size comparison", path_collage)
+
 
 def plot_shutter_comparison_winratio_plots(opponents, board_size = 6, num_games = 1000, limits_shutter = [None, 0]):
 
@@ -1241,7 +1236,6 @@ def plot_shutter_comparison_winratio_plots(opponents, board_size = 6, num_games 
             pool.starmap(win_ratio_comparison_plot_collage, jobs_collage)
             pool.close()
             pool.join()
-
 
 
 def the_twelve_6_X_6(num_games, limit_shutter):
@@ -1385,12 +1379,11 @@ def the_twelve_6_X_6(num_games, limit_shutter):
     del opponents_6X6
 
 
-    # calc_all_models_statistics(p_names, o_names, width=6, num_games=num_games, sub_dir=sub_dir)
+    calc_all_models_statistics(p_names, o_names, width=6, num_games=num_games, sub_dir=sub_dir)
     plot_all_statistics_results(o_names, num_games=num_games, sub_dir=sub_dir, width=6)
 
 
     # save_states_from_history_empty_board(opponent_player_forcing_6X6, players_list_6X6, num_games, sub_dir=sub_dir, board_width=6)
-
 
 
 def the_six_10X10(num_games, limit_shutter):
@@ -1472,9 +1465,7 @@ def the_six_10X10(num_games, limit_shutter):
 
 
 
-
-
-def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_games, fig_width, height):
+def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height):
 
     mpl.rcParams.update({'font.size': 25})
     limits_shutter = [None, 0]
@@ -1645,9 +1636,7 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
     plt.close('all')
 
 
-
-
-def make_plot_type_1(model_name, board_size, opponent_name, limits_shutter, num_games, fig_width, height):
+def make_paper_plots(model_name, board_size, opponent_name, limits_shutter, num_games, fig_width, height):
 
     mpl.rcParams.update({'font.size': 25})
 
@@ -1773,80 +1762,6 @@ def make_plot_type_1(model_name, board_size, opponent_name, limits_shutter, num_
     plt.close('all')
 
 
-def make_plot_type_2(model_name, board_size, opponent_name, num_games, fig_width, height):
-
-    mpl.rcParams.update({'font.size': 25})
-
-    limits_shutter = [None, 0]
-
-    bars = []
-
-
-    if board_size == 6:
-        all_boards_names = ["board 1 full", "board 1 truncated", "board 2 full", "board 2 truncated", "empty board"]
-        all_boards_names_legend = ["I full", "I truncated", "II full", "II truncated", "empty"]
-    else:
-        all_boards_names = ["board 3 full", "board 3 truncated", "board 4 full", "board 4 truncated", "board 5 full", "board 5 truncated", "empty board"]
-        all_boards_names_legend = ["III full", "III truncated", "IV full", "IV truncated", "V full", "V truncated", "empty"]
-
-    for board_name in all_boards_names:
-
-        path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_size}X{board_size}_statistics_limit_all_to_shutter_None/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
-        data_no_limit = pd.read_excel(path, index_col=0)
-        win_ratio_no_limit = data_no_limit.at[model_name, "no. wins"] * (1 / (num_games - data_no_limit.at[model_name, "no. ties"]))
-
-        path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/{board_size}X{board_size}_statistics_limit_all_to_shutter_0/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
-        data_0_limit = pd.read_excel(path, index_col=0)
-        win_ratio_0_limit = data_0_limit.at[model_name, "no. wins"] * (1 / (num_games - data_0_limit.at[model_name, "no. ties"]))
-
-        if win_ratio_no_limit != 0:
-            bars.append(win_ratio_0_limit/win_ratio_no_limit)
-        else:
-            bars.append(0)
-
-
-    fig = plt.figure(constrained_layout=True)
-
-    fig.suptitle(f"{model_name} model: 1000 games against {opponent_name}", y=1.05, fontsize=35)
-
-    fig.set_size_inches(fig_width, height)
-    grid = fig.add_gridspec(nrows=2, ncols=1, height_ratios=[20, 1])
-
-    ind = np.arange(len(bars))
-    width = 0.5
-    width_ratio = 0.25
-
-    ax = fig.add_subplot(grid[0, 0])
-
-    ax.set_ylabel("(Win/Loss ratio) ratio", fontsize=35)
-
-
-    ax.bar(ind, bars, width=width_ratio * width, color='blue', alpha=0.5)
-
-
-    ax.set_xticks(ind)
-    ax.set_xticklabels(all_boards_names_legend, fontsize=30)
-
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    image = PIL.Image.open(buf)
-
-
-    limit_shutter_str = '_'.join([str(lim) for lim in limits_shutter])
-
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/comparison_plots/type2_plots/{board_size}X{board_size}_{limit_shutter_str}/"
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    plt.savefig(f"{path}{model_name} model vs {opponent_name}.png", bbox_inches='tight')
-
-    plt.close('all')
-
-
-
 if __name__ == '__main__':
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -1887,57 +1802,18 @@ if __name__ == '__main__':
     # plot_shutter_comparison_winratio_plots(o_names, board_size=10, num_games=1000, limits_shutter=[None, 2, 1, 0])
 
 
-    # height = 10
-    # opponent_name = "pure MCTS 1000"
-    #
-    #
-    # for model_name in ["v9_1500", "v10_1500"]:
-    #     board_size = 6
-    #     limits_shutter = [None, 0]
-    #
-    #     fig_width = 35
-    #     make_plot_type_1(model_name, board_size, opponent_name, limits_shutter, num_games, fig_width, height)
-    #
-    #     fig_width = 30
-    #     make_plot_type_2(model_name, board_size, opponent_name, num_games, fig_width, height)
-    #
-    #
-    #
-    # for model_name in ["v_01_1500", "v_02_1500"]:
-    #     board_size = 10
-    #
-    #     fig_width = 35
-    #     limits_shutter = [None, 0]
-    #     make_plot_type_1(model_name, board_size, opponent_name, limits_shutter, num_games, fig_width, height)
-    #
-    #     fig_width = 40
-    #     limits_shutter = [None, 1, 0]
-    #     make_plot_type_1(model_name, board_size, opponent_name, limits_shutter, num_games, fig_width, height)
-    #
-    #     fig_width = 30
-    #     make_plot_type_2(model_name, board_size, opponent_name, num_games, fig_width, height)
-
-
-
 
     model_name_6 = "v9_1500"
     model_name_10 = "v_01_1500"
     fig_width = 15
     height = 10
     opponent_name = "pure MCTS 1000"
-    make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
+    make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
 
 
-
-    # model_name_6 = "v10_1500"
-    # model_name_10 = "v_02_1500"
-    # fig_width = 50
-    # height = 10
-    # opponent_name = "pure MCTS 1000"
-    # make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
-
-
-
-    # import seaborn as sns
-    # pal = sns.color_palette()
-    # print(pal.as_hex())
+    model_name_6 = "v10_1500"
+    model_name_10 = "v_02_1500"
+    fig_width = 50
+    height = 10
+    opponent_name = "pure MCTS 1000"
+    make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)

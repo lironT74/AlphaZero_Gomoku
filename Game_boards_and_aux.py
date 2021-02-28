@@ -263,34 +263,6 @@ def EMD_between_two_models_on_board(model1_name, input_plains_num_1, i1,
 
 
 
-class Human(object):
-    """
-    human player
-    """
-
-    def __init__(self):
-        self.player = None
-        self.name = "Human"
-
-    def set_player_ind(self, p):
-        self.player = p
-
-    def get_action(self, board, **kwargs):
-        try:
-            location = input("Your move: ")
-            if isinstance(location, str):  # for python3
-                location = [int(n, 10) for n in location.split(",")]
-            move = board.location_to_move(location)
-        except Exception as e:
-            move = -1
-        if move == -1 or move not in board.availables:
-            print("invalid move")
-            move = self.get_action(board)
-        return move
-
-    def __str__(self):
-        return "Human {}".format(self.player)
-
 
 def boot_matrix(z, B):
     """Bootstrap sample
@@ -360,15 +332,9 @@ def npstr2tuple(s):
     return tuple(np.array(ast.literal_eval(s)))
 
 
-if __name__ == '__main__':
 
-    # print(f"6X6 boards: ")
-    # for board in ALL_PAPER_6X6_BOARD:
-    #     print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
-    #
-    # print(f"\n10x10 boards: ")
-    # for board in ALL_PAPER_10X10_BOARD:
-    #     print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
+def get_additional_statistics_paper_plot():
+
 
     all_boards_names_legend = ["I full",
                                "I truncated",
@@ -387,12 +353,9 @@ if __name__ == '__main__':
     wins_no_limit = [9, 151, 12, 47, 298, 1, 0, 27, 23, 216, 50, 903]
     losses_no_limit = [988, 847, 988, 953, 702, 999, 1000, 973, 977, 784, 950, 97]
 
-    wins_limit_0 = [65,616,144,159,476,259,113,191,188,429,240,927]
-    losses_limit_0 = [934,384,856,841,524,741,887,809,812,571,760,73]
+    wins_limit_0 = [65, 616, 144,159,476,259,113,191,188,429,240,927]
+    losses_limit_0 = [934, 384, 856,841,524,741,887,809,812,571,760,73]
 
-
-
-    effect_sizes, pvalues = [], []
 
     for a, b, c, d, name in zip(losses_no_limit, wins_no_limit, losses_limit_0, wins_limit_0, all_boards_names_legend):
 
@@ -400,3 +363,7 @@ if __name__ == '__main__':
         y = [0] * c + [1] * d
 
         rank_biserial_effect_size(x, y, name)
+
+
+if __name__ == '__main__':
+    pass

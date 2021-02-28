@@ -1,7 +1,11 @@
+"""download loss functions graphs data from tensorboard and plot smoothed graphs.
+It takes a long, long time to produce the Bootstrap smoothing graphs."""
+
+
 from multiprocessing import Pool, set_start_method
 import pickle
-import numpy             as np
-import pandas            as pd
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import matplotlib
@@ -139,7 +143,6 @@ def plot_smoothing_with_ci_aux_BS(model, n_step, model_loss_values, path):
     print(f"Done model: {model}, n_steps = {n_step} ({cur_time()})")
 
 
-
 def plot_smoothing_with_ci_aux_NORM(model, n_step, model_loss_values, path):
 
     if not os.path.exists(f"{path}smoothing_data/{model}/steps_{n_step}/"):
@@ -177,7 +180,6 @@ def plot_smoothing_with_ci_aux_NORM(model, n_step, model_loss_values, path):
     pickle.dump(smooth_path, open(f"{path}smoothing_data/{model}/steps_{n_step}/smooth_path_NORM", "wb"))
 
     print(f"Done model: {model}, n_steps = {n_step} ({cur_time()})")
-
 
 
 def group_by_action(label, group_by):
@@ -345,8 +347,6 @@ def plot_smoothing_with_ci(path, models_dfs, save_name="12_6x6_models", method =
     # plt.close('all')
 
 
-
-
 def plot_loss_only_empty(group_by='shutter', n_playout=50):
     models_dfs = {}
 
@@ -398,7 +398,6 @@ def plot_loss_only_empty(group_by='shutter', n_playout=50):
     plt.close('all')
 
 
-
 def tabulate_events(dpath, path):
 
     final_out = {}
@@ -437,7 +436,6 @@ def tabulate_events(dpath, path):
         final_out[dname] = tag_values
 
     pickle.dump(final_out, open(f"{path}{save_name}_df_dict", "wb"))
-
 
 
 
