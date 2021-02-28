@@ -11,7 +11,7 @@ import PIL.Image
 from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
 import os
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 from multiprocessing import Pool
 
 

@@ -18,7 +18,7 @@ import os
 import PIL
 import warnings
 import torch
-from config_models_statistics import *
+from aux_for_models_statistics import *
 
 warnings.simplefilter("error", np.VisibleDeprecationWarning)
 MAX_POOL = 28

@@ -16,10 +16,10 @@ from policy_value_net_pytorch import PolicyValueNet  # Pytorch
 import os
 from tensorboardX import SummaryWriter
 import copy
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 import matplotlib.pyplot as plt
 import pickle
-from config_models_statistics import *
+from aux_for_models_statistics import *
 from multiprocessing import Pool, set_start_method
 
 

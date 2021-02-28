@@ -5,7 +5,7 @@ This script was used to generate the models to heuristics plots.
 
 
 from multiprocessing import Pool
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 import matplotlib.ticker as mticker

@@ -14,7 +14,7 @@ mpl.use('agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import io
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 
 
 

@@ -8,7 +8,7 @@ Later, the boards were examined using the code of another project which implemen
 
 from players import Heuristic_player
 from multiprocessing import Pool, set_start_method
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import os

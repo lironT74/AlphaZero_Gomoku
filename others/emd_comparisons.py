@@ -6,7 +6,7 @@ across their training iterations (res[i,j] - EMD(policy1 at step i, policy2 at s
 
 from multiprocessing import Pool
 import pandas as pd
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import os
 import matplotlib.pyplot as plt

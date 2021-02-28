@@ -6,7 +6,7 @@ x axis: training iterations of the model/s.
 """
 
 from multiprocessing import Pool
-from Game_boards_and_aux import *
+from aux_functions_and_boards import *
 import os
 import matplotlib.pyplot as plt
 import io

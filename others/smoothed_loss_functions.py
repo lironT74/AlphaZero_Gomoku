@@ -17,7 +17,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta as rd
 from collections import defaultdict
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
-from config_models_statistics import *
+from aux_for_models_statistics import *
 
 
 discription_dict = {
