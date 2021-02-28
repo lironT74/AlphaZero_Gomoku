@@ -112,8 +112,6 @@ def calc_all_models_statistics(players_list, opponents, width=6, num_games=1000,
             pool.join()
 
 
-
-
 def statistics_of_games_to_df(players_list, opponent_player, board, num_games, sub_dir):
 
 
@@ -1486,52 +1484,52 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
     CI_dict = {index: [] for index in range(len(limits_shutter))}
 
 
-    # all_boards_names_6 = ["board 1 full",
-    #                       "board 1 truncated",
-    #                       "board 2 full",
-    #                       "board 2 truncated"
-    #                     ]
-    #
-    # all_boards_names_10 = [
-    #     "board 3 full",
-    #     "board 3 truncated",
-    #     "board 4 full",
-    #     "board 4 truncated",
-    #     "board 5 full",
-    #     "board 5 truncated",
-    # ]
-    #
-    # all_boards_names_legend = ["I full",
-    #                            "I truncated",
-    #                            "II full",
-    #                            "II truncated",
-    #                            "III full",
-    #                            "III truncated",
-    #                            "IV full",
-    #                            "IV truncated",
-    #                            "V full",
-    #                            "V truncated",
-    #                            # "empty 6X6", "empty 10X10"
-    #                            ]
-
-
     all_boards_names_6 = ["board 1 full",
+                          "board 1 truncated",
                           "board 2 full",
+                          "board 2 truncated"
                         ]
 
     all_boards_names_10 = [
         "board 3 full",
+        "board 3 truncated",
         "board 4 full",
+        "board 4 truncated",
         "board 5 full",
+        "board 5 truncated",
     ]
 
     all_boards_names_legend = ["I full",
+                               "I truncated",
                                "II full",
+                               "II truncated",
                                "III full",
+                               "III truncated",
                                "IV full",
+                               "IV truncated",
                                "V full",
+                               "V truncated",
                                # "empty 6X6", "empty 10X10"
                                ]
+
+
+    # all_boards_names_6 = ["board 1 full",
+    #                       "board 2 full",
+    #                     ]
+    #
+    # all_boards_names_10 = [
+    #     "board 3 full",
+    #     "board 4 full",
+    #     "board 5 full",
+    # ]
+    #
+    # all_boards_names_legend = ["I full",
+    #                            "II full",
+    #                            "III full",
+    #                            "IV full",
+    #                            "V full",
+    #                            # "empty 6X6", "empty 10X10"
+    #                            ]
 
     for index, shutter_limit in enumerate(limits_shutter):
 
@@ -1539,53 +1537,53 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
             path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
             data = pd.read_excel(path, index_col=0)
 
-            bars_dict[index].append(data.at[model_name_6, "no. wins"] * (1 / (num_games - data.at[model_name_6, "no. ties"])))
+            bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
+
             CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
 
+
+            print(f"{model_name_6} (shutter limit: {shutter_limit}) vs {opponent_name} on {board_name}: {data.at[model_name_6, 'no. ties']} ties")
 
 
         for board_name in all_boards_names_10:
             path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
             data = pd.read_excel(path, index_col=0)
 
-            bars_dict[index].append(data.at[model_name_10, "no. wins"] * (1 / (num_games - data.at[model_name_10, "no. ties"])))
+            bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
+
             CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
+
+            print(f"{model_name_10} (shutter limit: {shutter_limit})  vs {opponent_name} on {board_name}: {data.at[model_name_10, 'no. ties']} ties")
 
 
         # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
         # data = pd.read_excel(path, index_col=0)
         #
-        # bars_dict[index].append(data.at[model_name_6, "no. wins"] * (1 / (num_games - data.at[model_name_6, "no. ties"])))
+        # bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
         # CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
         #
         #
         # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
         # data = pd.read_excel(path, index_col=0)
         #
-        # bars_dict[index].append(data.at[model_name_10, "no. wins"] * (1 / (num_games - data.at[model_name_10, "no. ties"])))
+        # bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
         # CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
-
 
 
     if len(bars_dict[0]) == 2:
         fig_width = fig_width / 3
 
 
-
+    if len(all_boards_names_legend) == 10:
+        fig_width = fig_width * 2
 
 
     fig, ax = plt.subplots(constrained_layout=True)
-
-    fig.suptitle(f"6X6 and 10X10 AlphaZero Gomoku models:\n1000 games against {opponent_name}", y=1.1, fontsize=35)
 
     fig.set_size_inches(fig_width, height)
 
     ind = np.arange(len(bars_dict[0]))
     width = 0.27
-
-    ax.set_ylabel("Game Wins Percent", fontsize=30)
-    ax.set_ylim([0,0.6])
-    plt.locator_params(axis='y', nbins=10)
 
     alpha = 1
 
@@ -1596,10 +1594,15 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
 
 
     for index, ci in zip(ind, CI_dict[0]):
-        ax.plot((index - width / 1.5, index - width / 1.5), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=ms)
+
+        ci = npstr2tuple(ci)
+        ci_percent = (ci[0]*100, ci[1]*100)
+        ax.plot((index - width / 1.5, index - width / 1.5), ci_percent, 'r_-', color='black', linewidth=4, mew=4, ms=ms)
 
     for index, ci in zip(ind, CI_dict[1]):
-        ax.plot((index + width / 1.5, index + width / 1.5), npstr2tuple(ci), 'r_-', color='black', linewidth=4, mew=4, ms=ms)
+        ci = npstr2tuple(ci)
+        ci_percent = (ci[0] * 100, ci[1] * 100)
+        ax.plot((index + width / 1.5, index + width / 1.5), ci_percent, 'r_-', color='black', linewidth=4, mew=4, ms=ms)
 
 
     legend_elements = [
@@ -1610,14 +1613,16 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
 
                         ]
 
-    ax.legend(handles=legend_elements, fontsize=30)
-
+    # ax.legend(handles=legend_elements, fontsize=30)
+    # ax.legend(fancybox=True, shadow=True, fontsize=30, ncol=1)
+    ax.legend(fancybox=False, shadow=False, fontsize=30, ncol=1)
 
     ax.set_xticks(ind)
-    ax.set_xticklabels(all_boards_names_legend, fontsize=30)
+    ax.set_xticklabels(all_boards_names_legend, fontsize=30, weight='bold')
+    ax.set_ylabel("Game wins percentage ", fontsize=30, weight='bold')
+    ax.set_ylim([0,60])
+    plt.locator_params(axis='y', nbins=10)
 
-
-    # ax.legend(fancybox=True, shadow=True, fontsize=25, ncol=1)
 
     # lax = fig.add_subplot(grid[1, 0])
     # h, l = ax.get_legend_handles_labels()
@@ -1634,8 +1639,8 @@ def make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_game
     if not os.path.exists(path):
         os.makedirs(path)
 
-    # plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name}.png", bbox_inches='tight')
-    plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name} no truncated.png", bbox_inches='tight')
+    plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name}.png", bbox_inches='tight')
+    # plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name} no truncated.png", bbox_inches='tight')
 
     plt.close('all')
 
@@ -1931,6 +1936,8 @@ if __name__ == '__main__':
     # opponent_name = "pure MCTS 1000"
     # make_plot_type_1_united(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
 
-    import seaborn as sns
-    pal = sns.color_palette()
-    print(pal.as_hex())
+
+
+    # import seaborn as sns
+    # pal = sns.color_palette()
+    # print(pal.as_hex())

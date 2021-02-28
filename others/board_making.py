@@ -1,3 +1,11 @@
+"""
+This script was used to save boards observed in games between two players.
+Later, the boards were examined using the code of another project which implemented Alpha-Beta pruning
+(the goal was to find boards that guarantee a win in 3-4 moves ahead).
+"""
+
+
+
 from heuristic_player import Heuristic_player
 from multiprocessing import Pool, set_start_method
 from Game_boards_and_aux import *

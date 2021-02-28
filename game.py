@@ -1271,8 +1271,6 @@ class Game(object):
         plt.close('all')
 
 
-
-
     def start_play(self, player1, player2, start_player=1, is_shown=1, start_board=None, **kwargs):
 
 
@@ -1417,9 +1415,6 @@ class Game(object):
             self.board.do_move(move)
 
 
-
-
-
             if savefig:
 
                 image = PIL.Image.open(heatmap_buf)
@@ -1451,8 +1446,6 @@ class Game(object):
                     return winner
                 else:
                     return winner, game_length, shutter_sizes, real_last_move_shutter_sizes, game_history
-
-
 
     def start_play_just_game_capture(self, path, player1, player2, start_player=1, is_shown=1, start_board=None, **kwargs):
 
@@ -1556,9 +1549,6 @@ class Game(object):
 
                 return winner, boards_list_for_gttt, game_length
 
-
-
-
     @staticmethod
     def save_shutter_size_fig(path, shutter_sizes, start_player, game_length, players):
 
@@ -1646,8 +1636,6 @@ class Game(object):
                     else:
                         print("Game end. Tie")
                 return winner, zip(states, mcts_probs, winners_z)
-
-
 
 
     def start_play_training(self, player, opponent, is_shown=0, temp=1e-3):

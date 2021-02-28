@@ -12,6 +12,9 @@ import string
 import re
 import ast
 
+
+
+
 BOARD_1_FULL = (np.array([
                 [0, 1, 0, 2, 0, 0],
                 [0, 2, 1, 1, 0, 0],
@@ -332,6 +335,16 @@ def bootstrap_mean(x, B=100000, alpha=0.05, plot=False):
     return quantile_boot
 
 
+def rank_biserial_effect_size(x,y, name):
+    mann_whitney_res, p_value_mw = stats.mannwhitneyu(x, y)
+    u = mann_whitney_res
+    effect_size = 1.0-((2.0*u)/(len(x)*len(y)))
+
+    print(f"{name:20}pvalue: {p_value_mw}\t", end="")
+    print(f"effect size: {effect_size}")
+
+    return effect_size, p_value_mw
+
 
 def cur_time():
     now = datetime.now()
@@ -349,10 +362,41 @@ def npstr2tuple(s):
 
 if __name__ == '__main__':
 
-    print(f"6X6 boards: ")
-    for board in ALL_PAPER_6X6_BOARD:
-        print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
+    # print(f"6X6 boards: ")
+    # for board in ALL_PAPER_6X6_BOARD:
+    #     print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
+    #
+    # print(f"\n10x10 boards: ")
+    # for board in ALL_PAPER_10X10_BOARD:
+    #     print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
 
-    print(f"\n10x10 boards: ")
-    for board in ALL_PAPER_10X10_BOARD:
-        print(f"{board[1]}: {len(np.where(board[0] == 1)[0])} X's, {len(np.where(board[0] == 2)[0])} O's")
+    all_boards_names_legend = ["I full",
+                               "I truncated",
+                               "II full",
+                               "II truncated",
+                               "empty 6X6",
+                               "III full",
+                               "III truncated",
+                               "IV full",
+                               "IV truncated",
+                               "V full",
+                               "V truncated",
+                               "empty 10X10"
+                               ]
+
+    wins_no_limit = [9, 151, 12, 47, 298, 1, 0, 27, 23, 216, 50, 903]
+    losses_no_limit = [988, 847, 988, 953, 702, 999, 1000, 973, 977, 784, 950, 97]
+
+    wins_limit_0 = [65,616,144,159,476,259,113,191,188,429,240,927]
+    losses_limit_0 = [934,384,856,841,524,741,887,809,812,571,760,73]
+
+
+
+    effect_sizes, pvalues = [], []
+
+    for a, b, c, d, name in zip(losses_no_limit, wins_no_limit, losses_limit_0, wins_limit_0, all_boards_names_legend):
+
+        x = [0] * a + [1] * b
+        y = [0] * c + [1] * d
+
+        rank_biserial_effect_size(x, y, name)

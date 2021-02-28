@@ -43,8 +43,6 @@ discription_dict = {
 
 }
 
-
-
 colors_dict = {
     "v7_1500" : "grey",
     "v9_1500" : "grey",
@@ -81,8 +79,6 @@ colors_dict = {
 
 }
 
-
-
 # veteran_models_6 = (["v7_1500", "v9_1500", "v10_1500", "v10_1500_random"], "veteran_models")
 veteran_models_6 = (["v9_1500", "v10_1500", "v9_5000", "v10_5000"], "veteran_models")
 
@@ -101,7 +97,6 @@ shutter_1_models_6 = (["v27_5000", "v29_5000", "v23_5000", "v25_5000", "v31_5000
 
 models_variations_6 = [all_new_12_models_6, mcts_25_models_6, mcts_50_models_6, mcts_100_models_6, full_boards_models_6,
                        non_full_boards_models_6, shutter_0_models_6, shutter_1_models_6]
-
 
 
 
