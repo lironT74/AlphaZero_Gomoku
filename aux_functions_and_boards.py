@@ -23,7 +23,7 @@ import matplotlib.patches as mpatches
 import matplotlib as mpl
 import io
 import os
-
+import sys
 
 BOARD_1_FULL = (np.array([
     [0, 1, 0, 2, 0, 0],

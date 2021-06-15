@@ -1687,7 +1687,13 @@ if __name__ == '__main__':
     set_start_method("spawn")
     num_games = 1000
 
-    game_statistics_path = '/home/lirontyomkin/AlphaZero_Gomoku/matches/'
+
+
+    if len(sys.argv) == 1:
+        game_statistics_path = '/home/lirontyomkin/AlphaZero_Gomoku/matches/'
+    else:
+        game_statistics_path = sys.argv[1]
+
 
     produce_model_vs_opponent_summery_excel("v9_1500", 6, "pure MCTS 500", game_statistics_path, game_statistics_path)
     produce_model_vs_opponent_summery_excel("v9_1500", 6, "pure MCTS 1000", game_statistics_path, game_statistics_path)
