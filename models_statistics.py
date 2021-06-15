@@ -1505,62 +1505,63 @@ def produce_model_vs_opponent_summery_excel(model_name, board_size, opponent_nam
 
 def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games,
                                 fig_width, height,
-                                game_statistics_path):
+                                game_statistics_path, limits_shutter=[None, 0], add_truncated=True, add_empty=False):
+
 
     mpl.rcParams.update({'font.size': 25})
-    limits_shutter = [None, 0]
 
 
     bars_dict = {index: [] for index in range(len(limits_shutter))}
     CI_dict = {index: [] for index in range(len(limits_shutter))}
 
 
-    all_boards_names_6 = ["board 1 full",
-                          "board 1 truncated",
-                          "board 2 full",
-                          "board 2 truncated"
-                          ]
+    if add_truncated:
+        all_boards_names_6 = ["board 1 full",
+                              "board 1 truncated",
+                              "board 2 full",
+                              "board 2 truncated"
+                              ]
 
-    all_boards_names_10 = [
-        "board 3 full",
-        "board 3 truncated",
-        "board 4 full",
-        "board 4 truncated",
-        "board 5 full",
-        "board 5 truncated",
-    ]
+        all_boards_names_10 = [
+            "board 3 full",
+            "board 3 truncated",
+            "board 4 full",
+            "board 4 truncated",
+            "board 5 full",
+            "board 5 truncated",
+        ]
 
-    all_boards_names_legend = ["I full",
-                               "I truncated",
-                               "II full",
-                               "II truncated",
-                               "III full",
-                               "III truncated",
-                               "IV full",
-                               "IV truncated",
-                               "V full",
-                               "V truncated",
-                               # "empty 6X6", "empty 10X10"
-                               ]
+        all_boards_names_legend = ["I full",
+                                   "I truncated",
+                                   "II full",
+                                   "II truncated",
+                                   "III full",
+                                   "III truncated",
+                                   "IV full",
+                                   "IV truncated",
+                                   "V full",
+                                   "V truncated",
+                                   ]
 
+    else:
 
-    # all_boards_names_6 = ["board 1 full",
-    #                       "board 2 full",
-    #                     ]
-    #
-    # all_boards_names_10 = [
-    #     "board 3 full",
-    #     "board 4 full",
-    #     "board 5 full",
-    # ]
-    #
-    # all_boards_names_legend = ["I full",
-    #                            "II full",
-    #                            "III full",
-    #                            "IV full",
-    #                            "V full",
-    #                            # "empty 6X6", "empty 10X10"
-    #                            ]
+        all_boards_names_6 = ["board 1 full",
+                              "board 2 full",
+                              ]
+
+        all_boards_names_10 = [
+            "board 3 full",
+            "board 4 full",
+            "board 5 full",
+        ]
+
+        all_boards_names_legend = ["I full",
+                                   "II full",
+                                   "III full",
+                                   "IV full",
+                                   "V full",
+                                   ]
+
 
     for index, shutter_limit in enumerate(limits_shutter):
 
@@ -1573,7 +1574,7 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
             CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
 
 
-            print(f"{model_name_6} (shutter limit: {shutter_limit}) vs {opponent_name} on {board_name}: {data.at[model_name_6, 'no. ties']} ties")
+            # print(f"{model_name_6} (shutter limit: {shutter_limit}) vs {opponent_name} on {board_name}: {data.at[model_name_6, 'no. ties']} ties")
 
 
         for board_name in all_boards_names_10:
@@ -1584,20 +1585,20 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
 
             CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
 
-            print(f"{model_name_10} (shutter limit: {shutter_limit})  vs {opponent_name} on {board_name}: {data.at[model_name_10, 'no. ties']} ties")
 
 
-        # path = f"{game_tatistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
-        # data = pd.read_excel(path, index_col=0)
-        #
-        # bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
-        # CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
-        #
-        # path = f"{game_tatistics_path}10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
-        # data = pd.read_excel(path, index_col=0)
-        #
-        # bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
-        # CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
+        if add_empty:
+            path = f"{game_statistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+            data = pd.read_excel(path, index_col=0)
+
+            bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
+            CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
+
+            path = f"{game_statistics_path}10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+            data = pd.read_excel(path, index_col=0)
+
+            bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
+            CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
 
 
     if len(bars_dict[0]) == 2:
@@ -1635,35 +1636,18 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
         ax.plot((index + width / 1.5, index + width / 1.5), ci_percent, 'r_-', color='black', linewidth=4, mew=4, ms=ms)
 
 
-    legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label=f'No shutter limitation',
-               markerfacecolor='#5f9e6e', markersize=25),
-        Line2D([0], [0], marker='o', color='w', label=f'Shutter = {limits_shutter[1]}',
-               markerfacecolor='#5874a2', markersize=25)
 
-    ]
-
-    # ax.legend(handles=legend_elements, fontsize=30)
-    # ax.legend(fancybox=True, shadow=True, fontsize=30, ncol=1)
     ax.legend(fancybox=False, shadow=False, fontsize=30, ncol=1)
 
     ax.set_xticks(ind)
     ax.set_xticklabels(all_boards_names_legend, fontsize=30, weight='bold')
     ax.set_ylabel("Game wins percentage ", fontsize=30, weight='bold')
-    # ax.set_ylim([0,100])
     plt.locator_params(axis='y', nbins=10)
-
-
-    # lax = fig.add_subplot(grid[1, 0])
-    # h, l = ax.get_legend_handles_labels()
-    # lax.legend(h, l, borderaxespad=0, loc="center", fancybox=True, shadow=True, fontsize=25, ncol=len(limits_shutter))
-    # lax.axis("off")
 
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
     image = PIL.Image.open(buf)
-
 
 
     limit_shutter_str = '_'.join([str(lim) for lim in limits_shutter])
@@ -1672,8 +1656,13 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
     if not os.path.exists(path):
         os.makedirs(path)
 
-    plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name}.png", bbox_inches='tight')
-    # plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name} no truncated.png", bbox_inches='tight')
+
+    if add_truncated:
+        plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name}.png", bbox_inches='tight')
+
+    else:
+        plt.savefig(f"{path}{model_name_6} and {model_name_10} vs {opponent_name} no truncated.png", bbox_inches='tight')
+
 
     plt.close('all')
 
