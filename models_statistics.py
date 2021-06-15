@@ -1465,7 +1465,8 @@ def the_six_10X10(num_games, limit_shutter):
 
 
 
-def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height):
+def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games,
+                                fig_width, height, game_statistics_path='/home/lirontyomkin/AlphaZero_Gomoku/matches/'):
 
     mpl.rcParams.update({'font.size': 25})
     limits_shutter = [None, 0]
@@ -1525,7 +1526,7 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
     for index, shutter_limit in enumerate(limits_shutter):
 
         for board_name in all_boards_names_6:
-            path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
+            path = f"{game_statistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
@@ -1537,7 +1538,7 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
 
 
         for board_name in all_boards_names_10:
-            path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
+            path = f"{game_statistics_path}/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
@@ -1547,14 +1548,13 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
             print(f"{model_name_10} (shutter limit: {shutter_limit})  vs {opponent_name} on {board_name}: {data.at[model_name_10, 'no. ties']} ties")
 
 
-        # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+        # path = f"{game_tatistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
         # data = pd.read_excel(path, index_col=0)
         #
         # bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
         # CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
         #
-        #
-        # path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+        # path = f"{game_tatistics_path}10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
         # data = pd.read_excel(path, index_col=0)
         #
         # bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
@@ -1625,7 +1625,7 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
     buf.seek(0)
     image = PIL.Image.open(buf)
 
-    path = f"/home/lirontyomkin/AlphaZero_Gomoku/matches/comparison_plots/type1_plots/all_boards/"
+    path = f"{game_statistics_path}/plots/shutter_comparison_plots/"
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -1843,15 +1843,16 @@ if __name__ == '__main__':
     # make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
 
 
-    # model_name_6 = "v9_1500"
-    # model_name_10 = "v_01_1500"
-    # fig_width = 15
-    # height = 10
-    # opponent_name = "pure MCTS 500"
-    # make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
+    model_name_6 = "v9_1500"
+    model_name_10 = "v_01_1500"
+    fig_width = 15
+    height = 10
+    opponent_name = "pure MCTS 500"
+    make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height)
 
     produce_model_vs_opponent_excel("v9_1500", 6, "pure MCTS 500")
     produce_model_vs_opponent_excel("v9_1500", 6, "pure MCTS 1000")
 
     produce_model_vs_opponent_excel("v_01_1500", 10, "pure MCTS 500")
     produce_model_vs_opponent_excel("v_01_1500", 10, "pure MCTS 1000")
+
