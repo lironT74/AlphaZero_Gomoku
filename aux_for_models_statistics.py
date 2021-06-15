@@ -1,8 +1,8 @@
 from __future__ import print_function
-from mcts_alphaZero import *
+from mcts_alphaZero import MCTSPlayer, PolicyValueNet
 from players import Heuristic_player
 from mcts_pure import MCTSPlayer as PUREMCTS
-
+from aux_functions_and_boards import *
 
 
 discription_dict = {
