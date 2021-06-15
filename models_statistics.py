@@ -8,6 +8,8 @@ Instead, a "no_playouts" parameter was passed to MCTS.
 
 from __future__ import print_function
 
+import os
+
 from aux_for_models_statistics import *
 
 warnings.simplefilter("error", np.VisibleDeprecationWarning)
@@ -1567,6 +1569,7 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
 
         for board_name in all_boards_names_6:
             path = f"{game_statistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
+
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
@@ -1574,11 +1577,10 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
             CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
 
 
-            # print(f"{model_name_6} (shutter limit: {shutter_limit}) vs {opponent_name} on {board_name}: {data.at[model_name_6, 'no. ties']} ties")
-
 
         for board_name in all_boards_names_10:
             path = f"{game_statistics_path}/10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/{board_name}/all models {num_games} games results.xlsx"
+
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
@@ -1586,15 +1588,16 @@ def make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_
             CI_dict[index].append(data.at[model_name_10, "CI_wins_losses"])
 
 
-
         if add_empty:
             path = f"{game_statistics_path}6X6_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_6, "no. wins"] / num_games)
             CI_dict[index].append(data.at[model_name_6, "CI_wins_losses"])
 
             path = f"{game_statistics_path}10X10_statistics_limit_all_to_shutter_{shutter_limit}/vs {opponent_name}/empty board/all models {num_games} games results.xlsx"
+
             data = pd.read_excel(path, index_col=0)
 
             bars_dict[index].append(100 * data.at[model_name_10, "no. wins"] / num_games)
@@ -1677,9 +1680,8 @@ if __name__ == '__main__':
     num_games = 1000
 
 
-
     if len(sys.argv) == 1:
-        game_statistics_path = '/home/lirontyomkin/AlphaZero_Gomoku/matches/'
+        game_statistics_path = '/home/lirontyomkin/AlphaZero_Gomoku/matches_excels/'
     else:
         game_statistics_path = sys.argv[1]
 
@@ -1706,3 +1708,4 @@ if __name__ == '__main__':
     height = 10
     opponent_name = "pure MCTS 1000"
     make_paper_plots_all_models(model_name_6, model_name_10, opponent_name, num_games, fig_width, height, game_statistics_path)
+
